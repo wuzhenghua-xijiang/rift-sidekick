@@ -103,6 +103,7 @@ LCU 没有跨符文、装备和技能的事务。使用“先保存意图 → �
 - 0.1.5 Windows x64 安装包已生成，核对内含程序为 Windows x86-64、包内版本为 0.1.5，并确认托盘图标已随包分发；SHA-256 已记录到 `release/SHA256SUMS.txt`。安装包尚未代码签名。
 - 0.1.6 已在本机生成 Windows x64 NSIS 安装包并确认 `app-update.yml` 使用 GitHub 镜像 generic feed；本机用临时测试密钥验证签名脚本能绑定版本、安装包和 latest.yml SHA-512，正式私钥仅存在 GitHub Actions Secret。当前 macOS 无法替代 Windows 实测下载、安装重启和托盘生命周期。
 - 0.1.6 已通过 GitHub Windows runner 构建并公开发布，镜像完整下载 125809506 字节，使用内置公钥验证正式清单签名并确认 SHA-512/SHA-256 一致。0.1.7 补上安装前重验、安装阶段保护、可重试状态与更新提示。具体流程和 Windows 升级验收见 [UPDATES.md](UPDATES.md)。
+- 0.1.7 GitHub Windows CI 与签名发布成功；用真实 electron-updater 的 NSIS 下载器从镜像下载正式包 125810285 字节，确认 Ed25519、SHA-512 和 SHA-256 通过。验收进程仅模拟旧版本及 Windows 频道来检查下载，不执行 Windows 安装器；实际安装重启与 LOL 联动仍待 Windows 验收。
 - Windows 安装、LOL 实际写入、恢复、DPI 吸附、帧率/延迟及长期内存占用尚未实测，见 `WINDOWS-ACCEPTANCE.md`。
 
 ## 参考来源
