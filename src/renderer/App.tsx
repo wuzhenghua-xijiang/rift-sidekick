@@ -58,6 +58,7 @@ export default function App() {
   const liveChampion = champions.find((entry) => entry.key === client.championId)
   const supportedMode = client.mode === 'ranked' || client.mode === 'aram' || client.mode === 'aram-mayhem'
   const busy = applyBusy || Boolean(state.lastConfig?.busy)
+  const hasUpdate = state.update?.status === 'available' || state.update?.status === 'downloaded'
   const action = configurationStatus({ state, championKey: champion?.key, mode, hasPlan: Boolean(plan), loading, busy })
   const canApply = action.canApply
   const browsingOther = Boolean(client.connected && client.phase === 'ChampSelect' && liveChampion &&
@@ -181,7 +182,7 @@ export default function App() {
         <NavButton active={page === 'tft'} label="云顶配方" onClick={() => setPage('tft')}><Trophy size={20} /></NavButton>
         <NavButton active={page === 'champions'} label="英雄图鉴" onClick={() => setPage('champions')}><BookOpen size={20} /></NavButton>
         <div className="rail-rule" />
-        <NavButton active={page === 'settings'} label="偏好设置" onClick={() => setPage('settings')}><Settings2 size={20} /></NavButton>
+        <NavButton active={page === 'settings'} label={hasUpdate ? '设置 · 有更新' : '偏好设置'} onClick={() => setPage('settings')}><Settings2 size={20} />{hasUpdate && <i className="update-dot" />}</NavButton>
         <div className="rail-bottom"><span>GG</span><small>V 0.1</small></div>
       </nav>
       <div className="workspace">
@@ -227,17 +228,17 @@ export default function App() {
 
           {page === 'settings' && <section className="settings-page">
             <div className="settings-intro"><span className="eyebrow lime">YOUR RIFT. YOUR RULES.</span><h2>认真上分<br /><em>也要快乐开黑。</em></h2><p>自动配置默认开启，随时可以把开关交回自己。</p></div>
+            <UpdatePanel update={state.update} run={perform} />
             <SettingsRow icon={<WandSparkles size={19} />} title="锁定后自动配置" description="优先使用保存的方案；无偏好时选胜率最高的，海克斯用首套装备参考" control={<Toggle label="锁定后自动配置" checked={state.autoConfig} onChange={() => perform(window.rift.setAutoConfig(!state.autoConfig))} />} />
             <SettingsRow icon={<Zap size={19} />} title="同时同步召唤师技能" description="开启后，一键配置也会替换当前召唤师技能" control={<Toggle label="同步召唤师技能" checked={state.includeSpells} onChange={() => perform(window.rift.setIncludeSpells(!state.includeSpells))} />} />
             <SettingsRow icon={<PanelRightClose size={19} />} title="吸附在客户端右侧" description="跟随客户端移动、缩放和最小化；空间不足时移至左侧" control={<Toggle label="吸附客户端" checked={state.dock} onChange={() => perform(window.rift.setDock(!state.dock))} />} />
             <div className="game-focus-note"><Gamepad2 size={17} /><div><b>开局专注，战后再见</b><span>进入加载和对局时自动隐藏；结束后恢复并打开本局分析。{state.backgroundAvailable ? '关闭窗口会留在托盘，双击托盘图标可唤回；右键可彻底退出。' : '需要时可再次启动助手唤回。'}</span></div></div>
-            <UpdatePanel update={state.update} run={perform} />
             <SettingsRow icon={<RotateCcw size={19} />} title="恢复原配置" description={state.recoveryNeeded ? '上次操作未完全恢复，请连接原账号后重试' : state.canRestore ? '撤回最近一次配置，保留其他符文页和装备方案' : '成功配置后，这里会保留最近一次恢复入口'} control={<button className="outline-button" disabled={!state.canRestore || !client.connected || busy} onClick={() => void restore()}>恢复</button>} />
             {state.recoveryNeeded && state.canRestore && <SettingsRow icon={<Check size={19} />} title="保留当前配置" description="已手动调整？保留客户端当前内容并放弃上次恢复快照" control={<button className="outline-button" disabled={busy} onClick={() => { void window.rift.keepCurrentConfig().then(setToast).catch(report) }}>保留</button>} />}
             <SettingsRow icon={<RefreshCw size={19} />} title="客户端连接" description={client.connected ? `${phaseLabel} · ${client.modeLabel || '等待对局'}` : client.message || '打开 Windows 英雄联盟客户端后自动连接'} control={<button className="outline-button" onClick={() => perform(window.rift.reconnect())}>重连</button>} />
             {state.lastConfig?.message && <Feedback state={state} />}
             <div className="source-card"><div className="source-heading"><span className="source-logo">RS</span><div><b>配方有出处，变阵有说明</b><small>DATA CREDITS</small></div></div><p><b>OP.GG</b> 提供对局统计。卡片展示不同核心成装或符文组合，胜率注明对应样本，不推算整套胜率。海克斯装备使用普通大乱斗参考并明确标注。<b>Data Dragon</b> 提供英雄和图标；其版本号不代表推荐统计版本。</p><p>LCU 为社区整理的客户端接口，可能随更新失效。接口不可用时仍可浏览方案；加载中和对局内不写入配置。</p><div className="source-links"><button onClick={() => perform(window.rift.openSource('opgg'))}>OP.GG <ArrowUpRight size={12} /></button><button onClick={() => perform(window.rift.openSource('ddragon'))}>Data Dragon <ArrowUpRight size={12} /></button><button onClick={() => perform(window.rift.openSource('github'))}>LCU 参考 <ArrowUpRight size={12} /></button></div></div>
-            <div className="about-row"><span><Gem size={13} /> RIFT SIDEKICK · 0.1.6</span><span>为了下一场高光 ✦</span></div>
+            <div className="about-row"><span><Gem size={13} /> RIFT SIDEKICK · {state.update?.currentVersion || '0.1.7'}</span><span>为了下一场高光 ✦</span></div>
           </section>}
         </main>
         {page === 'recommend' && <footer className={`action-dock action-${action.tone}`}><div className="action-caption"><span><span className={`tiny-live ${canApply ? '' : 'off'}`} />{action.caption}</span>{state.canRestore && <button disabled={busy || !client.connected} onClick={() => void restore()}><RotateCcw size={12} />撤回</button>}</div><button className={`apply-button ${busy ? 'busy' : ''}`} onClick={() => void applySelected()} disabled={!canApply}><span className="button-spark"><WandSparkles size={19} /></span><span>{busy ? '正在同步你的配方…' : '一键配置所选方案'}</span><ArrowUpRight size={19} /></button><p className="apply-hint">{action.hint}</p></footer>}
@@ -283,8 +284,8 @@ function UpdatePanel({ update, run }: { update?: UpdateState; run: (action: Prom
       </button>
     </div>
     <p className="update-message" role="status">{update?.message || '启动后自动检查新版本，也可以手动检查。'}</p>
-    {status === 'downloading' && <div className="update-progress" role="progressbar" aria-label="更新下载进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={update?.progress ?? 0}><i style={{ width: `${update?.progress ?? 0}%` }} /></div>}
-    {(canDownload || downloaded) && <div className="update-foot"><span>{downloaded ? '安装前已完成版本与 SHA-512 校验' : `发现 v${update?.version}`}</span><button onClick={() => run(window.rift.openSource('updates'))}>发布说明 <ArrowUpRight size={11} /></button></div>}
+    {status === 'downloading' && <div className="update-progress" role="progressbar" aria-label="更新下载进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={update?.progress ?? 0}><i style={{ transform: `scaleX(${(update?.progress ?? 0) / 100})` }} /></div>}
+    {(canDownload || downloaded) && <div className="update-foot"><span>{downloaded ? '返回大厅后安装，配置与偏好保留' : `发现 v${update?.version}`}</span><button onClick={() => run(window.rift.openSource('updates'))}>发布说明 <ArrowUpRight size={11} /></button></div>}
   </section>
 }
 function Feedback({ state }: { state: AppState }) {

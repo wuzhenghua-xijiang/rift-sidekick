@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, ipcMain, Menu, nativeImage, screen, session, shell, Tray } from 'electron'
+import { app, autoUpdater, BrowserWindow, clipboard, ipcMain, Menu, nativeImage, screen, session, shell, Tray } from 'electron'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -241,6 +241,7 @@ async function runAutoConfig(identity: string, token: number, championKey: numbe
   } finally { updateConfigurationState() }
 }
 async function applyPlan(championId: string, plan: BuildPlan, guard: () => boolean) {
+  if (state.update?.status === 'installing') throw new Error('助手正在安装更新，请重启后配置。')
   const version = await lcu.request<string>('GET', '/lol-patch/v1/game-version')
   const includeSpells = preferences.includeSpells
   await data.verifyPlan(plan, version, includeSpells)
@@ -271,6 +272,7 @@ ipcMain.handle('rift:postgame', async () => {
   return postGame.get(gameId)
 })
 ipcMain.handle('rift:honor', (_event, input: unknown) => {
+  if (state.update?.status === 'installing') return { ok: false, retryable: false, message: '助手正在安装更新，请到客户端完成点赞。' }
   const value = input as { gameId?: number; puuids?: string[] } | null
   return postGame.honor(value?.gameId!, value?.puuids!)
 })
@@ -408,10 +410,22 @@ else {
     try { await configuration.initialize(); configurationReady = true; updateConfigurationState() }
     catch (error) { updateState({ recoveryNeeded: true, lastConfig: { ok: false, message: messageOf(error), at: Date.now() } }) }
     installSecurityHeaders()
-    updates = new UpdateService((update) => updateState({ update }))
+    updates = new UpdateService((update) => updateState({ update }), async () => {
+      await refreshClientState()
+      if (configuration.isBusy || state.lastConfig?.busy || postGame.isBusy) throw new Error('正在写入配置或提交点赞，请完成后再安装更新。')
+      if (configuration.recoveryNeeded) throw new Error('请先恢复或保留当前配置，再安装更新。')
+      if (gameWindow.suppressed) throw new Error('正在加载或进行对局，请返回大厅后再安装。')
+      if (state.client.connected) {
+        const phase = await lcu.request<string>('GET', '/lol-gameflow/v1/gameflow-phase')
+        if (!['None', 'Lobby', 'EndOfGame'].includes(phase)) throw new Error('请结束选人、匹配或对局，返回大厅后再安装。')
+      }
+      await preferencesWrites
+      operation++
+      if (autoTimer) clearTimeout(autoTimer)
+    })
     makeTray()
     makeWindow()
-    updateCheckTimer = setTimeout(() => void updates?.check(), 7_000)
+    if (app.isPackaged && process.platform === 'win32') updateCheckTimer = setTimeout(() => void updates?.check(), 7_000)
     const refreshData = () => void data.refresh().then(() => updateState({ client: { ...state.client, patch: data.getPatch() } })).catch(() => undefined)
     refreshData()
     refreshTimer = setInterval(refreshData, 6 * 60 * 60_000)
@@ -429,4 +443,5 @@ app.on('before-quit', () => {
   tray?.destroy()
   tray = undefined
 })
+autoUpdater.on('before-quit-for-update', () => { quitting = true })
 app.on('window-all-closed', () => app.quit())

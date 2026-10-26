@@ -392,7 +392,7 @@ summary:focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; }
 .update-action:disabled { color: #aaa4b0; border-color: var(--stroke); background: rgba(255,255,255,.035); cursor: default; }
 .update-message { margin: 0; color: #bbb3c1; font-size: 9px; line-height: 1.6; overflow-wrap: anywhere; }
 .update-progress { height: 4px; overflow: hidden; border-radius: 4px; background: rgba(255,255,255,.09); }
-.update-progress i { display: block; height: 100%; border-radius: inherit; background: var(--acid); transition: width .2s ease; }
+.update-progress i { display: block; width: 100%; height: 100%; border-radius: inherit; background: var(--acid); transform-origin: left; transition: transform .2s ease; }
 .update-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #ada2b4; font-size: 8px; }
 .update-foot > button { display: inline-flex; align-items: center; gap: 3px; padding: 3px 0 3px 5px; border: 0; color: #d5c5da; background: none; font-size: 8px; cursor: pointer; }
 .update-foot > button:hover { color: var(--acid); }
@@ -400,6 +400,7 @@ summary:focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; }
 .update-available .update-mark { color: var(--pink); border-color: rgba(252,98,186,.2); background: rgba(252,98,186,.06); }
 .update-error .update-mark { color: var(--gold); border-color: rgba(255,200,109,.2); background: rgba(255,200,109,.06); }
 .update-spin { animation: spin .9s linear infinite; }
+.rail-button > .update-dot, .rail-button.active > .update-dot { position: absolute; top: 8px; right: 8px; left: auto; width: 6px; height: 6px; border-radius: 50%; background: var(--pink); transform: none; box-shadow: none; }
 .outline-button { min-width: 43px; height: 25px; margin-left: auto; border: 1px solid rgba(202,255,67,.25); border-radius: 6px; color: var(--acid); background: rgba(202,255,67,.055); font-size: 8px; cursor: pointer; }
 .outline-button:hover { border-color: var(--acid); background: rgba(202,255,67,.11); }
 .source-card { margin-top: 4px; padding: 12px; border: 1px solid rgba(255,200,109,.13); border-radius: 9px; background: linear-gradient(125deg,rgba(255,200,109,.05),rgba(255,255,255,.02)); }

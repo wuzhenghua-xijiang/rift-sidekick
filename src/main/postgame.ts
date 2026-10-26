@@ -86,6 +86,7 @@ export function parseHonorBallot(raw: unknown, local: Identity, gameId: number):
 
 export class PostGameService {
   private busy = false
+  get isBusy() { return this.busy }
   private finished = new Map<number, string>()
   private reports = new Map<number, PostGameReport>()
   constructor(private readonly request: LcuRequest) {}

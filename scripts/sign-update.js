@@ -1,4 +1,4 @@
-const { createHash, createPrivateKey, sign } = require('node:crypto')
+const { createHash, createPrivateKey, createPublicKey, sign } = require('node:crypto')
 const { readFileSync, writeFileSync } = require('node:fs')
 const { resolve } = require('node:path')
 
@@ -33,6 +33,10 @@ const privateKey = createPrivateKey({
   format: 'der',
   type: 'pkcs8',
 })
+const clientSource = readFileSync(resolve(root, 'src/shared/update-policy.ts'), 'utf8')
+const clientPublicKey = /UPDATE_SIGNING_PUBLIC_KEY = '([^']+)'/.exec(clientSource)?.[1]
+const signerPublicKey = createPublicKey(privateKey).export({ format: 'der', type: 'spki' }).toString('base64')
+if (clientPublicKey !== signerPublicKey) throw new Error('The release signing key does not match the public key embedded in this app.')
 const manifest = { ...claims, signature: sign(null, payload, privateKey).toString('base64') }
 writeFileSync(resolve(root, 'release', 'update-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, { mode: 0o600 })
 process.stdout.write(`Signed update manifest for ${tag}.\n`)

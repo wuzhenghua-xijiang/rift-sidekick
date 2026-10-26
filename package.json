@@ -1,6 +1,6 @@
 {
   "name": "rift-sidekick",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "description": "A playful Windows companion for League of Legends champion select.",
   "author": "Rift Sidekick contributors",
@@ -67,9 +67,11 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     },
-    "publish": [{
-      "provider": "generic",
-      "url": "https://gh-proxy.com/https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/download/latest/"
-    }]
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://gh-proxy.com/https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/latest/download/"
+      }
+    ]
   }
 }

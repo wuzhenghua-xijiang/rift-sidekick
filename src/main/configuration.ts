@@ -70,6 +70,7 @@ export class ConfigurationManager {
   }
 
   get canRestore() { return Boolean(this.journal.snapshot) }
+  get isBusy() { return this.busy }
   get recoveryNeeded() { return Boolean(this.journal.snapshot && this.journal.snapshot.status !== 'applied') }
 
   async apply(champion: Champion, plan: BuildPlan, includeSpells: boolean, guard: () => boolean = () => true): Promise<ApplyResult> {

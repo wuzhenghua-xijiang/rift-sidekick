@@ -42,4 +42,9 @@ jobs:
           "$hash  $(Split-Path $installer -Leaf)" | Set-Content -Encoding ascii release/SHA256SUMS.txt
           $assets = @($installer, "$installer.blockmap", 'release/latest.yml', 'release/update-manifest.json', 'release/SHA256SUMS.txt')
           foreach ($asset in $assets) { if (-not (Test-Path $asset)) { throw "Release asset missing: $asset" } }
-          gh release create $tag $assets --repo $env:GITHUB_REPOSITORY --verify-tag --title "Rift Sidekick $version" --generate-notes
+          $notes = "docs/releases/$tag.md"
+          if (Test-Path $notes) {
+            gh release create $tag $assets --repo $env:GITHUB_REPOSITORY --verify-tag --title "Rift Sidekick $version" --notes-file $notes
+          } else {
+            gh release create $tag $assets --repo $env:GITHUB_REPOSITORY --verify-tag --title "Rift Sidekick $version" --generate-notes
+          }
