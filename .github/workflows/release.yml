@@ -1,0 +1,45 @@
+name: Signed Windows release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run dist:win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Sign the update manifest
+        run: node scripts/sign-update.js
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          RIFT_UPDATE_SIGNING_KEY: ${{ secrets.RIFT_UPDATE_SIGNING_KEY }}
+      - name: Publish the installer and updater metadata
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = node -p "require('./package.json').version"
+          $tag = "v$version"
+          if ($env:GITHUB_REF_NAME -ne $tag) { throw "Tag $env:GITHUB_REF_NAME must match package version $tag." }
+          $installer = "release/Rift-Sidekick-Setup-$version-x64.exe"
+          $hash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLower()
+          "$hash  $(Split-Path $installer -Leaf)" | Set-Content -Encoding ascii release/SHA256SUMS.txt
+          $assets = @($installer, "$installer.blockmap", 'release/latest.yml', 'release/update-manifest.json', 'release/SHA256SUMS.txt')
+          foreach ($asset in $assets) { if (-not (Test-Path $asset)) { throw "Release asset missing: $asset" } }
+          gh release create $tag $assets --repo $env:GITHUB_REPOSITORY --verify-tag --title "Rift Sidekick $version" --generate-notes
