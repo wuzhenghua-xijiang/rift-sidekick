@@ -1,6 +1,6 @@
 # 启动客户端与性能优化
 
-2026-10-27 起，[0.2.1](releases/v0.2.1.md) 的启动窗和游戏启动页只负责优化与打开官方客户端，已移除 QQ 账号、密码、记住密码及自动填写入口。[0.2.2](releases/v0.2.2.md) 修复残留后台进程导致启动被跳过的问题。真实国服启动、系统授权和对局仍待实机复测。
+2026-10-27 起，[0.2.1](releases/v0.2.1.md) 的启动窗和游戏启动页只负责优化与打开官方客户端，已移除 QQ 账号、密码、记住密码及自动填写入口。[0.2.2](releases/v0.2.2.md) 修复残留后台进程导致启动被跳过的问题。用户随后反馈助手启动客户端成功；系统授权、登录及对局的其他条目仍待实机验收。
 
 ## 默认查找国服官方客户端
 
@@ -48,6 +48,8 @@
 
 启动测试覆盖自动选择官方入口、旧缓存迁移、拒绝 TCLS/WeGame、优化先于启动、重复点击、窗口确认、系统授权错误、分阶段诊断与失败恢复；主进程集成检查确认无需账号设置且不注册旧账号 IPC。Windows CI 解析真实 PowerShell 启动脚本并编译窗口检查代码，还会在有残留后台进程的情况下，从中文、空格和括号路径实际打开临时 Windows 窗口程序，核对 ShellExecute、工作目录、窗口确认及再次唤回；macOS 按平台跳过原生检查。
 
-0.2.1 的 [Windows 检查](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40480985839) 和 [发布流水线](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40480985575) 曾通过 278 项测试，但没有覆盖残留后台进程跳过启动的缺陷。[失败复现](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40484131529) 已确认此判断有误；修复后新增上述原生窗口测试，[Windows 检查](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40485776109) 的 284 项测试全部通过。本地类型检查及启动相关 36 项测试通过，4 项因 macOS 平台跳过。
+0.2.1 的 [Windows 检查](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40480985839) 和 [发布流水线](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40480985575) 曾通过 278 项测试，但没有覆盖残留后台进程跳过启动的缺陷。[失败复现](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40484131529) 已确认此判断有误；修复后新增上述原生窗口测试，0.2.2 的 [Windows 检查](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40486214312) 和 [发布流水线](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40486226106) 均成功，284 项测试全部通过。本地类型检查及启动相关 36 项测试通过，4 项因 macOS 平台跳过。
 
-界面使用正式 React 组件和隔离的示例桥接，1100/840 启动窗与 430/390 小窗检查通过，截图和同尺寸对照见 [启动页验收报告](../output/playwright/official-launch-review.html)。上述检查不代表真实 Windows 客户端已启动；实机项目见 [Windows 验收清单](WINDOWS-ACCEPTANCE.md#官方客户端启动页)。
+已下载并解包 0.2.2 正式安装器，确认内置版本和窗口判断、分阶段错误提示等修复代码；更新清单签名、SHA-512 / SHA-256、发布资产和更新元数据校验通过，现有 0.2.1 的更新策略接受新版。
+
+界面沿用正式 React 组件和隔离示例桥接完成的 1100/840 启动窗与 430/390 小窗检查，截图和同尺寸对照见 [启动页验收报告](../output/playwright/official-launch-review.html)。自动化检查只覆盖临时窗口程序；用户已另外反馈通过助手启动客户端成功，其余实机项目见 [Windows 验收清单](WINDOWS-ACCEPTANCE.md#官方客户端启动页)。
