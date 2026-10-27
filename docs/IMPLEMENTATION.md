@@ -112,6 +112,7 @@ LCU 与 Live Client Data 仅在各自本机 loopback HTTPS 请求接受自签名
 - 0.1.6 已通过 GitHub Windows runner 构建并公开发布，镜像完整下载 125809506 字节，使用内置公钥验证正式清单签名并确认 SHA-512/SHA-256 一致。0.1.7 补上安装前重验、安装阶段保护、可重试状态与更新提示。具体流程和 Windows 升级验收见 [UPDATES.md](UPDATES.md)。
 - 0.1.7 GitHub Windows CI 与签名发布成功；用真实 electron-updater 的 NSIS 下载器从镜像下载正式包 125810285 字节，确认 Ed25519、SHA-512 和 SHA-256 通过。验收进程仅模拟旧版本及 Windows 频道来检查下载，不执行 Windows 安装器；实际安装重启与 LOL 联动仍待 Windows 验收。
 - 0.1.8 在实际 Electron 隔离窗口核对大小龙/Buff、普通营地、鼠标操作状态、左右键标记、快捷键失败提示和窄侧栏规则保存。界面复核的两项问题（白色滚动条、快捷键失败后的提示）均已修正并复验，见 [计时说明与样例](JUNGLE-TIMERS.md)。
+- 0.1.8 [Windows 检查](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40431315723) 与 [正式发布](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40431316281) 均成功，包含 157 项测试及实际 PowerShell/Win32 声明编译。真实 NSIS 更新下载器从镜像完整下载 125817376 字节，正式清单签名和双哈希通过；未执行 Windows 安装器。
 - 用户已在 Windows 确认符文与召唤师技能生效。装备显示修正、计时原生鼠标穿透、DPI 贴边、实际安装重启、帧率/延迟及长期资源占用仍需 Windows 复测，见 [验收清单](WINDOWS-ACCEPTANCE.md)。
 
 ## 参考来源

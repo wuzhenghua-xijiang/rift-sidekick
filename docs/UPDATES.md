@@ -35,6 +35,8 @@
 
 2026-10-26 线上检查：GitHub Windows 构建和签名发布工作流均成功，正式 Release 与镜像 API 均返回 v0.1.7。另用真实 electron-updater 6.8.11 的 NSIS 下载器在 macOS 上模拟旧版本号/Windows 更新频道，完整下载正式安装器 125810285 字节，并以客户端内置公钥验证发布清单、确认 SHA-512 与 SHA-256 一致。这证明镜像和实际下载器可共同工作，没有执行该 Windows 安装器。SHA-256 为 `d258e319748473e4857d1ef09259a6f43d251b3caccfc551d14d3ca8ebe9b70e`，与 Release 的校验附件一致。
 
+2026-10-27，0.1.8 的 [Windows CI](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40431315723) 和 [签名发布](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40431316281) 成功，157 项测试通过。用同一实际 NSIS 下载器模拟从 0.1.7 更新，通过镜像版本目录完整下载 125817376 字节的正式安装器；内置公钥验证清单签名，SHA-512 与 SHA-256 均一致，后者为 `42261e2318add335ad8a488caed594e690492a919fa1de970bde12e4af7331e2`。没有执行安装器，不代表 Windows 安装重启或实际游戏联动已通过。
+
 - 从旧安装版检查更新，确认版本和进度；断网后重试，当前功能仍可用。
 - 校验失败不得出现安装按钮；下载完成后替换缓存文件应拒绝安装。
 - 选人、对局和正在恢复配置期间不得重启；返回大厅后同一包可继续安装。

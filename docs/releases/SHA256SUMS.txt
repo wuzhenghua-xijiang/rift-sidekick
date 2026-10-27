@@ -1,2 +1,3 @@
 516df20d30fb4114715e3de3e8df2614c9915601fa9dcc7417842f60b90a1074  Rift-Sidekick-Setup-0.1.6-x64.exe
 d258e319748473e4857d1ef09259a6f43d251b3caccfc551d14d3ca8ebe9b70e  Rift-Sidekick-Setup-0.1.7-x64.exe
+42261e2318add335ad8a488caed594e690492a919fa1de970bde12e4af7331e2  Rift-Sidekick-Setup-0.1.8-x64.exe
