@@ -1,6 +1,6 @@
 # 启动客户端与性能优化
 
-2026-10-27 工作区调整，**尚未发布新安装包**：启动窗和游戏启动页只负责优化与打开官方客户端，已移除 QQ 账号、密码、记住密码及自动填写入口。Windows 原生启动、系统授权和真实对局仍待实机验收。
+2026-10-27 已随 [0.2.1](releases/v0.2.1.md) 发布：启动窗和游戏启动页只负责优化与打开官方客户端，已移除 QQ 账号、密码、记住密码及自动填写入口。Windows 原生启动、系统授权和真实对局仍待实机验收。
 
 ## 默认查找国服官方客户端
 
@@ -46,4 +46,6 @@
 
 启动测试覆盖自动选择官方入口、旧缓存迁移、拒绝 TCLS/WeGame、优化先于启动、重复点击、窗口确认、系统授权错误与失败恢复；主进程集成检查确认无需账号设置且不注册旧账号 IPC。Windows CI 另行解析真实 PowerShell 启动脚本并编译窗口检查代码；macOS 会按平台跳过原生检查。
 
-本次类型检查、生产构建通过，测试为 276 项通过、2 项按平台跳过。界面使用正式 React 组件和隔离的示例桥接，1100/840 启动窗与 430/390 小窗检查通过，截图和同尺寸对照见 [启动页验收报告](../output/playwright/official-launch-review.html)，不代表真实 Windows 客户端已启动。实机项目见 [Windows 验收清单](WINDOWS-ACCEPTANCE.md#官方客户端启动页工作区未发布)。
+本次类型检查、生产构建通过；macOS 本地 276 项测试通过，2 项按平台跳过。[Windows 检查](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40480985839) 与 [发布流水线](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40480985575) 均成功，Windows 的 278 项测试全部通过，包括原生启动脚本解析与窗口检查代码编译。已下载发布产物，核对版本、安装包哈希、Ed25519 更新清单签名及更新元数据。
+
+界面使用正式 React 组件和隔离的示例桥接，1100/840 启动窗与 430/390 小窗检查通过，截图和同尺寸对照见 [启动页验收报告](../output/playwright/official-launch-review.html)。上述检查不代表真实 Windows 客户端已启动；实机项目见 [Windows 验收清单](WINDOWS-ACCEPTANCE.md#官方客户端启动页)。
