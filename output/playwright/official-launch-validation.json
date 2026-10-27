@@ -1,0 +1,82 @@
+{
+  "errors": [],
+  "checks": [
+    "No account UI or credential API; one launch; busy state; no connection claim before LCU; settings and actual path",
+    "Concrete failure and actual executable path remain visible",
+    "430 and 390 dock launch settings have no account form or horizontal overflow"
+  ],
+  "results": [
+    {
+      "name": "launcher",
+      "viewport": 1100,
+      "body": 1100,
+      "content": 482,
+      "available": 482,
+      "brokenImages": []
+    },
+    {
+      "name": "waiting for official login",
+      "viewport": 1100,
+      "body": 1100,
+      "content": 482,
+      "available": 482,
+      "brokenImages": []
+    },
+    {
+      "name": "launch settings",
+      "viewport": 1100,
+      "body": 1100,
+      "content": 800,
+      "available": 800,
+      "brokenImages": []
+    },
+    {
+      "name": "launcher",
+      "viewport": 840,
+      "body": 840,
+      "content": 368,
+      "available": 368,
+      "brokenImages": []
+    },
+    {
+      "name": "waiting for official login",
+      "viewport": 840,
+      "body": 840,
+      "content": 368,
+      "available": 368,
+      "brokenImages": []
+    },
+    {
+      "name": "launch settings",
+      "viewport": 840,
+      "body": 840,
+      "content": 800,
+      "available": 800,
+      "brokenImages": []
+    },
+    {
+      "name": "launch failure",
+      "viewport": 840,
+      "body": 840,
+      "content": 368,
+      "available": 368,
+      "brokenImages": []
+    },
+    {
+      "name": "dock launch settings",
+      "viewport": 430,
+      "body": 430,
+      "content": 383,
+      "available": 383,
+      "brokenImages": []
+    },
+    {
+      "name": "dock launch settings",
+      "viewport": 390,
+      "body": 390,
+      "content": 343,
+      "available": 343,
+      "brokenImages": []
+    }
+  ]
+}

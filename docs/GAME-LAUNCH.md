@@ -1,44 +1,49 @@
 # 启动客户端与性能优化
 
-0.2.0 新增功能；Windows 启动、权限和真实对局仍待实机验收。
+2026-10-27 工作区调整，**尚未发布新安装包**：启动窗和游戏启动页只负责优化与打开官方客户端，已移除 QQ 账号、密码、记住密码及自动填写入口。Windows 原生启动、系统授权和真实对局仍待实机验收。
 
-助手启动后自动扫描游戏安装注册表、运行中的客户端路径、开始菜单/桌面快捷方式、Riot 本地安装清单和常见游戏目录；仍未找到时，自动扫描本地固定磁盘的目录，限制为 45 秒/十万个目录，跳过系统、依赖缓存及目录联接。后台扫描不会阻塞窗口。找到后自动选用并保存位置，下次先校验已记住的位置；游戏搬家后自动重新查找，也可点击「重新查找」主动刷新。
+## 默认查找国服官方客户端
 
-从首页入口或左侧「游戏启动」直接启动。未识别到时仍保留「手动选择」作为备用，选择 `LeagueClient.exe` 或国服安装目录中的 `TCLS\Client.exe`，也可选择国际服 `RiotClientServices.exe`。多个入口可以切换。不会选择或启动 WeGame；即使游戏安装在 WeGameApps 目录下，也直接使用游戏内的官方程序。
+助手自动读取安装注册表、运行中的游戏进程位置、桌面/开始菜单快捷方式、本地安装清单与常见目录。默认选择游戏根目录中的 `Launcher\Client.exe`，也支持已有的 `LeagueClient.exe`；不会扫描或启动 `TCLS\Client.exe`、`WeGameLauncher\launcher.exe` 或 WeGame。安装在 WeGameApps 目录中不影响直接启动，包含“英雄联盟（含经典模式）”的目录也会自动查找。
 
-「启动前性能优化」默认开启。点击「优化并启动英雄联盟」后的顺序为：
+旧版本缓存为 `TCLS\Client.exe` 或 `startup_runner.exe` 时，只使用其父目录定位安装根目录，然后查找同目录的 `Launcher\Client.exe`。旧文件已被更新删除时仍可迁移；官方客户端缺失则重新扫描或提示选择，不回退 TCLS，不修改游戏的 WeGame 登录偏好文件。
+
+常规查找仍无结果时，后台扫描本地固定磁盘目录，限制为 45 秒/十万个目录，跳过系统、依赖缓存及目录联接。找到的位置会保存；游戏搬家后重查，也可点击「重新查找」或「手动选择」。启动窗与游戏位置页显示实际路径，失败提示也附上本次启动路径。
+
+## 启动与登录
+
+点击启动后先完成下面的性能检查，再通过 Windows ShellExecute 打开已校验的官方程序，工作目录设为程序所在目录。此方式遵循官方程序的权限清单，需要管理员权限时由 Windows 显示正常授权窗口；取消授权、权限拒绝、文件或依赖缺失时给出具体原因并请求恢复本次优化。
+
+助手检查同一安装目录的官方窗口出现后，才显示已打开客户端；单纯创建进程不算确认成功。窗口最多等待约 45 秒，系统授权单独等待；启动期间检测到新的 WeGame 进程或未确认官方窗口时显示失败，不杀死其他应用。只有 LCU 实际连接后才进入吸附小窗。
+
+账号登录、官方已保存的登录状态、扫码、验证码及大区选择均由官方客户端处理。助手不接收、保存或填写 QQ 凭证，不加载旧版 `tcls-login.json`，也不再提供保存/清除/自动填写的 IPC 接口；历史存储文件不主动删除。客户端已经运行时只唤回，不启动第二个实例或切换账号。
+
+## 启动前性能优化
+
+「启动前性能优化」默认开启，顺序为：
 
 1. 检查 CPU、内存和电源计划。
 2. 设备提供标准高性能计划时切换并读回核验；未提供时保留当前方案并显示说明。
 3. 降低助手后台优先级，临时阻止系统自动休眠。
-4. 以上检查和可用优化完成后，才启动官方客户端。切换或核验失败时停止启动，保留原因和恢复入口；资源紧张和设备不支持的项目单独提示。
+4. 完成检查和可用优化后，再打开官方客户端。必要步骤失败时停止启动；资源紧张或设备不支持的项目单独提示。
 
-选人或游戏状态轮询不会启动整机优化。游戏进程出现后，仅跟进其进程优先级，尝试设置为 AboveNormal，游戏保护或系统拒绝时显示限制；不会使用 High 或实时优先级。已经运行的客户端只请求唤回，避免启动第二个客户端或在启动后补做整机优化。
+选人或游戏状态轮询不会启动整机优化。游戏进程出现后，仅尝试将其优先级设为 AboveNormal，系统拒绝时显示限制，不使用 High 或实时优先级。已经运行的客户端不会补做整机优化。
 
-对局结束、取消选人、关闭优化开关、手动点击恢复或彻底退出助手时，恢复本次改动。关闭到托盘继续保留本次会话。先写入 `performance.json` 恢复快照再修改系统；异常退出后下次启动尝试恢复。恢复电源计划前检查当前计划，保留玩家后来手动切换的方案；游戏进程同时校验 PID 和启动时间，避免恢复到复用同一 PID 的其他进程。恢复失败时保留快照并允许重试。
+对局结束、取消选人、关闭优化、手动恢复或彻底退出助手时，恢复本次改动。关闭到托盘继续保留会话。先写入 `performance.json` 快照再修改系统，异常退出后下次启动尝试恢复。恢复电源计划时保留玩家后来手动切换的方案；进程恢复同时核对 PID 和启动时间。恢复失败保留快照并允许重试。
 
-性能优化不会关闭其他应用、清理用户文件、清空工作集、修改游戏文件或注入进程。CPU/内存为最近一次启动检查的数据，不能据此保证固定帧率增益。高性能计划会增加功耗，设备散热和其他后台负载仍会影响实际表现。
+性能优化不会关闭其他应用、清理用户文件、清空工作集、修改游戏文件或注入进程。CPU/内存为最近一次启动检查的数据，不能保证固定帧率增益。实现依据：[Microsoft powercfg](https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/powercfg-command-line-options)、[进程优先级定义](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processpriorityclass)。
 
-## 国服 QQ 自动登录
+## GitHub 交叉检索结论
 
-源码已接入助手内填写 QQ 账号密码，再自动填写官方 TCLS 登录窗口的流程，仅支持 Windows 国服。没有接入 WeGame DLL 或国际服 Riot 密码接口，也没有实现无窗口的登录票据透传。关闭自动填写时，仍可复用官方保存的登录状态，或者在官方窗口手动输入/扫码。
+本次没有找到可验证、适用于当前国服原生客户端的通用账号密码参数或公开本地登录接口。这不等于断言腾讯内部不存在集成协议；按用户要求，本项目停止自动填写路线，只负责打开官方客户端。
 
-1. 进入「游戏启动」，等待自动找到国服安装位置。若保存的是 `LeagueClient.exe`，开启 QQ 自动填写后会查找同一安装目录中的 `TCLS\Client.exe`；找不到时停止启动并提示重新选择，不把 QQ 密码交给 Riot 客户端。
-2. 打开「国服 QQ 登录」的「自动填写 QQ 登录」，输入账号密码，点击「保存登录设置」。默认只保留在助手主进程内存中，退出后需要重新输入。
-3. 如需重启后继续使用，勾选「在此电脑记住密码」。账号和密码一起使用 Electron `safeStorage` 在 Windows 本机加密，写入用户配置目录下独立的 `tcls-login.json`；系统加密不可用时拒绝记住，不回退明文。清除账号会移除保存的密文并关闭自动填写。密码不会回传渲染进程；同一账号可将密码栏留空继续使用，换账号必须重新输入密码。
-4. 点击「优化并启动英雄联盟」。登录设置通过检查后，先完成性能优化，再直接打开 TCLS，随后开始自动填写。请将官方登录窗口保持在前台；助手不会反复抢焦点。
-5. 每次尝试最多提交一次。验证码、密码错误或大区选择会停止自动操作并提示在官方窗口处理。识别失败或等待约 90 秒后也会停止，不反复提交；可随时点击「停止自动填写」。客户端已运行时仅唤回，不填写或切换正在使用的账号。
+- [LeagueAkari 的安装发现](https://github.com/LeagueAkari/LeagueAkari/blob/56cdfde00e56148f4641d1a8cf86acb66e903124/src/main/shards/client-installation/installation-detector.ts#L94-L98) 将 `Launcher\Client.exe` 作为国服原生入口，与 WeGameLauncher 单独处理。
+- [rank-analysis 的启动实现](https://github.com/wnzzer/rank-analysis/blob/3878348ed516252083d1fc3fde606affe0e2ce6c/rank-analysis-app/src-tauri/src/command/launcher.rs) 使用 ShellExecute 遵循官方权限清单；[维护者说明](https://github.com/wnzzer/rank-analysis/issues/32#issuecomment-4884814846) 明确此功能免开 WeGame，但仍需在腾讯窗口登录。其源码与本项目采用相同的 Windows 启动方式，不采用其清理自启动注册表功能。
+- [LOL-GameAssistant 的国服实现](https://github.com/shecong/LOL-GameAssistant/blob/f823b2c1a757ee9abbd106698235cb39eff7f04b/LOL-GameAssistant/Infrastructure/LeagueClient/TclsLoginAutomation.cs) 使用 UI Automation；[lol_login](https://github.com/Skyonelu/lol_login/blob/41a74167d8d514f557898fd30b192e85ff9cd28f/lol_login.py) 通过图像定位及模拟输入操作窗口，均不能作为账号密码参数透传的证据。
+- [WeGameLogin](https://github.com/fantasyboy/WeGameLogin/blob/2a193f8daa52939598d0b833719b6dfdd088ffcd/GameFunction.cpp#L18-L112) 依赖 WeGame 内部模块和地址匹配，不能直接用于“不经 WeGame”的原生启动需求，也不能据此确认当前国服的具体协议。
 
-旧式控件使用 Windows UI Automation；绘制式界面使用 Windows 自带中文 OCR 识别完整的 QQ 表单，再发送输入，检查窗口路径、PID、进程启动时间和前台窗口。OCR 只读取本机登录面板，截图仅存在于内存；密码通过子进程标准输入传递，不进入命令行、剪贴板、脚本文件或日志。系统未安装简体中文 OCR、窗口被遮挡/最小化、登录器以更高权限运行或布局不受支持时可能需要手动登录。助手退出、检测到 LCU 连接或用户取消时停止后续输入；自动填写期间阻止安装更新。
+## 验证范围
 
-只有已有 LCU 连接确认后才显示客户端已连接；「账号密码已提交一次」只代表已尝试提交，账号及大区仍应在官方客户端核对。本功能的当前国服版本兼容性待 Windows 实测，验收项目见 [Windows 验收清单](WINDOWS-ACCEPTANCE.md#国服-qq-自动登录)。
+启动测试覆盖自动选择官方入口、旧缓存迁移、拒绝 TCLS/WeGame、优化先于启动、重复点击、窗口确认、系统授权错误与失败恢复；主进程集成检查确认无需账号设置且不注册旧账号 IPC。Windows CI 另行解析真实 PowerShell 启动脚本并编译窗口检查代码；macOS 会按平台跳过原生检查。
 
-2026-10-27 GitHub 复核：[`shecong/LOL-GameAssistant` 的 TCLS 实现](https://github.com/shecong/LOL-GameAssistant/blob/f823b2c1a757ee9abbd106698235cb39eff7f04b/LOL-GameAssistant/Infrastructure/LeagueClient/TclsLoginAutomation.cs#L32-L56) 通过 Windows UI Automation 写入账号密码并点击登录；[绘制式登录界面的适配](https://github.com/shecong/LOL-GameAssistant/blob/f823b2c1a757ee9abbd106698235cb39eff7f04b/LOL-GameAssistant/Infrastructure/LeagueClient/TclsRenderedLoginAutomation.cs#L14-L77) 使用本地 OCR 和前台窗口输入。此项目参考其表单几何识别思路，改用 Windows 原生控件和系统 OCR，未引入 FlaUI/PaddleOCR；授权说明随包保留在 [THIRD-PARTY-NOTICES.txt](../THIRD-PARTY-NOTICES.txt)。上游相关测试使用模拟窗口和生成图片，也不能据此确认当前国服登录器兼容性。国际服 Riot RSO 文档不能作为判断国服 QQ/TCLS 登录能力的依据。
-
-WeGame 的平台会话与助手自动填写需要分别核实：GitHub 中的[腾讯 Rail SDK 头文件](https://github.com/GaiaWorld/pi_rail/blob/47afe72381df48d6d0e2a1d8e63385f8b3be8735/rail/sdk/rail_player.h) 暴露会话票据接口；另有[调用 WeGame 内部登录模块的逆向项目](https://github.com/fantasyboy/WeGameLogin/blob/2a193f8daa52939598d0b833719b6dfdd088ffcd/GameFunction.cpp#L18-L112)。这些资料说明平台登录和游戏启动存在集成方式，不能据此确认当前 LOL 国服具体使用的传递协议，也不能将依赖 WeGame 内部 DLL 的路线用于本项目的直接启动要求。
-
-实现依据：[Microsoft powercfg](https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/powercfg-command-line-options)、[进程优先级定义](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processpriorityclass)、[LeagueAkari 官方客户端启动实现](https://github.com/LeagueAkari/LeagueAkari/blob/main/src/main/shards/client-installation/client-launcher.ts)。
-
-本地验证（2026-10-27）：类型检查、生产构建通过，当前工作区完整测试为 257 项通过、2 项 Windows 原生检查按平台跳过。31 项启动/优化/自动登录相关测试覆盖自动扫描与缓存失效、启动顺序、失败阻断、重复启动、密码保密与加密/损坏存储、切换账号、取消和连接后停止、进程传输白名单，以及原有性能恢复路径。Windows CI 会解析真实 PowerShell 脚本、编译 UIA/输入代码并校验 OCR 表单几何，当前 macOS 无法执行这些原生检查。
-
-Playwright 在隔离 Electron 表单样例中操作了开关、输入、保存、启动等待、停止与清除，确认密码掩码、保存后清空、未保存阻止启动，以及 430×900、390×520 下无横向溢出、页面无运行错误。样例使用模拟桥接和测试账号，不证明 Windows 加密、TCLS 或 OCR 实际登录成功；[表单预览](../output/playwright/tcls-login/qq-login-form.png) 与早先的 [macOS 页面预览](screenshots/game-launch-macos-preview.png) 均不代表 Windows 实机验收。
+本次类型检查、生产构建通过，测试为 276 项通过、2 项按平台跳过。界面使用正式 React 组件和隔离的示例桥接，1100/840 启动窗与 430/390 小窗检查通过，截图和同尺寸对照见 [启动页验收报告](../output/playwright/official-launch-review.html)，不代表真实 Windows 客户端已启动。实机项目见 [Windows 验收清单](WINDOWS-ACCEPTANCE.md#官方客户端启动页工作区未发布)。

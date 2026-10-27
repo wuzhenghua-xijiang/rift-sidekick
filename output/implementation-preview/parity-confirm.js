@@ -39,7 +39,7 @@ async page => {
   for(const [width,height] of [[1100,740],[840,640]]){
     await page.setViewportSize({width,height});
     await page.goto(path+'?surface=login');
-    await page.locator('#login-account').waitFor();
+    await page.locator('.login-submit').waitFor();
     await measure('login',width);
     await page.screenshot({path:'output/playwright/parity-login-'+width+'.png'});
   }
@@ -55,16 +55,9 @@ async page => {
   await page.goto(path+'?surface=login');
   await page.setViewportSize({width:1100,height:740});
   await page.getByRole('button',{name:'优化并启动',exact:true}).click();
-  await page.getByRole('alert').filter({hasText:'请填写 QQ 账号和密码'}).waitFor();
-  await page.locator('#login-account').fill('123456789');
-  await page.locator('#login-password').fill('acceptance-only');
-  await page.getByRole('button',{name:'显示密码',exact:true}).click();
-  if(await page.locator('#login-password').getAttribute('type')!=='text')throw new Error('Password reveal');
-  await page.getByRole('button',{name:'隐藏密码',exact:true}).click();
-  await page.getByRole('button',{name:'优化并启动',exact:true}).click();
   await page.locator('.od-rail').waitFor();
-  if(!(await calls('saveTclsLogin')).length||!(await calls('launchGameClient')).length)throw new Error('Login dispatch');
-  checks.push('account validation, password visibility and real login dispatch');
+  if((await calls('saveTclsLogin')).length||!(await calls('launchGameClient')).length)throw new Error('Official launch dispatch');
+  checks.push('official launch without account controls or credential save');
   await page.setViewportSize({width:430,height:720});
   await page.goto(path+'?surface=dock');
   await page.locator('.od-plan').first().waitFor();
@@ -155,10 +148,10 @@ async page => {
   checks.push('build error retry and empty champion state');
   await page.setViewportSize({width:1100,height:740});
   await page.goto(path+'?surface=login');
-  await page.getByRole('button',{name:'使用官方登录',exact:true}).click();
+  await page.getByRole('button',{name:'优化并启动',exact:true}).click();
   await page.locator('.od-rail').waitFor();
-  if((await calls('saveTclsLogin')).length||!(await calls('launchGameClient')).some(c=>c.input?.manualLogin))throw new Error('Official login credential mutation');
-  checks.push('official login skips credential save');
+  if((await calls('saveTclsLogin')).length||!(await calls('launchGameClient')).some(c=>c.input===undefined))throw new Error('Official launch credential mutation');
+  checks.push('official launch has no credential save path');
   const reference=[];
   const refPage=await page.context().newPage();
   for(const size of [430,390]){

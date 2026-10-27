@@ -29,19 +29,13 @@ async page => {
   }
   await page.getByRole('button',{name:'设置',exact:true}).click();
   if(await page.locator('#ai-api-key').count()!==1||await page.locator('#login-account').isVisible())throw new Error('Login utilities must isolate shared settings');
-  await page.getByRole('button',{name:'返回登录'}).click();
-  await page.getByRole('button',{name:'优化并启动',exact:true}).click();
-  await page.locator('.login-feedback.error').waitFor();
-  await page.locator('#login-account').fill('12345678');
-  await page.locator('#login-password').fill('sample-password');
-  await page.getByRole('button',{name:'显示密码'}).click();
-  if(await page.locator('#login-password').getAttribute('type')!=='text')throw new Error('Reveal failed');
-  await page.getByRole('button',{name:'隐藏密码'}).click();
+  await page.getByRole('button',{name:'返回启动'}).click();
+  if(await page.locator('#login-account, #login-password').count())throw new Error('Retired account controls remain');
   await page.getByRole('button',{name:'优化并启动',exact:true}).click();
   await page.locator('.rail').waitFor();
   const loginCalls=await page.evaluate(()=>window.__riftCalls);
-  if(!loginCalls.some(c=>c.name==='launchGameClient'&&c.input.manualLogin===false))throw new Error('Login submit not dispatched');
-  checks.push('account validation, password reveal and launch dispatch');
+  if(!loginCalls.some(c=>c.name==='launchGameClient'&&c.input===undefined))throw new Error('Official launch not dispatched');
+  checks.push('official launch without credential controls or account submission');
   const pages=[['备战','ready'],['对位','matchup'],['教练','coach'],['战绩','history'],['云顶','tft'],['英雄','champions'],['语音','voice'],['设置','settings']];
   for(const [width,height] of [[430,720],[390,560]]){
     await page.setViewportSize({width,height});
@@ -109,11 +103,11 @@ async page => {
   if(await page.locator('.build-card').count())throw new Error('Old loadouts stayed visible while waiting');
   checks.push('waiting for champion clears stale loadouts');
   await page.goto(path+'?surface=login');
-  await page.getByRole('button',{name:'使用官方登录',exact:true}).click();
+  await page.getByRole('button',{name:'优化并启动',exact:true}).click();
   await page.locator('.rail').waitFor();
   const manual=await page.evaluate(()=>window.__riftCalls.filter(c=>['saveTclsLogin','launchGameClient'].includes(c.name)));
-  if(manual.some(c=>c.name==='saveTclsLogin')||!manual.some(c=>c.input?.manualLogin===true))throw new Error('Official login changed credentials');
-  checks.push('official login skips credential save');
+  if(manual.some(c=>c.name==='saveTclsLogin')||!manual.some(c=>c.name==='launchGameClient'&&c.input===undefined))throw new Error('Official launch supplied account data');
+  checks.push('official launch has no credential save path');
   if(results.some(r=>r.body>r.viewport||r.content>r.available||r.brokenImages.length))throw new Error('Layout or visible image failure: '+JSON.stringify(results));
   return {errors,checks,results};
 }

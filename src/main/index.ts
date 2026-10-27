@@ -22,9 +22,6 @@ import { NativeJungleService } from './native-jungle'
 import { ClientLauncher, WindowsLauncherRuntime } from './client-launcher'
 import { FilePerformanceStore, PerformanceService } from './performance'
 import { WindowsPerformanceRuntime } from './windows-performance'
-import { TclsAccountStore } from './tcls-account'
-import { TclsLoginService } from './tcls-login'
-import { WindowsTclsLoginRuntime } from './windows-tcls-login'
 import { CombatService } from './combat'
 import { WindowsCombatVoice } from './combat-voice'
 import { readLiveGame } from './live-client'
@@ -62,7 +59,6 @@ const tftCodes = new Map<string, string>()
 let configuration: ConfigurationManager
 let updates: UpdateService | undefined
 let performance: PerformanceService | undefined
-let tclsLogin: TclsLoginService | undefined
 let performanceExitReady = false
 let performanceExitPending = false
 let configurationReady = false
@@ -238,7 +234,6 @@ async function doRefreshClientState() {
   const old = state.client
   const client = await lcu.currentClientState(old)
   launcher.updateClient(client.connected)
-  tclsLogin?.updateClient(client.connected)
   performance?.updateClient(client)
   const isChampSelect = client.phase === 'ChampSelect'
   if (isChampSelect && previousPhase !== 'ChampSelect') autoGeneration++
@@ -553,63 +548,37 @@ async function scanGameClient(force = false) {
 }
 ipcMain.handle('rift:scan-game-client', (event) => {
   requireMainWindow(event)
-  if (tclsLogin?.isBusy) throw new Error('请先停止自动填写，再重新查找客户端。')
   return scanGameClient(true)
 })
 ipcMain.handle('rift:choose-game-client', async (event) => {
   requireMainWindow(event)
   if (process.platform !== 'win32') throw new Error('请选择 Windows 设备上的英雄联盟客户端。')
-  if (launcher.isBusy || tclsLogin?.isBusy) throw new Error('正在查找、启动客户端或自动填写，请稍后。')
+  if (launcher.isBusy) throw new Error('正在查找或启动客户端，请稍后。')
   const result = await dialog.showOpenDialog(mainWindow!, { title: '选择英雄联盟客户端（不经过 WeGame）',
     properties: ['openFile'], filters: [{ name: '英雄联盟官方启动程序', extensions: ['exe'] }] })
   if (result.canceled || !result.filePaths[0]) return
   preferences.launcherPath = await launcher.select(result.filePaths[0])
   await persistPreferences()
 })
-ipcMain.handle('rift:launch-game-client', async (event, options?: { manualLogin?: boolean }) => {
+ipcMain.handle('rift:launch-game-client', async (event) => {
   requireMainWindow(event)
-  if (options !== undefined && (!options || typeof options !== 'object' || Array.isArray(options) || (options.manualLogin !== undefined && typeof options.manualLogin !== 'boolean'))) throw new Error('无效的启动选项。')
-  const manualLogin = options?.manualLogin === true
   if (state.update?.status === 'installing') return { ok: false, message: '助手正在安装更新，请重启后再启动游戏。' }
-  if (tclsLogin?.isBusy) return { ok: false, message: '已有自动登录任务，请等待或先停止自动填写。' }
-  return launcher.launch(async (installation) => {
-    if (!tclsLogin) return { ok: false, message: '登录设置尚未就绪，请稍后重试。' }
-    if (!manualLogin) {
-      const login = tclsLogin.validateForLaunch(installation)
-      if (!login.ok) return login
-    }
+  const result = await launcher.launch(async () => {
     if (!performance) return { ok: false, message: '性能检查尚未就绪，请稍后重试。' }
     if (preferences.optimizeBeforeLaunch) {
       const result = await performance.prepare()
       return quitting ? { ok: false, message: '助手正在退出，已取消客户端启动。' } : result
     }
     return quitting ? { ok: false, message: '助手正在退出，已取消客户端启动。' } : { ok: true, message: '启动前优化已关闭。' }
-  }, async () => { await performance?.restore('客户端未能启动，已恢复原性能设置。') }, {
-    tencentOnly: !manualLogin && tclsLogin?.state.enabled,
-    afterLaunch: (installation) => { if (!quitting && !manualLogin) tclsLogin?.start(installation) },
-  })
-})
-ipcMain.handle('rift:tcls-login-save', async (event, input: unknown) => {
-  requireMainWindow(event)
-  if (!tclsLogin) return { ok: false, message: '登录设置尚未就绪。' }
-  if (launcher.isBusy || performance?.isBusy) return { ok: false, message: '请等待启动或性能操作完成后再修改登录设置。' }
-  try { await tclsLogin.save(input); return { ok: true, message: tclsLogin.state.message } }
-  catch (error) { return { ok: false, message: error instanceof Error ? error.message : '登录设置保存失败。' } }
-})
-ipcMain.handle('rift:tcls-login-clear', async (event) => {
-  requireMainWindow(event)
-  if (!tclsLogin) return { ok: false, message: '登录设置尚未就绪。' }
-  if (launcher.isBusy || performance?.isBusy) return { ok: false, message: '请等待启动或性能操作完成后再清除账号。' }
-  try { await tclsLogin.clear(); return { ok: true, message: tclsLogin.state.message } }
-  catch { return { ok: false, message: '账号清除失败，请重试。' } }
-})
-ipcMain.handle('rift:tcls-login-cancel', async (event) => {
-  requireMainWindow(event)
-  return tclsLogin?.cancel() || { ok: false, message: '登录设置尚未就绪。' }
+  }, async () => { await performance?.restore('客户端未能启动，已恢复原性能设置。') })
+  if (launcher.state.selectedPath && launcher.state.selectedPath !== preferences.launcherPath) {
+    preferences.launcherPath = launcher.state.selectedPath
+    await persistPreferences()
+  }
+  return result
 })
 ipcMain.handle('rift:select-game-client', async (event, path: unknown) => {
   requireMainWindow(event)
-  if (tclsLogin?.isBusy) throw new Error('请先停止自动填写，再选择客户端。')
   if (typeof path !== 'string' || !launcher.state.installations.some((entry) => entry.path === path)) throw new Error('请从已找到的英雄联盟客户端中选择。')
   preferences.launcherPath = await launcher.select(path)
   await persistPreferences()
@@ -617,14 +586,14 @@ ipcMain.handle('rift:select-game-client', async (event, path: unknown) => {
 ipcMain.handle('rift:optimize-before-launch', async (event, enabled: unknown) => {
   requireMainWindow(event)
   if (typeof enabled !== 'boolean') throw new Error('无效的性能优化偏好。')
-  if (launcher.isBusy || performance?.isBusy || tclsLogin?.isBusy) throw new Error('正在启动、优化或自动填写，请完成后再切换。')
+  if (launcher.isBusy || performance?.isBusy) throw new Error('正在启动或优化，请完成后再切换。')
   preferences.optimizeBeforeLaunch = enabled
   await performance?.setEnabled(enabled)
   await persistPreferences()
 })
 ipcMain.handle('rift:restore-performance', async (event) => {
   requireMainWindow(event)
-  if (launcher.isBusy || performance?.isBusy || tclsLogin?.isBusy) return { ok: false, message: '请等待启动或优化完成，或停止自动填写后再恢复。' }
+  if (launcher.isBusy || performance?.isBusy) return { ok: false, message: '请等待启动或优化完成后再恢复。' }
   return performance?.restore() || { ok: false, message: '性能设置尚未就绪。' }
 })
 ipcMain.handle('rift:reconnect', () => refreshClientState())
@@ -639,8 +608,6 @@ else {
   app.on('second-instance', showAssistant)
   app.whenReady().then(async () => {
     await loadPreferences()
-    tclsLogin = new TclsLoginService(new TclsAccountStore(join(app.getPath('userData'), 'tcls-login.json'), safeStorage), new WindowsTclsLoginRuntime(), (next) => updateState({ tclsLogin: next }))
-    await tclsLogin.initialize()
     coachSettings = new CoachSettingsStore(join(app.getPath('userData'), 'ai-coach.json'), safeStorage)
     await coachSettings.load()
     try {
@@ -667,7 +634,7 @@ else {
       await refreshClientState()
       if (configuration.isBusy || state.lastConfig?.busy || postGame.isBusy) throw new Error('正在写入配置或提交点赞，请完成后再安装更新。')
       if (nativeJungle.isBusy) throw new Error('正在配置小地图计时，请完成后再安装更新。')
-      if (launcher.isBusy || performance?.isBusy || tclsLogin?.isBusy) throw new Error('正在启动客户端、优化性能或自动填写登录，请完成后再安装更新。')
+      if (launcher.isBusy || performance?.isBusy) throw new Error('正在启动客户端或优化性能，请完成后再安装更新。')
       if (configuration.recoveryNeeded) throw new Error('请先恢复或保留当前配置，再安装更新。')
       if (gameWindow.suppressed) throw new Error('正在加载或进行对局，请返回大厅后再安装。')
       if (state.client.connected) {
@@ -694,7 +661,6 @@ else {
 }
 app.on('before-quit', (event) => {
   quitting = true
-  tclsLogin?.dispose()
   coachGeneration++
   coach.cancel()
   combat.dispose()

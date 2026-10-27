@@ -39,7 +39,7 @@ async page => {
   for(const [width,height] of [[1100,740],[840,640]]){
     await page.setViewportSize({width,height});
     await page.goto(path+'?surface=login');
-    await page.locator('#login-account').waitFor();
+    await page.locator('.login-submit').waitFor();
     await measure('login',width);
     await page.screenshot({path:'output/playwright/parity-login-'+width+'.png'});
   }

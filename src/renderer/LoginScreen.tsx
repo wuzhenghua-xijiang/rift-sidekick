@@ -1,20 +1,14 @@
 import { useEffect, useState } from 'react'
 import {
   ArrowLeft,
-  ArrowRight,
   ArrowUpRight,
   Check,
   ChevronRight,
   CircleAlert,
-  Eye,
-  EyeOff,
   FolderOpen,
   LoaderCircle,
-  LockKeyhole,
   Minus,
   Settings2,
-  Square,
-  UserRound,
   X,
   Zap,
 } from 'lucide-react'
@@ -23,33 +17,21 @@ import jinxArt from './assets/jinx-fractured.jpg'
 
 export function LoginScreen({
   state,
-  notify,
   settings,
   launchSettings,
   toast,
   dismissToast,
 }: {
   state: AppState
-  notify(result: ApplyResult): void
   settings: React.ReactNode
   launchSettings: React.ReactNode
   toast: ApplyResult | null
   dismissToast(): void
 }) {
   const [panel, setPanel] = useState<'settings' | 'launch' | null>(null)
-  const [username, setUsername] = useState(state.tclsLogin?.username || '')
-  const [password, setPassword] = useState('')
-  const [remember, setRemember] = useState(
-    state.tclsLogin?.rememberPassword || false,
-  )
   const [optimize, setOptimize] = useState(state.performance?.enabled ?? true)
-  const [visible, setVisible] = useState(false)
   const [pending, setPending] = useState(false)
   const [feedback, setFeedback] = useState<ApplyResult>()
-  useEffect(() => {
-    setUsername(state.tclsLogin?.username || '')
-    setRemember(state.tclsLogin?.rememberPassword || false)
-  }, [state.tclsLogin?.username, state.tclsLogin?.rememberPassword])
   useEffect(
     () => setOptimize(state.performance?.enabled ?? true),
     [state.performance?.enabled],
@@ -64,37 +46,33 @@ export function LoginScreen({
   }, [panel])
   const busy =
     pending ||
-    state.tclsLogin?.busy ||
     ['launching', 'scanning'].includes(state.launcher?.status || '') ||
     ['optimizing', 'restoring'].includes(state.performance?.status || '')
   const supported = Boolean(
     state.launcher && state.launcher.status !== 'unsupported',
   )
   const hasPath = Boolean(state.launcher?.selectedPath)
-  const canAutoLogin = Boolean(state.tclsLogin?.supported)
+  const failed = feedback?.ok === false || (!feedback && state.launcher?.status === 'error')
   const progress =
-    state.tclsLogin?.busy ||
-    ['manual', 'error'].includes(state.tclsLogin?.status || '')
-      ? state.tclsLogin?.message
-      : state.performance?.status === 'optimizing'
-        ? state.performance.message
+    state.performance?.status === 'optimizing'
+      ? state.performance.message
+      : ['launching', 'scanning', 'error'].includes(state.launcher?.status || '')
+        ? state.launcher?.message
         : state.launcher?.status === 'waiting-login'
-          ? '请在官方窗口完成验证与大区选择。'
+          ? '请在英雄联盟官方客户端登录并选择大区。'
           : ''
   const label = busy
-    ? state.tclsLogin?.busy
-      ? '等待官方登录…'
-      : state.performance?.status === 'optimizing'
-        ? '正在优化…'
-        : state.launcher?.status === 'scanning'
-          ? '查找客户端…'
-          : '正在启动…'
+    ? state.performance?.status === 'optimizing'
+      ? '正在优化…'
+      : state.launcher?.status === 'scanning'
+        ? '查找客户端…'
+        : '正在启动…'
     : !hasPath
       ? '选择游戏位置'
       : optimize
         ? '优化并启动'
         : '立即启动'
-  async function launch(manualLogin: boolean) {
+  async function launch() {
     setFeedback(undefined)
     if (!hasPath) {
       setPanel('launch')
@@ -102,23 +80,9 @@ export function LoginScreen({
     }
     setPending(true)
     try {
-      if (!manualLogin) {
-        const result = await window.rift.saveTclsLogin({
-          enabled: true,
-          username,
-          password,
-          rememberPassword: remember,
-        })
-        if (!result.ok) {
-          setFeedback(result)
-          return
-        }
-        setPassword('')
-        setVisible(false)
-      }
       if (optimize !== (state.performance?.enabled ?? true))
         await window.rift.setOptimizeBeforeLaunch(optimize)
-      const result = await window.rift.launchGameClient({ manualLogin })
+      const result = await window.rift.launchGameClient()
       setFeedback(result)
     } catch (error) {
       setFeedback({
@@ -183,7 +147,7 @@ export function LoginScreen({
         </section>
         <section
           className="login-desk"
-          aria-label="国服登录与启动"
+          aria-label="国服客户端启动"
           hidden={Boolean(panel)}
         >
           <div className="login-heading">
@@ -198,70 +162,15 @@ export function LoginScreen({
               <Zap size={43} />
             </span>
           </div>
+          <p className="login-launch-copy">在英雄联盟官方客户端完成登录，<br />助手会在登录后自动连接。</p>
           <form
             onSubmit={(event) => {
               event.preventDefault()
-              void launch(false)
+              void launch()
             }}
             autoComplete="off"
           >
-            <fieldset disabled={busy || !canAutoLogin}>
-              <label htmlFor="login-account">
-                QQ 账号
-                <div className="login-input">
-                  <UserRound size={17} />
-                  <input
-                    id="login-account"
-                    name="account"
-                    value={username}
-                    maxLength={128}
-                    autoComplete="off"
-                    spellCheck={false}
-                    placeholder="输入 QQ 账号"
-                    onChange={(event) => setUsername(event.target.value)}
-                  />
-                </div>
-              </label>
-              <label htmlFor="login-password">
-                密码
-                <div className="login-input">
-                  <LockKeyhole size={17} />
-                  <input
-                    id="login-password"
-                    name="password"
-                    type={visible ? 'text' : 'password'}
-                    value={password}
-                    maxLength={256}
-                    autoComplete="new-password"
-                    placeholder={
-                      state.tclsLogin?.hasPassword &&
-                      username.trim() === state.tclsLogin.username
-                        ? '已保存，留空继续使用'
-                        : '输入 QQ 密码'
-                    }
-                    onChange={(event) => setPassword(event.target.value)}
-                  />
-                  <button
-                    type="button"
-                    aria-label={visible ? '隐藏密码' : '显示密码'}
-                    aria-pressed={visible}
-                    onClick={() => setVisible(!visible)}
-                  >
-                    {visible ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </label>
-            </fieldset>
             <div className="login-options">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  disabled={busy || !state.tclsLogin?.canRemember}
-                  onChange={(event) => setRemember(event.target.checked)}
-                />
-                记住密码
-              </label>
               <label>
                 <input
                   type="checkbox"
@@ -275,7 +184,7 @@ export function LoginScreen({
             <button
               className="login-submit"
               type="submit"
-              disabled={busy || !supported || (hasPath && !canAutoLogin)}
+              disabled={busy || !supported}
             >
               <span>{label}</span>
               <span className="login-submit-icon">
@@ -287,24 +196,17 @@ export function LoginScreen({
               </span>
             </button>
           </form>
-          <button
-            className="login-official"
-            disabled={busy || !supported}
-            onClick={() => void launch(true)}
-          >
-            使用官方登录 <ArrowRight size={16} />
-          </button>
           <p className="login-note">
             {!supported
-              ? '游戏启动与 QQ 自动填写仅支持 Windows'
-              : '验证码与大区在官方窗口完成'}
+              ? '游戏启动仅支持 Windows'
+              : '账号登录、验证码与大区选择均在官方窗口完成'}
           </p>
           {(feedback || progress) && (
             <div
-              className={`login-feedback ${feedback?.ok === false ? 'error' : ''}`}
-              role={feedback?.ok === false ? 'alert' : 'status'}
+              className={`login-feedback ${failed ? 'error' : ''}`}
+              role={failed ? 'alert' : 'status'}
             >
-              {feedback?.ok === false ? (
+              {failed ? (
                 <CircleAlert size={14} />
               ) : busy ? (
                 <LoaderCircle size={14} className="spin" />
@@ -314,29 +216,13 @@ export function LoginScreen({
               <span>{feedback?.message || progress}</span>
             </div>
           )}
-          {state.tclsLogin?.busy && (
-            <button
-              className="login-cancel"
-              onClick={() =>
-                void window.rift
-                  .cancelTclsLogin()
-                  .then(notify)
-                  .catch(() =>
-                    notify({ ok: false, message: '停止失败，请重试。' }),
-                  )
-              }
-            >
-              <Square size={12} />
-              停止自动填写
-            </button>
-          )}
           <div className="login-game-path">
             <FolderOpen size={19} />
             <div>
               <b>英雄联盟</b>
               <small title={state.launcher?.selectedPath}>
                 {hasPath
-                  ? `已找到 · ${remember ? '本机加密记住密码' : '密码仅本次使用'}`
+                  ? state.launcher?.selectedPath
                   : state.launcher?.status === 'scanning'
                     ? '正在查找客户端'
                     : '尚未选择游戏位置'}
@@ -361,7 +247,7 @@ export function LoginScreen({
             <header>
               <button onClick={() => setPanel(null)}>
                 <ArrowLeft size={18} />
-                返回登录
+                返回启动
               </button>
               <h2>
                 {panel === 'settings'

@@ -141,26 +141,6 @@
 .performance-checks .check-pending { color: var(--cyan); }
 .performance-checks .check-warning, .performance-checks .check-error { color: var(--gold); }
 .performance-restore { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
-.tcls-login-panel { margin: 22px 0; padding-top: 17px; border-top: 1px solid var(--stroke); }
-.tcls-login-copy { margin: 11px 0; color: #bfb6c9; font-size: 11px; line-height: 1.8; }
-.tcls-login-panel fieldset { min-width: 0; margin: 14px 0 0; padding: 0; border: 0; }
-.tcls-login-panel fieldset > label:not(.tcls-remember) { display: block; margin-top: 12px; color: #e4dcec; font-size: 11px; }
-.tcls-login-panel input:not([type="checkbox"]) { display: block; width: 100%; min-width: 0; min-height: 36px; margin-top: 7px; padding: 8px 9px; border: 1px solid #61546e; border-radius: 5px; background: #11101a; color: #f0eaf4; font: 12px/1.5 'DM Mono', 'Microsoft YaHei UI', sans-serif; }
-.tcls-login-panel input::placeholder { color: #aaa0b5; }
-.tcls-login-panel input:focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; }
-.tcls-remember { display: flex; align-items: flex-start; gap: 7px; margin-top: 14px; color: #ddd4e6; font-size: 11px; cursor: pointer; }
-.tcls-remember input { margin: 2px 0 0; accent-color: var(--acid); }
-.tcls-remember small { display: block; margin-top: 4px; color: #afa4b9; font-size: 10px; }
-.tcls-login-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 16px; }
-.tcls-login-actions button, .tcls-cancel, .tcls-disable-save, .tcls-clear { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 32px; font-size: 11px; }
-.tcls-clear { padding: 5px 0; border: 0; background: none; color: #bfb6c9; cursor: pointer; }
-.tcls-login-panel button:disabled, .tcls-login-panel fieldset:disabled { opacity: .55; cursor: default; }
-.tcls-login-status { display: flex; align-items: flex-start; gap: 7px; margin-top: 14px; color: #bfb6c9; font-size: 11px; line-height: 1.75; }
-.tcls-login-status svg { flex-shrink: 0; margin-top: 2px; }
-.tcls-connected { color: var(--acid); }
-.tcls-manual, .tcls-error, .tcls-dirty { color: var(--gold); }
-.tcls-dirty { margin: 10px 0 0; font-size: 11px; line-height: 1.7; }
-.tcls-cancel, .tcls-disable-save { margin-top: 12px; }
 .launch-final > p { margin: 10px 0 0; color: #bfb6c9; font-size: 11px; line-height: 1.7; overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) { .launch-page .spin, .launch-shortcut .spin { animation: none; } }
 

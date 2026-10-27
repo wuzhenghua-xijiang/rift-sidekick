@@ -1,7 +1,6 @@
 import type { NativeJungleState } from './jungle'
 import type { LauncherState, PerformanceState } from './desktop-tools'
 import type { CombatAISettings, CombatPreferences, CombatState } from './combat'
-import type { TclsLoginInput, TclsLoginState } from './tcls-login'
 import type { CoachAnalysis, CoachMember, CoachRequest, CoachSettings, CoachSettingsInput } from './coach'
 
 export type Position = 'top' | 'jungle' | 'mid' | 'adc' | 'support'
@@ -90,7 +89,6 @@ export interface AppState {
   coach?: CoachSettings
   combat?: CombatState
   launcher?: LauncherState
-  tclsLogin?: TclsLoginState
   performance?: PerformanceState
   backgroundAvailable?: boolean
   update?: UpdateState
@@ -172,10 +170,7 @@ export interface RiftBridge {
   scanGameClient(): Promise<LauncherState>
   chooseGameClient(): Promise<void>
   selectGameClient(path: string): Promise<void>
-  launchGameClient(options?: { manualLogin?: boolean }): Promise<ApplyResult>
-  saveTclsLogin(input: TclsLoginInput): Promise<ApplyResult>
-  clearTclsLogin(): Promise<ApplyResult>
-  cancelTclsLogin(): Promise<ApplyResult>
+  launchGameClient(): Promise<ApplyResult>
   setOptimizeBeforeLaunch(enabled: boolean): Promise<void>
   restorePerformance(): Promise<ApplyResult>
   getState(): Promise<AppState>

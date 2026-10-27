@@ -4,6 +4,8 @@ import { win32 } from 'node:path'
 import type { ApplyResult } from '@shared/types'
 import type { GameInstallation, LauncherState } from '@shared/desktop-tools'
 import { powershell } from './powershell'
+import { DirectLaunchError, tencentLaunchCandidates } from './tencent-launch-paths'
+import { startTencentClient, verifyTencentLaunch } from './tencent-launch'
 
 export interface LauncherRuntime {
   platform: string
@@ -14,17 +16,13 @@ export interface LauncherRuntime {
   focus(): Promise<void>
 }
 
-export interface LaunchOptions {
-  tencentOnly?: boolean
-  afterLaunch?(installation: GameInstallation): void
-}
-
 /** User paths are data, never shell commands. Launch only known official executables. */
 export function installationAt(path: string): GameInstallation | undefined {
   if (!win32.isAbsolute(path) || path.startsWith('\\\\') || path.startsWith('\\?\\') || /[\0\r\n]/.test(path)) return undefined
   const name = win32.basename(path).toLowerCase()
   if (name === 'leagueclient.exe') return { path, kind: 'league', name: '英雄联盟客户端' }
-  if (name === 'client.exe' && win32.basename(win32.dirname(path)).toLowerCase() === 'tcls') return { path, kind: 'tencent', name: '英雄联盟 · 国服官方登录' }
+  const parent = win32.basename(win32.dirname(path)).toLowerCase()
+  if (name === 'client.exe' && parent === 'launcher') return { path, kind: 'tencent', name: '英雄联盟 · 国服官方客户端' }
   if (name === 'riotclientservices.exe') return { path, kind: 'riot', name: '英雄联盟 · Riot 官方登录' }
   return undefined
 }
@@ -44,6 +42,15 @@ export class ClientLauncher {
   }
   private publish(value: Partial<LauncherState>) { this.state = { ...this.state, ...value }; this.changed(this.state) }
   get isBusy() { return Boolean(this.launchJob || this.scanJob) }
+  private async resolvePreferred(path: string) {
+    const selected = await this.runtime.resolve(path)
+    // Upgrade a cached TCLS/LeagueClient path even after a game update removed that old file.
+    for (const candidate of tencentLaunchCandidates(selected?.path || path)) {
+      const entry = await this.runtime.resolve(candidate)
+      if (entry?.kind === 'tencent') return entry
+    }
+    return selected
+  }
   updateClient(connected: boolean) {
     if (this.connected === connected) return
     this.connected = connected
@@ -59,15 +66,15 @@ export class ClientLauncher {
   private async scanNow(savedPath: string | undefined, force: boolean) {
     this.publish({ status: 'scanning', message: '正在查找英雄联盟安装目录…' })
     try {
-      const saved = savedPath ? await this.runtime.resolve(savedPath) : undefined
+      const saved = savedPath ? await this.resolvePreferred(savedPath) : undefined
       const paths = saved && !force ? [saved.path] : await this.runtime.discover((message) => this.publish({ message }))
       const installations: GameInstallation[] = []
       for (const path of [savedPath, ...paths]) {
         if (!path || installations.some((entry) => entry.path.toLowerCase() === path.toLowerCase())) continue
-        const entry = await this.runtime.resolve(path)
+        const entry = await this.resolvePreferred(path)
         if (entry && !installations.some((item) => item.path.toLowerCase() === entry.path.toLowerCase())) installations.push(entry)
       }
-      const selectedPath = installations.find((entry) => entry.path.toLowerCase() === (savedPath || '').toLowerCase())?.path || installations[0]?.path
+      const selectedPath = saved?.path || installations[0]?.path
       this.publish({ installations, selectedPath, status: this.connected ? 'connected' : installations.length ? 'ready' : 'not-found',
         message: installations.length ? '已自动找到官方客户端；启动前会先执行性能优化。' : '自动扫描未找到已安装的英雄联盟，可重新扫描或手动选择游戏位置。' })
     } catch { this.publish({ status: 'error', message: '自动查找失败，可以手动选择英雄联盟客户端。' }) }
@@ -75,18 +82,18 @@ export class ClientLauncher {
   }
   async select(path: string) {
     if (this.isBusy) throw new Error('正在查找或启动客户端，请稍后再选择。')
-    const installation = await this.runtime.resolve(path)
-    if (!installation) throw new Error('请选择 LeagueClient.exe、TCLS\\Client.exe 或 RiotClientServices.exe；不支持 WeGame。')
+    const installation = await this.resolvePreferred(path)
+    if (!installation) throw new Error('请选择游戏内 Launcher\\Client.exe 或 LeagueClient.exe；不支持 TCLS 和 WeGame。')
     this.publish({ selectedPath: installation.path, installations: [installation, ...this.state.installations.filter((entry) => entry.path !== installation.path)],
       status: this.connected ? 'connected' : 'ready', message: '已记住英雄联盟位置，下次可以直接启动。' })
     return installation.path
   }
-  launch(beforeLaunch: (installation: GameInstallation) => Promise<ApplyResult>, failedLaunch: () => Promise<unknown>, options: LaunchOptions = {}): Promise<ApplyResult> {
+  launch(beforeLaunch: (installation: GameInstallation) => Promise<ApplyResult>, failedLaunch: () => Promise<unknown>): Promise<ApplyResult> {
     if (this.launchJob) return this.launchJob
-    this.launchJob = this.launchNow(beforeLaunch, failedLaunch, options).finally(() => { this.launchJob = undefined })
+    this.launchJob = this.launchNow(beforeLaunch, failedLaunch).finally(() => { this.launchJob = undefined })
     return this.launchJob
   }
-  private async launchNow(beforeLaunch: (installation: GameInstallation) => Promise<ApplyResult>, failedLaunch: () => Promise<unknown>, options: LaunchOptions): Promise<ApplyResult> {
+  private async launchNow(beforeLaunch: (installation: GameInstallation) => Promise<ApplyResult>, failedLaunch: () => Promise<unknown>): Promise<ApplyResult> {
     if (this.runtime.platform !== 'win32') return { ok: false, message: this.state.message }
     if (this.scanJob) await this.scanJob
     let prepared = false
@@ -98,31 +105,23 @@ export class ClientLauncher {
         return { ok: true, message }
       }
       const selected = this.state.selectedPath
-      let installation = selected ? await this.runtime.resolve(selected) : undefined
+      const installation = selected ? await this.resolvePreferred(selected) : undefined
       if (!installation) { this.publish({ status: 'not-found', message: '客户端文件不存在，请重新查找或选择游戏位置。' }); return { ok: false, message: this.state.message } }
-      if (options.tencentOnly && installation.kind === 'league') {
-        const folder = win32.dirname(installation.path)
-        for (const root of [folder, win32.dirname(folder)]) {
-          const tcls = await this.runtime.resolve(win32.join(root, 'TCLS', 'Client.exe'))
-          if (tcls?.kind === 'tencent') { installation = tcls; break }
-        }
-      }
-      if (options.tencentOnly && installation.kind !== 'tencent') {
-        const message = 'QQ 自动登录需要国服 TCLS\\Client.exe，请重新查找或选择国服游戏目录。'
-        this.publish({ status: 'error', message }); return { ok: false, message }
-      }
+      if (installation.path !== selected) this.publish({ selectedPath: installation.path,
+        installations: [installation, ...this.state.installations.filter((entry) => ![selected?.toLowerCase(), installation.path.toLowerCase()].includes(entry.path.toLowerCase()))] })
       this.publish({ status: 'launching', message: '正在完成启动前性能优化…' })
       const preparation = await beforeLaunch(installation)
       if (!preparation.ok) { this.publish({ status: 'error', message: preparation.message }); return preparation }
       prepared = true
+      this.publish({ message: '启动前检查已完成，正在打开并确认官方客户端；如出现 Windows 授权窗口，请完成授权。' })
       await this.runtime.launch(installation)
       this.publish({ status: this.connected ? 'connected' : 'waiting-login',
         message: this.connected ? '已连接英雄联盟客户端。' : '已打开官方客户端，请在官方窗口完成登录；助手会自动连接。' })
-      if (!this.connected) options.afterLaunch?.(installation)
       return { ok: true, message: this.state.message }
-    } catch {
+    } catch (error) {
       if (prepared) await failedLaunch().catch(() => undefined)
-      this.publish({ status: 'error', message: '客户端启动失败，请确认文件可用及权限正常后重试。' })
+      const detail = error instanceof DirectLaunchError ? error.message : '客户端启动失败，请确认文件可用及权限正常后重试。'
+      this.publish({ status: 'error', message: this.state.selectedPath ? `${detail} 启动路径：${this.state.selectedPath}` : detail })
       return { ok: false, message: this.state.message }
     }
   }
@@ -148,7 +147,7 @@ try {
       try {
         $target = $shortcuts.CreateShortcut($_.FullName).TargetPath
         if ([IO.Path]::GetFileName($target) -eq 'LeagueClient.exe') { $roots.Add([IO.Path]::GetDirectoryName($target)) }
-        if ([IO.Path]::GetFileName($target) -eq 'Client.exe' -and [IO.Path]::GetFileName([IO.Path]::GetDirectoryName($target)) -eq 'TCLS') { $roots.Add([IO.Path]::GetDirectoryName([IO.Path]::GetDirectoryName($target))) }
+        if ([IO.Path]::GetFileName($target) -eq 'Client.exe' -and [IO.Path]::GetFileName([IO.Path]::GetDirectoryName($target)) -eq 'Launcher') { $roots.Add([IO.Path]::GetDirectoryName([IO.Path]::GetDirectoryName($target))) }
       } catch {}
     }
   }
@@ -170,9 +169,11 @@ Get-CimInstance Win32_LogicalDisk -Filter 'DriveType = 3' -ErrorAction SilentlyC
   foreach ($suffix in @('\Riot Games\League of Legends', '\Tencent\英雄联盟', '\英雄联盟', '\WeGameApps\英雄联盟', '\Program Files\腾讯游戏\英雄联盟', '\Program Files (x86)\腾讯游戏\英雄联盟')) {
     $roots.Add($_.DeviceID + $suffix)
   }
+  $apps = $_.DeviceID + '\WeGameApps'
+  Get-ChildItem -LiteralPath $apps -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like '*英雄联盟*' } | ForEach-Object { $roots.Add($_.FullName) }
 }
 foreach ($root in ($roots | Select-Object -Unique)) {
-  foreach ($suffix in @('TCLS\Client.exe', 'LeagueClient.exe', 'LeagueClient\LeagueClient.exe')) {
+  foreach ($suffix in @('Launcher\Client.exe', 'LeagueClient.exe', 'LeagueClient\LeagueClient.exe')) {
     $candidate = Join-Path $root $suffix
     if (Test-Path -LiteralPath $candidate -PathType Leaf) { $executables.Add($candidate) }
   }
@@ -200,8 +201,8 @@ while ($queue.Count -gt 0 -and $clock.ElapsedMilliseconds -lt 45000 -and $visite
   if ([IO.File]::Exists($league) -and ([IO.File]::Exists($ux) -or [IO.File]::Exists($game))) {
     $root = $folder.FullName
     if ($folder.Name -eq 'LeagueClient') { $root = $folder.Parent.FullName }
-    $tcls = [IO.Path]::Combine($root, 'TCLS\Client.exe')
-    if ([IO.File]::Exists($tcls)) { $found.Add($tcls) }
+    $launcher = [IO.Path]::Combine($root, 'Launcher\Client.exe')
+    if ([IO.File]::Exists($launcher)) { $found.Add($launcher) }
     $found.Add($league)
     break
   }
@@ -236,8 +237,8 @@ export class WindowsLauncherRuntime implements LauncherRuntime {
       for (const [league, riot] of Object.entries(value.associated_client || {})) {
         if (!/leagueclient\.exe$/i.test(league) || typeof riot !== 'string') continue
         await access(league)
-        // A game's own TCLS login remains the first choice for Chinese installations.
-        paths.push(win32.join(win32.dirname(league), 'TCLS', 'Client.exe'), riot, league)
+        // resolvePreferred upgrades this game path to its native Launcher entry for China.
+        paths.push(...tencentLaunchCandidates(league), league)
       }
     } catch { /* Manifest is optional; registry and manual selection cover other installs. */ }
     for (const path of paths) if (await this.resolve(path)) return paths
@@ -249,17 +250,19 @@ export class WindowsLauncherRuntime implements LauncherRuntime {
   async launch(installation: GameInstallation) {
     const validated = await this.resolve(installation.path)
     if (!validated) throw new Error('客户端路径无效。')
-    await new Promise<void>((resolve, reject) => {
+    const start = () => new Promise<void>((resolve, reject) => {
       const child = spawn(validated.path, launchArguments(validated), { cwd: win32.dirname(validated.path), detached: true, stdio: 'ignore', windowsHide: false, shell: false })
       child.once('error', reject)
       child.once('spawn', () => { child.unref(); resolve() })
     })
+    if (validated.kind === 'tencent') await verifyTencentLaunch(validated, () => startTencentClient(validated))
+    else await start()
   }
   async clientRunning() {
     return await powershell(String.raw`
 $clients = @(Get-Process -Name 'LeagueClient','LeagueClientUx' -ErrorAction SilentlyContinue)
 $login = @(Get-Process -Name 'Client' -ErrorAction SilentlyContinue | Where-Object {
-  try { $_.Path -match '\\(TCLS|Launcher)\\Client\.exe$' -and $_.MainWindowTitle -like '*英雄联盟*' } catch { $false }
+  try { $_.Path -match '\\Launcher\\Client\.exe$' -and $_.MainWindowTitle -like '*英雄联盟*' } catch { $false }
 })
 if ($clients.Count -gt 0 -or $login.Count -gt 0) { 'running' } else { 'stopped' }
 `) === 'running'
@@ -275,7 +278,7 @@ public static class RiftLaunchWindow {
 }
 '@
 $client = Get-Process -Name 'LeagueClientUx','LeagueClient','Client' -ErrorAction SilentlyContinue | Where-Object {
-  $_.MainWindowHandle -ne 0 -and ($_.ProcessName -ne 'Client' -or ($_.Path -match '\\(TCLS|Launcher)\\Client\.exe$' -and $_.MainWindowTitle -like '*英雄联盟*'))
+  $_.MainWindowHandle -ne 0 -and ($_.ProcessName -ne 'Client' -or ($_.Path -match '\\Launcher\\Client\.exe$' -and $_.MainWindowTitle -like '*英雄联盟*'))
 } | Select-Object -First 1
 if ($null -eq $client) { throw 'No client window' }
 [void][RiftLaunchWindow]::ShowWindowAsync($client.MainWindowHandle, 9)

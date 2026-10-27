@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>官方客户端启动页 · 验收对照</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 28px; color: #1b1b1c; background: #efede6; font: 15px/1.7 system-ui, sans-serif; }
+  h1 { font-size: 26px; margin: 0 0 12px; } h2 { margin: 28px 0 12px; font-size: 20px; }
+  p { max-width: 1050px; } a { color: #a73516; }
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1100px)); gap: 20px; }
+  figure { margin: 0; } figcaption { margin-bottom: 8px; } img { display: block; width: 100%; height: auto; }
+  .small { grid-template-columns: 430px 390px; align-items: start; overflow: auto; }
+  code { font-family: ui-monospace, monospace; }
+</style>
+<h1>官方客户端启动页 · 工作区验收</h1>
+<p>按 2026-10-27 用户要求移除 QQ 账号、密码、记住密码和自动填写入口。保留已确认稿的原画、海报构图、墨黑面板及橙色操作。流程为启动前优化 → 打开 <code>Launcher\Client.exe</code> → 在官方窗口登录 → LCU 连接后进入小窗。</p>
+<p>类型检查与生产构建通过；276 项测试通过、2 项按平台跳过。以下截图来自正式 React 组件及示例桥接，所有声音静音。已核对忙碌状态、等待官方登录、具体失败原因、实际路径及设置入口；四种窗口尺寸均无横向溢出、破损图片或页面异常。<strong>Windows 原生启动、UAC 与真实登录仍待实机验证，尚未发布新安装包。</strong></p>
+<p><a href="official-launch-validation.json">浏览器检查原始结果</a> · <a href="../../docs/GAME-LAUNCH.md">实现与 GitHub 检索依据</a></p>
+<h2>1100 × 740 · 同尺寸对照</h2>
+<div class="pair">
+  <figure><figcaption>已确认设计稿 · 账号表单按最新要求移除</figcaption><a href="overdrive-v2/login.png"><img src="overdrive-v2/login.png" width="1100" height="740" alt="已确认的启动页设计稿"></a></figure>
+  <figure><figcaption>当前正式组件 · 仅优化与打开官方客户端</figcaption><a href="official-launch-login-1100.png"><img src="official-launch-login-1100.png" width="1100" height="740" alt="移除账号表单后的启动页"></a></figure>
+</div>
+<h2>840 × 640 · 最小启动窗的等待与错误</h2>
+<div class="pair">
+  <figure><figcaption>等待官方窗口登录，不提前进入小窗</figcaption><img src="official-launch-waiting-840.png" width="840" height="640" alt="等待官方客户端登录"></figure>
+  <figure><figcaption>取消系统授权后显示原因与本次启动路径</figcaption><img src="official-launch-error-840.png" width="840" height="640" alt="系统授权取消的错误状态"></figure>
+</div>
+<h2>客户端阶段 · 游戏启动设置</h2>
+<p>默认 430 × 720 和最小 390 × 560，保留独立滚动及固定底栏。游戏位置与启动设置不含账号表单。</p>
+<div class="pair small">
+  <figure><figcaption>430 × 720</figcaption><img src="official-launch-dock-430.png" width="430" height="720" alt="430 宽客户端中的启动设置"></figure>
+  <figure><figcaption>390 × 560</figcaption><img src="official-launch-dock-390.png" width="390" height="560" alt="390 宽客户端中的启动设置"></figure>
+</div>
+</html>

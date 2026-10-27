@@ -344,6 +344,12 @@ a {
 .login-desk form {
   margin-top: 20px;
 }
+.login-launch-copy {
+  margin: 30px 0 32px;
+  color: #e1d8c8;
+  font-size: 14px;
+  line-height: 1.9;
+}
 .login-desk fieldset > label {
   display: block;
   color: #e1d8c8;
@@ -474,6 +480,7 @@ a {
   color: #bfb4a0;
   font-size: 10px;
   margin-top: 3px;
+  overflow-wrap: anywhere;
 }
 .login-game-path button {
   display: flex;
@@ -3589,8 +3596,7 @@ a {
   text-decoration: underline;
 }
 .launch-hint,
-.performance-copy,
-.tcls-login-copy {
+.performance-copy {
   font-size: 10px;
   color: var(--muted);
   margin-top: 9px;
@@ -3601,8 +3607,7 @@ a {
   padding-top: 15px;
   margin-top: 20px;
 }
-.performance-summary,
-.tcls-login-status {
+.performance-summary {
   display: flex;
   align-items: flex-start;
   gap: 6px;
@@ -3612,8 +3617,7 @@ a {
   background: #dfd6c7;
   margin-top: 12px;
 }
-.performance-summary > svg,
-.tcls-login-status > svg {
+.performance-summary > svg {
   margin-top: 2px;
 }
 .performance-metrics {
@@ -3673,14 +3677,12 @@ a {
 .performance-restore {
   margin-top: 10px;
 }
-.launch-select,
-.tcls-login-panel label:not(.tcls-remember) {
+.launch-select {
   display: block;
   font-size: 11px;
   margin: 13px 0;
 }
-.launch-select select,
-.tcls-login-panel input:not([type="checkbox"]) {
+.launch-select select {
   display: block;
   width: 100%;
   margin-top: 7px;
@@ -3688,45 +3690,6 @@ a {
   background: #e5decf;
   border: 1px solid var(--line);
   font-size: 11px;
-}
-.tcls-login-panel {
-  border-top: 2px solid var(--ink);
-  padding-top: 16px;
-  margin-top: 20px;
-}
-.tcls-remember {
-  display: flex;
-  gap: 7px;
-  align-items: flex-start;
-  font-size: 11px;
-  margin: 14px 0;
-}
-.tcls-remember input {
-  margin: 0;
-}
-.tcls-remember small {
-  display: block;
-  font-size: 9px;
-  color: var(--muted);
-  margin-top: 4px;
-}
-.tcls-login-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.tcls-clear,
-.tcls-cancel {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-}
-.tcls-dirty {
-  font-size: 10px;
-  color: #923317;
-  margin-top: 10px;
 }
 .launch-final {
   margin-top: 20px;

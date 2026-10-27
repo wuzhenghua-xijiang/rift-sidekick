@@ -8,11 +8,9 @@ const fixture = vi.hoisted(() => ({
   windowBounds: vi.fn(),
   dockEnabled: vi.fn(),
   sender: { send: vi.fn(), setWindowOpenHandler: vi.fn(), on: vi.fn() },
-  launch: vi.fn(async (prepare: (installation: { path: string; name: string; kind: 'tencent' }) => Promise<{ ok: boolean; message: string }>, _restore: unknown, options: { afterLaunch(installation: { path: string; name: string; kind: 'tencent' }): void }) => {
-    const installation = { path: 'D:\\League\\TCLS\\Client.exe', name: '英雄联盟', kind: 'tencent' as const }
-    const result = await prepare(installation)
-    if (result.ok) options.afterLaunch(installation)
-    return result
+  launch: vi.fn(async (prepare: (installation: { path: string; name: string; kind: 'tencent' }) => Promise<{ ok: boolean; message: string }>, _restore: unknown) => {
+    const installation = { path: 'D:\\League\\Launcher\\Client.exe', name: '英雄联盟', kind: 'tencent' as const }
+    return prepare(installation)
   }),
   apply: vi.fn(async () => ({ ok: true, message: '已读回确认' })),
   verify: vi.fn(async () => undefined),
@@ -87,22 +85,14 @@ beforeEach(() => {
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks() })
 
 describe('automatic selection configuration from the main process', () => {
-  it('official login skips saved credentials for that launch and rejects malformed launch options', async () => {
-    const { TclsLoginService } = await import('./tcls-login')
-    const validate = vi.spyOn(TclsLoginService.prototype, 'validateForLaunch').mockReturnValue({ ok: false, message: '账号缺失' })
-    const fill = vi.spyOn(TclsLoginService.prototype, 'start').mockImplementation(() => undefined)
+  it('launches the official client without account settings or any password IPC handlers', async () => {
     await start()
     const launch = fixture.handlers.get('rift:launch-game-client')!
     const event = { sender: fixture.sender }
-    await expect(launch(event, { manualLogin: true })).resolves.toMatchObject({ ok: true })
-    expect(validate).not.toHaveBeenCalled()
-    expect(fill).not.toHaveBeenCalled()
-    await expect(launch(event)).resolves.toMatchObject({ ok: false, message: '账号缺失' })
-    expect(validate).toHaveBeenCalledTimes(1)
-    validate.mockReturnValue({ ok: true, message: '就绪' })
-    await expect(launch(event)).resolves.toMatchObject({ ok: true })
-    expect(fill).toHaveBeenCalledTimes(1)
-    await expect(launch(event, { manualLogin: 'yes' })).rejects.toThrow('启动选项')
+    await expect(launch(event)).resolves.toMatchObject({ ok: true, message: '资源就绪' })
+    expect(fixture.launch).toHaveBeenCalledOnce()
+    expect(fixture.launch.mock.calls[0]).toHaveLength(2)
+    for (const name of ['rift:tcls-login-save', 'rift:tcls-login-clear', 'rift:tcls-login-cancel']) expect(fixture.handlers.has(name)).toBe(false)
   })
   it('switches from the independent launcher to a dock only after the client connects', async () => {
     fixture.client = { ...fixture.client, connected: false, phase: 'ClientOffline', championId: null }

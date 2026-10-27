@@ -453,7 +453,6 @@ export default function App() {
     return (
       <LoginScreen
         state={state}
-        notify={setToast}
         settings={
           <>
             <OpenAISettings settings={state.coach} />
@@ -1175,7 +1174,7 @@ export default function App() {
                       <SettingsRow
                         icon={<Rocket size={19} />}
                         title="游戏启动与优化"
-                        description="游戏位置、账号与性能检查"
+                        description="游戏位置与启动前性能检查"
                         control={
                           <button
                             className="outline-button"
