@@ -76,6 +76,23 @@ function harness() {
 }
 
 describe('LCU configuration transaction', () => {
+  it('applies and verifies ARAM runes, spells and map-specific equipment together', async () => {
+    const { db, manager, store } = harness()
+    db.queue = { id: 450, mapId: 12, gameMode: 'ARAM' }
+    await manager.initialize()
+    await manager.apply(champion, { ...plan, mode: 'aram', summonerSpellIds: [4, 32] }, true)
+    expect(db.pages.find((page) => page.current)?.selectedPerkIds).toEqual([8112, 8139, 8140, 8106, 8210, 8226, 5005, 5008, 5001])
+    expect([db.spell1Id, db.spell2Id]).toEqual([4, 32])
+    expect(db.items.itemSets[0].associatedMaps).toEqual([12])
+    expect(store.journal?.snapshot?.status).toBe('applied')
+  })
+  it('does not partially configure when the original summoner spells cannot be read', async () => {
+    const { db, manager } = harness()
+    db.spell2Id = 0
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, true)).rejects.toThrow('暂时无法读取本局召唤师技能')
+    expect(db.writes).toEqual([])
+  })
   it('applies and restores Mayhem equipment without touching unavailable runes or spells', async () => {
     const { db, manager, store } = harness()
     db.queue = { id: 2400, mapId: 12, gameMode: 'KIWI' }
@@ -123,6 +140,7 @@ describe('LCU configuration transaction', () => {
     expect(result.ok).toBe(true)
     expect(result.message).toContain('物品套装')
     expect(db.pages).toHaveLength(2)
+    expect(db.pages[1].name).toBe('Rift · 阿狸 · 热选')
     expect(db.pages[0].name).toBe('我的原符文')
     expect(db.items.itemSets).toHaveLength(2)
     expect(db.spell2Id).toBe(14)
@@ -175,12 +193,18 @@ describe('LCU configuration transaction', () => {
     expect(db.items.itemSets.map((set) => set.uid)).toEqual(['player-owned'])
     expect(restarted.recoveryNeeded).toBe(false)
   })
-  it('rejects a full inventory before making any writes', async () => {
+  it('uses an editable page when the rune inventory has no free slot', async () => {
     const { db, manager } = harness()
     db.canAdd = false
+    const originalPage = structuredClone(db.pages[0])
     await manager.initialize()
-    await expect(manager.apply(champion, plan, false)).rejects.toThrow('空闲符文页')
-    expect(db.writes).toEqual([])
+    const result = await manager.apply(champion, plan, false)
+    expect(result.ok).toBe(true)
+    expect(db.pages).toHaveLength(1)
+    expect(db.pages[0].name).toBe('Rift · 阿狸 · 热选')
+    expect(db.pages[0].current).toBe(true)
+    await manager.restore()
+    expect(db.pages).toEqual([originalPage])
   })
   it('rejects hover selection, wrong champion and wrong game mode before writes', async () => {
     const { db, manager } = harness()
@@ -202,7 +226,8 @@ describe('LCU configuration transaction', () => {
     await manager.apply(champion, plan, false)
     expect(db.pages).toHaveLength(2)
     db.summonerId = 100
-    await expect(manager.apply(champion, plan, false)).rejects.toThrow('空闲符文页')
+    db.pages = db.pages.map((page) => ({ ...page, isEditable: false }))
+    await expect(manager.apply(champion, plan, false)).rejects.toThrow('可编辑的符文页')
     expect(db.pages).toHaveLength(2)
   })
   it('cancels after a selection change and restores the page already written', async () => {

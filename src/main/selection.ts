@@ -16,6 +16,7 @@ export interface ChampSelectSession {
   myTeam?: ChampSelectMember[]
   theirTeam?: ChampSelectMember[]
   actions?: Array<Array<{ actorCellId?: number; type?: string; championId?: number; completed?: boolean }>>
+  bans?: { myTeamBans?: number[]; theirTeamBans?: number[] }
 }
 export interface GameflowSession {
   gameData?: {
@@ -34,7 +35,7 @@ export function detectMode(flow: GameflowSession): { mode: GameMode; modeLabel: 
   if (name.startsWith('TFT') || (queueId >= 1090 && queueId <= 1160)) return { mode: 'tft', modeLabel: '云顶之弈' }
   if (name === 'CHERRY' || mapId === 30 || queueId === 1700 || queueId === 1710) return { mode: 'arena', modeLabel: '斗魂竞技场' }
   if (queueId === 2400 || name === 'KIWI') return { mode: 'aram-mayhem', modeLabel: '海克斯大乱斗' }
-  if (name === 'ARAM' || (mapId === 12 && !name)) return { mode: 'aram', modeLabel: '极地大乱斗' }
+  if (name === 'ARAM' || (!name && (mapId === 12 || queueId === 450))) return { mode: 'aram', modeLabel: '极地大乱斗' }
   if ((name === 'CLASSIC' && (!mapId || mapId === 11)) || (!name && (mapId === 11 || [400, 420, 430, 440, 490, 700].includes(queueId)))) {
     const modeLabel = queueId === 420 ? '经典模式 · 单双排位' : queueId === 440 ? '经典模式 · 灵活排位' : queueId === 0 ? '经典模式 · 自定义' : '经典模式 · 召唤师峡谷'
     return { mode: 'ranked', modeLabel }
@@ -63,6 +64,16 @@ export function readSelection(session: ChampSelectSession, flow: GameflowSession
     queueId: flow.gameData?.queue?.id,
     sessionId: String(flow.gameData?.gameId || session.gameId || session.chatDetails?.multiUserChatId || ''),
     enemyChampionIds: (session.theirTeam || []).map((member) => member.championId || 0).filter((id) => id > 0),
+    allies: (session.myTeam || []).filter((member) => Number(member.championId || member.championPickIntent) > 0).map((member) => ({
+      championId: member.championId || member.championPickIntent!, position: normalizePosition(member.assignedPosition),
+      locked: Boolean(member.championId && (session.timer?.phase === 'FINALIZATION' ||
+        (session.actions || []).flat().some((action) => typeof member.cellId === 'number' && action.type === 'pick' && action.completed && action.actorCellId === member.cellId && action.championId === member.championId) ||
+        ((mode.mode === 'aram' || mode.mode === 'aram-mayhem') && !(session.actions || []).flat().some((action) => action.type === 'pick' && action.actorCellId === member.cellId)))),
+    })),
+    bannedChampionIds: [...new Set([
+      ...(session.bans?.myTeamBans || []), ...(session.bans?.theirTeamBans || []),
+      ...(session.actions || []).flat().filter((action) => action.type === 'ban' && action.completed).map((action) => action.championId || 0),
+    ])].filter((id) => id > 0),
     enemies: (session.theirTeam || []).filter((member) => Number(member.championId) > 0).map((member) => ({
       championId: member.championId!, position: normalizePosition(member.assignedPosition),
       locked: session.timer?.phase === 'FINALIZATION' || (session.actions || []).flat().some((action) =>

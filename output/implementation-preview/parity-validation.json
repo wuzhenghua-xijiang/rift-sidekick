@@ -1,0 +1,839 @@
+{
+  "date": "2026-10-27",
+  "errors": [],
+  "checks": [
+    "account validation, password visibility and real login dispatch",
+    "alternative loadout, apply and undo",
+    "champion search and opponent tabs with footer refresh",
+    "coach footer generation, Ban selection and history replay/refresh",
+    "TFT unit selection and copy, real lane filter and catalogue selection",
+    "muted voice, shared OpenAI footer save/test, independent prompts and shared key removal",
+    "build error retry and empty champion state",
+    "official login skips credential save"
+  ],
+  "results": [
+    {
+      "name": "ready",
+      "size": 430,
+      "body": 430,
+      "viewport": 430,
+      "content": 383,
+      "available": 383,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 666,
+        "width": 383,
+        "height": 54
+      },
+      "hero": {
+        "x": 60,
+        "y": 100,
+        "width": 357,
+        "height": 116
+      },
+      "plans": [
+        114,
+        103,
+        103
+      ]
+    },
+    {
+      "name": "matchup",
+      "size": 430,
+      "body": 430,
+      "viewport": 430,
+      "content": 383,
+      "available": 383,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 666,
+        "width": 383,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "coach",
+      "size": 430,
+      "body": 430,
+      "viewport": 430,
+      "content": 383,
+      "available": 383,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 666,
+        "width": 383,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "history",
+      "size": 430,
+      "body": 430,
+      "viewport": 430,
+      "content": 383,
+      "available": 383,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 666,
+        "width": 383,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "tft",
+      "size": 430,
+      "body": 430,
+      "viewport": 430,
+      "content": 383,
+      "available": 383,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 666,
+        "width": 383,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "champions",
+      "size": 430,
+      "body": 430,
+      "viewport": 430,
+      "content": 383,
+      "available": 383,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 666,
+        "width": 383,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "voice",
+      "size": 430,
+      "body": 430,
+      "viewport": 430,
+      "content": 383,
+      "available": 383,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 666,
+        "width": 383,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "settings",
+      "size": 430,
+      "body": 430,
+      "viewport": 430,
+      "content": 383,
+      "available": 383,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 666,
+        "width": 383,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "ready",
+      "size": 390,
+      "body": 390,
+      "viewport": 390,
+      "content": 343,
+      "available": 343,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 506,
+        "width": 343,
+        "height": 54
+      },
+      "hero": {
+        "x": 58,
+        "y": 100,
+        "width": 321,
+        "height": 116
+      },
+      "plans": [
+        110,
+        102,
+        102
+      ]
+    },
+    {
+      "name": "matchup",
+      "size": 390,
+      "body": 390,
+      "viewport": 390,
+      "content": 343,
+      "available": 343,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 506,
+        "width": 343,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "coach",
+      "size": 390,
+      "body": 390,
+      "viewport": 390,
+      "content": 343,
+      "available": 343,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 506,
+        "width": 343,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "history",
+      "size": 390,
+      "body": 390,
+      "viewport": 390,
+      "content": 343,
+      "available": 343,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 506,
+        "width": 343,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "tft",
+      "size": 390,
+      "body": 390,
+      "viewport": 390,
+      "content": 343,
+      "available": 343,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 506,
+        "width": 343,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "champions",
+      "size": 390,
+      "body": 390,
+      "viewport": 390,
+      "content": 343,
+      "available": 343,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 506,
+        "width": 343,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "voice",
+      "size": 390,
+      "body": 390,
+      "viewport": 390,
+      "content": 343,
+      "available": 343,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 506,
+        "width": 343,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "settings",
+      "size": 390,
+      "body": 390,
+      "viewport": 390,
+      "content": 343,
+      "available": 343,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 506,
+        "width": 343,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "login",
+      "size": 1100,
+      "body": 1100,
+      "viewport": 1100,
+      "content": 482,
+      "available": 482,
+      "brokenImages": [],
+      "footer": null,
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "login",
+      "size": 840,
+      "body": 840,
+      "viewport": 840,
+      "content": 368,
+      "available": 368,
+      "brokenImages": [],
+      "footer": null,
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "lobby",
+      "size": 430,
+      "body": 430,
+      "viewport": 430,
+      "content": 383,
+      "available": 383,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 666,
+        "width": 383,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "settings-voice",
+      "size": 430,
+      "body": 430,
+      "viewport": 430,
+      "content": 383,
+      "available": 383,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 666,
+        "width": 383,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "settings-game",
+      "size": 430,
+      "body": 430,
+      "viewport": 430,
+      "content": 383,
+      "available": 383,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 666,
+        "width": 383,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "settings-voice",
+      "size": 390,
+      "body": 390,
+      "viewport": 390,
+      "content": 343,
+      "available": 343,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 506,
+        "width": 343,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    },
+    {
+      "name": "settings-game",
+      "size": 390,
+      "body": 390,
+      "viewport": 390,
+      "content": 343,
+      "available": 343,
+      "brokenImages": [],
+      "footer": {
+        "x": 47,
+        "y": 506,
+        "width": 343,
+        "height": 54
+      },
+      "hero": null,
+      "plans": []
+    }
+  ],
+  "reference": [
+    {
+      "name": "ready",
+      "size": 430,
+      "window": {
+        "width": 430,
+        "height": 720
+      },
+      "header": {
+        "width": 430,
+        "height": 31
+      },
+      "status": {
+        "width": 430,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 664
+      },
+      "footer": {
+        "width": 383,
+        "height": 54
+      },
+      "hero": {
+        "width": 357,
+        "height": 116
+      }
+    },
+    {
+      "name": "matchup",
+      "size": 430,
+      "window": {
+        "width": 430,
+        "height": 720
+      },
+      "header": {
+        "width": 430,
+        "height": 31
+      },
+      "status": {
+        "width": 430,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 664
+      },
+      "footer": {
+        "width": 383,
+        "height": 54
+      },
+      "hero": null
+    },
+    {
+      "name": "coach",
+      "size": 430,
+      "window": {
+        "width": 430,
+        "height": 720
+      },
+      "header": {
+        "width": 430,
+        "height": 31
+      },
+      "status": {
+        "width": 430,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 664
+      },
+      "footer": {
+        "width": 383,
+        "height": 54
+      },
+      "hero": null
+    },
+    {
+      "name": "history",
+      "size": 430,
+      "window": {
+        "width": 430,
+        "height": 720
+      },
+      "header": {
+        "width": 430,
+        "height": 31
+      },
+      "status": {
+        "width": 430,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 664
+      },
+      "footer": {
+        "width": 383,
+        "height": 54
+      },
+      "hero": null
+    },
+    {
+      "name": "tft",
+      "size": 430,
+      "window": {
+        "width": 430,
+        "height": 720
+      },
+      "header": {
+        "width": 430,
+        "height": 31
+      },
+      "status": {
+        "width": 430,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 664
+      },
+      "footer": {
+        "width": 383,
+        "height": 54
+      },
+      "hero": null
+    },
+    {
+      "name": "champions",
+      "size": 430,
+      "window": {
+        "width": 430,
+        "height": 720
+      },
+      "header": {
+        "width": 430,
+        "height": 31
+      },
+      "status": {
+        "width": 430,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 664
+      },
+      "footer": {
+        "width": 383,
+        "height": 54
+      },
+      "hero": null
+    },
+    {
+      "name": "voice",
+      "size": 430,
+      "window": {
+        "width": 430,
+        "height": 720
+      },
+      "header": {
+        "width": 430,
+        "height": 31
+      },
+      "status": {
+        "width": 430,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 664
+      },
+      "footer": {
+        "width": 383,
+        "height": 54
+      },
+      "hero": null
+    },
+    {
+      "name": "settings",
+      "size": 430,
+      "window": {
+        "width": 430,
+        "height": 720
+      },
+      "header": {
+        "width": 430,
+        "height": 31
+      },
+      "status": {
+        "width": 430,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 664
+      },
+      "footer": {
+        "width": 383,
+        "height": 54
+      },
+      "hero": null
+    },
+    {
+      "name": "ready",
+      "size": 390,
+      "window": {
+        "width": 390,
+        "height": 560
+      },
+      "header": {
+        "width": 390,
+        "height": 31
+      },
+      "status": {
+        "width": 390,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 504
+      },
+      "footer": {
+        "width": 343,
+        "height": 54
+      },
+      "hero": {
+        "width": 321,
+        "height": 116
+      }
+    },
+    {
+      "name": "matchup",
+      "size": 390,
+      "window": {
+        "width": 390,
+        "height": 560
+      },
+      "header": {
+        "width": 390,
+        "height": 31
+      },
+      "status": {
+        "width": 390,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 504
+      },
+      "footer": {
+        "width": 343,
+        "height": 54
+      },
+      "hero": null
+    },
+    {
+      "name": "coach",
+      "size": 390,
+      "window": {
+        "width": 390,
+        "height": 560
+      },
+      "header": {
+        "width": 390,
+        "height": 31
+      },
+      "status": {
+        "width": 390,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 504
+      },
+      "footer": {
+        "width": 343,
+        "height": 54
+      },
+      "hero": null
+    },
+    {
+      "name": "history",
+      "size": 390,
+      "window": {
+        "width": 390,
+        "height": 560
+      },
+      "header": {
+        "width": 390,
+        "height": 31
+      },
+      "status": {
+        "width": 390,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 504
+      },
+      "footer": {
+        "width": 343,
+        "height": 54
+      },
+      "hero": null
+    },
+    {
+      "name": "tft",
+      "size": 390,
+      "window": {
+        "width": 390,
+        "height": 560
+      },
+      "header": {
+        "width": 390,
+        "height": 31
+      },
+      "status": {
+        "width": 390,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 504
+      },
+      "footer": {
+        "width": 343,
+        "height": 54
+      },
+      "hero": null
+    },
+    {
+      "name": "champions",
+      "size": 390,
+      "window": {
+        "width": 390,
+        "height": 560
+      },
+      "header": {
+        "width": 390,
+        "height": 31
+      },
+      "status": {
+        "width": 390,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 504
+      },
+      "footer": {
+        "width": 343,
+        "height": 54
+      },
+      "hero": null
+    },
+    {
+      "name": "voice",
+      "size": 390,
+      "window": {
+        "width": 390,
+        "height": 560
+      },
+      "header": {
+        "width": 390,
+        "height": 31
+      },
+      "status": {
+        "width": 390,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 504
+      },
+      "footer": {
+        "width": 343,
+        "height": 54
+      },
+      "hero": null
+    },
+    {
+      "name": "settings",
+      "size": 390,
+      "window": {
+        "width": 390,
+        "height": 560
+      },
+      "header": {
+        "width": 390,
+        "height": 31
+      },
+      "status": {
+        "width": 390,
+        "height": 25
+      },
+      "rail": {
+        "width": 47,
+        "height": 504
+      },
+      "footer": {
+        "width": 343,
+        "height": 54
+      },
+      "hero": null
+    }
+  ],
+  "source": "output/design-arena/overdrive-v2.js, overdrive-v2.css, overdrive-pages.js, overdrive-pages.css, overdrive-login.css",
+  "verification": {
+    "typecheck": "passed",
+    "build": "passed",
+    "tests": {
+      "passed": 265,
+      "skipped": 2
+    },
+    "muted": true
+  },
+  "limits": [
+    "Browser acceptance uses an explicitly labelled fixture bridge.",
+    "Real data changes hero counts, loadout items, advice, numbers and text wrapping.",
+    "Missing TFT artwork retains real names instead of unrelated assets.",
+    "Windows docking, QQ autofill, DPI and real LCU remain platform acceptance."
+  ]
+}

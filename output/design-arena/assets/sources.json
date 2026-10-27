@@ -1,0 +1,279 @@
+{
+  "patch": "16.21.1",
+  "sources": {
+    "Yasuo-splash.jpg": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yasuo_0.jpg",
+      "bytes": 208959,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Jinx-splash.jpg": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_0.jpg",
+      "bytes": 161141,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Camille-splash.jpg": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Camille_0.jpg",
+      "bytes": 127548,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Irelia-splash.jpg": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Irelia_0.jpg",
+      "bytes": 201874,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Zed-splash.jpg": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Zed_0.jpg",
+      "bytes": 183119,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Yasuo.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Yasuo.png",
+      "bytes": 28213,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Irelia.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Irelia.png",
+      "bytes": 29037,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Camille.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Camille.png",
+      "bytes": 26879,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Zed.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Zed.png",
+      "bytes": 28879,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Jinx.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Jinx.png",
+      "bytes": 27938,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Ahri.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Ahri.png",
+      "bytes": 28511,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Lux.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Lux.png",
+      "bytes": 29188,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "LeeSin.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/LeeSin.png",
+      "bytes": 24979,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Thresh.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Thresh.png",
+      "bytes": 26720,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Ashe.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Ashe.png",
+      "bytes": 32121,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Ekko.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Ekko.png",
+      "bytes": 26511,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Jhin.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Jhin.png",
+      "bytes": 25526,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Aatrox.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Aatrox.png",
+      "bytes": 25644,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Vayne.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Vayne.png",
+      "bytes": 28367,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "Sylas.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/champion/Sylas.png",
+      "bytes": 27292,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3031.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3031.png",
+      "bytes": 7104,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3036.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3036.png",
+      "bytes": 6844,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3006.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3006.png",
+      "bytes": 6568,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3046.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3046.png",
+      "bytes": 6232,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3072.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3072.png",
+      "bytes": 6532,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3053.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3053.png",
+      "bytes": 6547,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3078.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3078.png",
+      "bytes": 6498,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3047.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3047.png",
+      "bytes": 6073,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-6333.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/6333.png",
+      "bytes": 6363,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3153.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3153.png",
+      "bytes": 6909,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3087.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3087.png",
+      "bytes": 5724,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3118.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3118.png",
+      "bytes": 6310,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3026.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3026.png",
+      "bytes": 6600,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3094.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3094.png",
+      "bytes": 6629,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3157.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3157.png",
+      "bytes": 7290,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "SummonerFlash.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/spell/SummonerFlash.png",
+      "bytes": 6403,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "SummonerDot.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/spell/SummonerDot.png",
+      "bytes": 5799,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "SummonerTeleport.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/spell/SummonerTeleport.png",
+      "bytes": 6131,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "rift-map.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/map/map11.png",
+      "bytes": 70985,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "item-3089.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/16.21.1/img/item/3089.png",
+      "bytes": 6981,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "conqueror.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/Conqueror/Conqueror.png",
+      "bytes": 51100,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "lethal-tempo.png": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/LethalTempo/LethalTempoTemp.png",
+      "bytes": 55298,
+      "owner": "Riot Games / Data Dragon",
+      "use": "local design concept"
+    },
+    "archivo-black.woff2": {
+      "origin": "https://fonts.gstatic.com/s/archivoblack/v23/HTxqL289NzCGg4MzN6KJ7eW6CYyF_jzx13E.woff2",
+      "bytes": 9792,
+      "owner": "Google Fonts / Open Font License",
+      "use": "local design concept"
+    },
+    "cinzel.woff2": {
+      "origin": "https://fonts.gstatic.com/s/cinzel/v26/8vIJ7ww63mVu7gt79mT7PkRXMw.woff2",
+      "bytes": 25888,
+      "owner": "Google Fonts / Open Font License",
+      "use": "local design concept"
+    },
+    "Jinx-arcane-fractured.jpg": {
+      "origin": "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_60.jpg",
+      "bytes": 258692,
+      "owner": "Riot Games / Data Dragon",
+      "skinName": "双城之战2 破碎者 金克丝",
+      "skinNum": 60,
+      "metadata": "https://ddragon.leagueoflegends.com/cdn/16.21.1/data/zh_CN/champion/Jinx.json",
+      "use": "local design concept"
+    }
+  },
+  "failures": []
+}

@@ -1,4 +1,8 @@
-import type { JungleRules, JungleState, JungleTimerId } from './jungle'
+import type { NativeJungleState } from './jungle'
+import type { LauncherState, PerformanceState } from './desktop-tools'
+import type { CombatAISettings, CombatPreferences, CombatState } from './combat'
+import type { TclsLoginInput, TclsLoginState } from './tcls-login'
+import type { CoachAnalysis, CoachMember, CoachRequest, CoachSettings, CoachSettingsInput } from './coach'
 
 export type Position = 'top' | 'jungle' | 'mid' | 'adc' | 'support'
 export type QueueMode = 'ranked' | 'aram' | 'aram-mayhem'
@@ -69,27 +73,41 @@ export interface ClientState {
   championId: number | null
   championLocked: boolean
   position: Position | null
+  loadoutPosition?: Position
   mode: GameMode
   modeLabel?: string
   queueId?: number
   sessionId?: string
   enemyChampionIds?: number[]
   enemies?: Array<{ championId: number; position: Position | null; locked: boolean }>
+  allies?: CoachMember[]
+  bannedChampionIds?: number[]
   patch?: string
   message?: string
 }
 
 export interface AppState {
+  coach?: CoachSettings
+  combat?: CombatState
+  launcher?: LauncherState
+  tclsLogin?: TclsLoginState
+  performance?: PerformanceState
   backgroundAvailable?: boolean
   update?: UpdateState
-  jungle?: JungleState
+  nativeJungle?: NativeJungleState
   client: ClientState
-  autoConfig: boolean
   dock: boolean
-  includeSpells: boolean
   canRestore: boolean
   recoveryNeeded: boolean
-  lastConfig?: { ok: boolean; busy?: boolean; message: string; at: number }
+  lastConfig?: { ok: boolean; busy?: boolean; message: string; at: number; target?: ConfigurationTarget }
+}
+
+export interface ConfigurationTarget {
+  championId: number
+  mode: QueueMode
+  position: Position
+  sessionId?: string
+  planId?: string
 }
 
 export interface UpdateState {
@@ -146,6 +164,20 @@ export interface PostGameReport {
 export interface PostGameData { report: PostGameReport; honor: HonorBallot }
 
 export interface RiftBridge {
+  saveCoachSettings(input: CoachSettingsInput): Promise<CoachSettings>
+  listCoachModels(input: CoachSettingsInput): Promise<string[]>
+  testCoachConnection(input: CoachSettingsInput): Promise<ApplyResult>
+  analyzeCoach(input: CoachRequest): Promise<CoachAnalysis>
+  cancelCoach(): Promise<void>
+  scanGameClient(): Promise<LauncherState>
+  chooseGameClient(): Promise<void>
+  selectGameClient(path: string): Promise<void>
+  launchGameClient(options?: { manualLogin?: boolean }): Promise<ApplyResult>
+  saveTclsLogin(input: TclsLoginInput): Promise<ApplyResult>
+  clearTclsLogin(): Promise<ApplyResult>
+  cancelTclsLogin(): Promise<ApplyResult>
+  setOptimizeBeforeLaunch(enabled: boolean): Promise<void>
+  restorePerformance(): Promise<ApplyResult>
   getState(): Promise<AppState>
   getChampions(): Promise<Champion[]>
   fetchBuilds(input: { championId: string; position: Position; mode: QueueMode }): Promise<BuildPlan[]>
@@ -162,15 +194,13 @@ export interface RiftBridge {
   replay(input: { gameId: number; action: 'download' | 'watch' }): Promise<ApplyResult>
   selectPlan(input: { championId: string; planId: string }): Promise<void>
   selectPosition(input: { championId: string; position: Position }): Promise<void>
-  setAutoConfig(enabled: boolean): Promise<void>
-  setIncludeSpells(enabled: boolean): Promise<void>
   setDock(enabled: boolean): Promise<void>
-  setJungleEnabled(enabled: boolean): Promise<void>
-  setJungleRules(rules: JungleRules): Promise<void>
-  markJungle(input: { gameId: string; id: JungleTimerId; clear?: boolean }): Promise<void>
-  jungleLayout(input: { collapsed: boolean; camps: boolean }): Promise<void>
-  jungleInteract(): Promise<void>
-  hideJungle(): Promise<void>
+  setNativeJungleEnabled(enabled: boolean): Promise<void>
+  setCombatPreferences(preferences: Partial<CombatPreferences>): Promise<void>
+  previewCombatVoice(category: 'praise' | 'taunt'): Promise<ApplyResult>
+  stopCombatPreview(): Promise<void>
+  setCombatAISettings(settings: CombatAISettings): Promise<void>
+  checkNativeJungle(): Promise<NativeJungleState>
   reconnect(): Promise<void>
   checkUpdate(): Promise<UpdateState | undefined>
   downloadUpdate(): Promise<UpdateState | undefined>

@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-27",
+  "scope": "Local OVERDRIVE V2 prototype, including stronger compact styling requested by the user",
+  "browser": "Microsoft Edge via Playwright CLI",
+  "syntax": {"app.js": "pass", "overdrive-v2.js": "pass", "design.json": "pass"},
+  "layout": [
+    {"window": [430, 720], "mainClientWidth": 383, "mainScrollWidth": 383, "footerBottom": 720, "brokenImages": 0},
+    {"window": [390, 560], "mainClientWidth": 343, "mainScrollWidth": 343, "footerBottom": 560, "brokenImages": 0},
+    {"sceneViewport": [1440, 1000], "bodyScrollWidth": 1440, "clientToAssistantGap": 0, "brokenImages": 0}
+  ],
+  "functional": {
+    "sixSecondaryViewsAtBothWidths": "pass; matchup, coach, history, tft, champions, voice remain inside the dock without horizontal overflow",
+    "selectedPlanAriaPressed": "true",
+    "footerFixedDuringMainScroll": "pass at both widths",
+    "oneOpenAIKeyField": "pass at both widths",
+    "settingsSaveReachableByScrolling": "pass at both widths; demo save returns to ready",
+    "loginTransition": "pass; launch switches to dock and removes the credential form",
+    "phaseRender": ["lobby", "select", "postgame"],
+    "finalVisualPass": ["dock", "dock-bottom", "minimum", "lobby", "postgame", "settings", "context"],
+    "uncaughtPageErrors": []
+  },
+  "console": "One Chromium informational password-field-outside-form message for the demo settings API key; no JavaScript runtime exception observed.",
+  "screenshots": "../playwright/overdrive-v2/",
+  "limits": [
+    "No production React or Electron implementation was changed by this design refinement.",
+    "Existing production dock widths and following logic were read; native Windows docking was not exercised.",
+    "All data, connection states, settings and login effects are illustrative; inputs are not stored or sent.",
+    "No formal contrast or accessibility compliance audit was performed."
+  ]
+}

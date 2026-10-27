@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-27",
+  "target": "Production React components via the labelled, muted implementation preview",
+  "preview": "http://127.0.0.1:4320/output/implementation-preview/?surface=login",
+  "checks": {
+    "typecheck": "passed",
+    "tests": {
+      "filesPassed": 31,
+      "filesSkipped": 1,
+      "passed": 265,
+      "skipped": 2
+    },
+    "productionBuild": "passed",
+    "diffWhitespace": "passed",
+    "browserPageErrors": [],
+    "viewportCases": 18,
+    "viewports": {
+      "login": [
+        [
+          1100,
+          740
+        ],
+        [
+          840,
+          640
+        ]
+      ],
+      "pages": [
+        [
+          430,
+          720
+        ],
+        [
+          390,
+          560
+        ]
+      ]
+    },
+    "pages": [
+      "ready",
+      "matchup",
+      "coach",
+      "history",
+      "tft",
+      "champions",
+      "voice",
+      "settings"
+    ],
+    "horizontalOverflow": false,
+    "visibleBrokenImages": false,
+    "interactions": [
+      "Account validation, password visibility, credential save and launch dispatch",
+      "Official login skips credential save",
+      "Loadout choice, apply and restore",
+      "Champion search, Escape dismissal and catalogue class filtering",
+      "One shared connection, independent prompts, cleared password input and shared key removal",
+      "Voice remains muted and preview is disabled at zero volume",
+      "Load failure and retry",
+      "Waiting for champion clears stale loadouts"
+    ]
+  },
+  "screenshots": "../playwright/implementation-*.png",
+  "limits": [
+    "Preview uses explicitly labelled sample data and a test bridge.",
+    "Windows QQ autofill, Win32 docking, cross-display DPI, real LCU and actual voice require Windows acceptance.",
+    "No installer was built or published."
+  ]
+}

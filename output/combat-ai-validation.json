@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-27",
+  "baseUrl": "https://mdkj.lol/v1",
+  "model": "gpt-5.6-sol",
+  "credentialsPersisted": false,
+  "modelsEndpointStatus": 200,
+  "diagnosticCases": [
+    { "kind": "clutch", "httpStatus": 200, "elapsedMs": 13482, "exclusiveLineMatched": true },
+    { "kind": "teamwork", "httpStatus": 200, "elapsedMs": 4943, "exclusiveLineMatched": true },
+    { "kind": "rough", "httpStatus": 200, "elapsedMs": 11752, "exclusiveLineMatched": true }
+  ],
+  "productionDeadline": { "timeoutMs": 4000, "attempts": 2, "fallbacks": 2, "observedElapsedMs": [4005, 4005] },
+  "scope": "Synthetic anonymous LOL event samples against the live service; diagnostic requests used a longer deadline. Does not verify live Windows game telemetry or speech output."
+}

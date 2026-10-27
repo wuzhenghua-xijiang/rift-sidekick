@@ -15,6 +15,12 @@ describe('mode and locked champion detection', () => {
   it('recognizes random ARAM champions without a pick action', () => {
     expect(readSelection({ localPlayerCellId: 0, myTeam: [{ cellId: 0, championId: 103 }] }, { map: { id: 12, gameMode: 'ARAM' } })).toMatchObject({ mode: 'aram', championLocked: true })
   })
+  it('uses the ARAM queue when mode and map metadata have not arrived yet', () => {
+    const flow = { gameData: { queue: { id: 450 } } }
+    expect(detectMode(flow)).toEqual({ mode: 'aram', modeLabel: '极地大乱斗' })
+    expect(readSelection({ localPlayerCellId: 0, myTeam: [{ cellId: 0, championId: 115 }] }, flow)).toMatchObject({ mode: 'aram', championId: 115, championLocked: true })
+    expect(detectMode({ gameData: { queue: { id: 450, gameMode: 'UNKNOWN_ROTATION' } } }).mode).toBe('other')
+  })
   it('recognizes a traded champion after the pick phase finishes', () => {
     const session = { localPlayerCellId: 0, timer: { phase: 'FINALIZATION' }, myTeam: [{ cellId: 0, championId: 157 }], actions: [[{ actorCellId: 0, type: 'pick', championId: 103, completed: true }]] }
     expect(readSelection(session, { map: { id: 11, gameMode: 'CLASSIC' } }).championLocked).toBe(true)
@@ -66,6 +72,13 @@ describe('window docking in DIP coordinates', () => {
 
 describe('opponent pick visibility', () => {
   const flow = { map: { id: 11, gameMode: 'CLASSIC' } }
+  it('captures allied intent and completed bans for the coach without treating pending bans as final', () => {
+    const state = readSelection({ localPlayerCellId: 0, myTeam: [{ cellId: 0, championPickIntent: 103 }, { cellId: 1, championId: 99, assignedPosition: 'UTILITY' }],
+      bans: { myTeamBans: [157, -1], theirTeamBans: [157, 86] }, actions: [[{ type: 'ban', championId: 64, completed: false }, { type: 'ban', championId: 222, completed: true }, { type: 'pick', actorCellId: 1, championId: 99, completed: true }]],
+    }, flow)
+    expect(state.allies).toEqual([{ championId: 103, position: null, locked: false }, { championId: 99, position: 'support', locked: true }])
+    expect(state.bannedChampionIds).toEqual([157, 86, 222])
+  })
   it('preserves explicit enemy lanes but only marks completed picks as locked', () => {
     const state = readSelection({ theirTeam: [{ cellId: 5, championId: 157, assignedPosition: 'MIDDLE' }, { cellId: 7, championId: 86, assignedPosition: 'TOP' }, { cellId: 6, championPickIntent: 99 }], actions: [[{ actorCellId: 5, type: 'pick', championId: 157, completed: true }, { actorCellId: 7, type: 'pick', championId: 86, completed: false }]] }, flow)
     expect(state.enemies).toEqual([{ championId: 157, position: 'mid', locked: true }, { championId: 86, position: 'top', locked: false }])

@@ -1,31 +1,48 @@
-import { app, autoUpdater, BrowserWindow, clipboard, ipcMain, Menu, nativeImage, screen, session, shell, Tray } from 'electron'
+import { app, autoUpdater, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, safeStorage, screen, session, shell, Tray } from 'electron'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { AppState, BuildPlan, Position, QueueMode } from '@shared/types'
 import { rankBuildPlans } from '@shared/build-plans'
 import { GameWindowPolicy } from '@shared/gameflow'
+import { isLoadoutMode } from '@shared/selection-context'
 import { DataService } from './data'
 import { LcuService } from './lcu'
 import { ConfigurationManager, messageOf } from './configuration'
 import { FileJournal } from './journal'
 import { fetchRecommendedBuilds } from './opgg'
 import { WindowsDock } from './windows-dock'
+import { windowPresentation } from './window-presentation'
 import { fetchProfile } from './profile'
 import { fetchTftGuide } from './tft'
 import { LaneRankingService } from './lane-rankings'
 import { PostGameService } from './postgame'
 import { UpdateService } from './update-service'
-import { JungleService } from './jungle-service'
-import { JungleOverlay } from './jungle-overlay'
-import { DEFAULT_JUNGLE_RULES, validJungleRules, type JungleRules } from '@shared/jungle'
+import { NativeJungleService } from './native-jungle'
+import { ClientLauncher, WindowsLauncherRuntime } from './client-launcher'
+import { FilePerformanceStore, PerformanceService } from './performance'
+import { WindowsPerformanceRuntime } from './windows-performance'
+import { TclsAccountStore } from './tcls-account'
+import { TclsLoginService } from './tcls-login'
+import { WindowsTclsLoginRuntime } from './windows-tcls-login'
+import { CombatService } from './combat'
+import { WindowsCombatVoice } from './combat-voice'
+import { readLiveGame } from './live-client'
+import { DEFAULT_COMBAT_BASE_URL, DEFAULT_COMBAT_MODEL, DEFAULT_COMBAT_PROMPT, DEFAULT_COMBAT_PREFERENCES, combatPreferences, type CombatPreferences } from '@shared/combat'
+import { combatBaseUrl, OpenAICombatJudge } from './combat-openai'
+import { coachDraft, coachDraftKey, type CoachRequest, type CoachSettingsInput } from '@shared/coach'
+import { CoachSettingsStore } from './coach-settings'
+import { migrateSharedAI, sharedCombatConnection } from './shared-ai'
+import { CoachService } from './coach'
+import { CoachEvidenceService } from './coach-evidence'
 
 interface Preferences {
-  autoConfig: boolean
+  optimizeBeforeLaunch: boolean
+  launcherPath?: string
   dock: boolean
-  includeSpells: boolean
-  jungleEnabled: boolean
-  jungleRules: JungleRules
+  nativeJungleEnabled: boolean
+  combat: CombatPreferences
+  combatAI?: { baseUrl: string; model: string; prompt: string; encryptedApiKey?: string }
   selectedPlans: Record<string, string>
   positions: Record<string, Position>
 }
@@ -34,15 +51,23 @@ const lcu = new LcuService()
 const dock = new WindowsDock()
 const gameWindow = new GameWindowPolicy()
 const laneRankings = new LaneRankingService()
+const coach = new CoachService()
+const coachEvidence = new CoachEvidenceService((position) => laneRankings.get(position), () => lcu.request<string>('GET', '/lol-patch/v1/game-version'))
+let coachSettings: CoachSettingsStore
+let coachGeneration = 0
 const postGame = new PostGameService(lcu.request)
 const planRegistry = new Map<string, { championId: string; plan: BuildPlan }>()
 const replayGames = new Map<number, number>()
 const tftCodes = new Map<string, string>()
 let configuration: ConfigurationManager
 let updates: UpdateService | undefined
-let jungleOverlay: JungleOverlay | undefined
+let performance: PerformanceService | undefined
+let tclsLogin: TclsLoginService | undefined
+let performanceExitReady = false
+let performanceExitPending = false
 let configurationReady = false
 let mainWindow: BrowserWindow | undefined
+let connectedPresentation: boolean | undefined
 let tray: Tray | undefined
 let backgroundHidden = false
 let pollTimer: NodeJS.Timeout | undefined
@@ -57,22 +82,23 @@ let previousPhase = ''
 let operation = 0
 let quitting = false
 let preferencesWrites: Promise<void> = Promise.resolve()
-let preferences: Preferences = { autoConfig: true, dock: true, includeSpells: false, jungleEnabled: true, jungleRules: { ...DEFAULT_JUNGLE_RULES }, selectedPlans: {}, positions: {} }
+let preferences: Preferences = { optimizeBeforeLaunch: true, dock: true, nativeJungleEnabled: true, combat: { ...DEFAULT_COMBAT_PREFERENCES }, selectedPlans: {}, positions: {} }
 let state: AppState = {
   client: { connected: false, phase: 'ClientOffline', championId: null, championLocked: false, position: null, mode: 'ranked', message: '等待英雄联盟客户端…' },
-  autoConfig: true, dock: true, includeSpells: false, canRestore: false, recoveryNeeded: false,
+  dock: true, canRestore: false, recoveryNeeded: false,
 }
-const jungle = new JungleService((next) => {
-  jungleOverlay?.update(next)
-  updateState({ jungle: { ...next, interactive: jungleOverlay?.interactive, shortcutAvailable: jungleOverlay?.shortcutAvailable } })
-  dock.observeGame(['waiting', 'live', 'unavailable'].includes(next.status) ? (game) => jungleOverlay?.observe(game) : undefined)
+const nativeJungle = new NativeJungleService(lcu.request, (next) => updateState({ nativeJungle: next }))
+const launcher = new ClientLauncher((next) => updateState({ launcher: next }), new WindowsLauncherRuntime())
+const combatAI = new OpenAICombatJudge()
+let combatApiKey = ''
+const combat = new CombatService(readLiveGame, new WindowsCombatVoice(() => join(app.getPath('userData'), 'combat-voices')), (next) => updateState({ combat: next }), undefined, combatAI, async () => {
+  const local = await lcu.request<{ gameName?: string; tagLine?: string; displayName?: string }>('GET', '/lol-summoner/v1/current-summoner')
+  return local.gameName && local.tagLine ? [`${local.gameName}#${local.tagLine}`] : local.displayName ? [local.displayName] : []
 })
 
 function updateState(next: Partial<AppState>) {
   state = { ...state, ...next }
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('rift:state', state)
-  const overlay = jungleOverlay?.window
-  if (overlay && !overlay.isDestroyed()) overlay.webContents.send('rift:state', state)
 }
 function updateConfigurationState() {
   updateState({ canRestore: configuration.canRestore, recoveryNeeded: configuration.recoveryNeeded })
@@ -91,12 +117,26 @@ function persistPreferences() {
 async function loadPreferences() {
   try {
     const value = JSON.parse(await readFile(join(app.getPath('userData'), 'preferences.json'), 'utf8')) as Partial<Preferences>
-    for (const key of ['autoConfig', 'dock', 'includeSpells', 'jungleEnabled'] as const) if (typeof value[key] === 'boolean') preferences[key] = value[key]
-    if (validJungleRules(value.jungleRules)) preferences.jungleRules = value.jungleRules
+    // Retired automation switches and manual-timer preferences are not loaded or saved.
+    for (const key of ['dock', 'nativeJungleEnabled'] as const) if (typeof value[key] === 'boolean') preferences[key] = value[key]
+    if (typeof value.optimizeBeforeLaunch === 'boolean') preferences.optimizeBeforeLaunch = value.optimizeBeforeLaunch
+    if (typeof value.launcherPath === 'string') preferences.launcherPath = value.launcherPath
+    preferences.combat = combatPreferences(value.combat)
+    if (value.combatAI && typeof value.combatAI === 'object') {
+      const ai = value.combatAI
+      preferences.combatAI = { baseUrl: DEFAULT_COMBAT_BASE_URL, model: typeof ai.model === 'string' && /^[a-zA-Z0-9._:-]{1,100}$/.test(ai.model) ? ai.model : DEFAULT_COMBAT_MODEL,
+        prompt: typeof ai.prompt === 'string' ? ai.prompt.slice(0, 2_000) : DEFAULT_COMBAT_PROMPT }
+      try { if (typeof ai.baseUrl === 'string') preferences.combatAI.baseUrl = combatBaseUrl(ai.baseUrl) } catch { /* keep official endpoint */ }
+      if (typeof ai.encryptedApiKey === 'string' && ai.encryptedApiKey.length < 32_000) {
+        preferences.combatAI.encryptedApiKey = ai.encryptedApiKey
+        try { if (safeStorage.isEncryptionAvailable()) combatApiKey = safeStorage.decryptString(Buffer.from(ai.encryptedApiKey, 'base64')) } catch { /* re-enter an unreadable key in settings */ }
+      }
+    }
     if (value.selectedPlans && typeof value.selectedPlans === 'object') preferences.selectedPlans = value.selectedPlans
     if (value.positions && typeof value.positions === 'object') preferences.positions = value.positions
   } catch { /* use defaults on first launch */ }
-  state = { ...state, autoConfig: preferences.autoConfig, dock: preferences.dock, includeSpells: preferences.includeSpells }
+  state = { ...state, dock: preferences.dock }
+  combatAI.configure(combatApiKey, preferences.combatAI?.model, preferences.combatAI?.prompt, preferences.combatAI?.baseUrl)
 }
 
 function installSecurityHeaders() {
@@ -131,7 +171,6 @@ function makeTray() {
     tray.setContextMenu(Menu.buildFromTemplate([
       { label: '显示助手', click: showAssistant },
       { label: '隐藏到后台', click: hideAssistant },
-      { label: '显示/操作野怪计时', click: () => jungleOverlay?.toggleInteraction(true) },
       { type: 'separator' },
       { label: '退出助手', click: () => app.quit() },
     ]))
@@ -141,9 +180,10 @@ function makeTray() {
 }
 function makeWindow() {
   const work = screen.getPrimaryDisplay().workArea
+  const presentation = windowPresentation(state.client.connected, work)
   mainWindow = new BrowserWindow({
-    width: 430, height: Math.min(900, work.height), minWidth: 390, maxWidth: 520, minHeight: 520,
-    show: false, frame: false, roundedCorners: false, backgroundColor: '#11101a', title: 'Rift Sidekick', autoHideMenuBar: true,
+    ...presentation.bounds, minWidth: presentation.minWidth, maxWidth: presentation.maxWidth, minHeight: presentation.minHeight,
+    show: false, frame: false, roundedCorners: false, backgroundColor: '#1b1b1c', title: 'Rift Sidekick', autoHideMenuBar: true,
     webPreferences: { preload: join(__dirname, '../preload/index.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true },
   })
   mainWindow.setMenu(null)
@@ -161,8 +201,7 @@ function makeWindow() {
   mainWindow.once('ready-to-show', () => {
     if (!gameWindow.suppressed) mainWindow?.show()
     updateState({})
-    dock.setEnabled(state.dock)
-    if (state.dock && process.platform !== 'win32') mainWindow?.setBounds({ x: work.x + work.width - 430, y: work.y, width: 430, height: Math.min(900, work.height) })
+    syncWindowPresentation()
   })
   mainWindow.on('close', (event) => {
     if (quitting || !tray || tray.isDestroyed()) return
@@ -172,9 +211,22 @@ function makeWindow() {
   mainWindow.on('query-session-end', () => { quitting = true })
   mainWindow.on('closed', () => {
     mainWindow = undefined
-    // A hidden timer window must not keep a tray-less assistant running after Close.
+    // A tray-less assistant must stop background services when the main window closes.
     if (!quitting) app.quit()
   })
+}
+
+function syncWindowPresentation() {
+  if (!mainWindow || mainWindow.isDestroyed() || connectedPresentation === state.client.connected) return
+  connectedPresentation = state.client.connected
+  dock.setEnabled(false)
+  const work = screen.getDisplayMatching(mainWindow.getBounds()).workArea
+  const next = windowPresentation(connectedPresentation, work)
+  mainWindow.setMinimumSize(0, 0)
+  mainWindow.setMaximumSize(next.maxWidth, next.maxHeight)
+  mainWindow.setBounds(next.bounds, false)
+  mainWindow.setMinimumSize(next.minWidth, next.minHeight)
+  dock.setEnabled(connectedPresentation && state.dock)
 }
 
 async function refreshClientState() {
@@ -185,15 +237,20 @@ async function refreshClientState() {
 async function doRefreshClientState() {
   const old = state.client
   const client = await lcu.currentClientState(old)
+  launcher.updateClient(client.connected)
+  tclsLogin?.updateClient(client.connected)
+  performance?.updateClient(client)
   const isChampSelect = client.phase === 'ChampSelect'
   if (isChampSelect && previousPhase !== 'ChampSelect') autoGeneration++
   previousPhase = client.phase
   const champion = client.championId ? data.byKey(client.championId) : undefined
   const position = client.position || (champion ? preferences.positions[champion.id] : null) || (client.mode === 'aram' || client.mode === 'aram-mayhem' ? 'mid' : null)
-  const next = { ...client, patch: data.getPatch() }
+  const next = { ...client, loadoutPosition: position || undefined, patch: data.getPatch() }
   if (JSON.stringify(old) !== JSON.stringify(next)) updateState({ client: next })
+  syncWindowPresentation()
   const windowAction = gameWindow.update(client)
-  jungle.updateClient(client)
+  nativeJungle.updateClient(client)
+  combat.updateClient(client)
   if (windowAction === 'restore') backgroundHidden = false
   dock.setSuppressed(gameWindow.suppressed || backgroundHidden)
   if (windowAction === 'hide') mainWindow?.hide()
@@ -206,14 +263,11 @@ async function doRefreshClientState() {
     ? `${autoGeneration}:${client.sessionId}:${client.championId}:${position}:${client.mode}` : ''
   if (identity !== currentAutoKey) {
     currentAutoKey = identity
+    lastAutoKey = ''
     operation++
     if (autoTimer) clearTimeout(autoTimer)
-    if (identity && preferences.autoConfig) scheduleAutoConfig(identity, client.championId!, position!, client.mode as QueueMode)
-    else if (state.lastConfig?.busy) updateState({ lastConfig: { ok: false, message: '选人状态已改变，已取消待执行的自动配置。', at: Date.now() } })
-  }
-  if (isChampSelect && client.championLocked && supported && !position && preferences.autoConfig && !state.lastConfig?.busy) {
-    const message = '这局没有分配分路。点选一条分路后，就能自动配好。'
-    if (state.lastConfig?.message !== message) updateState({ lastConfig: { ok: false, message, at: Date.now() } })
+    if (state.lastConfig?.target && !state.recoveryNeeded) updateState({ lastConfig: undefined })
+    if (identity) scheduleAutoConfig(identity, client.championId!, position!, client.mode as QueueMode)
   }
 }
 function startPolling() {
@@ -227,7 +281,8 @@ function scheduleAutoConfig(identity: string, championKey: number, position: Pos
   if (!configurationReady || configuration.recoveryNeeded || identity === lastAutoKey) return
   if (autoTimer) clearTimeout(autoTimer)
   const token = ++operation
-  updateState({ lastConfig: { ok: false, busy: true, message: '英雄已锁定，正在准备你的开局配方…', at: Date.now() } })
+  const target = { championId: championKey, position, mode, sessionId: state.client.sessionId }
+  updateState({ lastConfig: { ok: false, busy: true, target, message: '正在准备本局推荐方案…', at: Date.now() } })
   autoTimer = setTimeout(() => void runAutoConfig(identity, token, championKey, position, mode), 1_150)
 }
 async function loadPlans(championId: string, position: Position, mode: QueueMode) {
@@ -241,40 +296,85 @@ async function loadPlans(championId: string, position: Position, mode: QueueMode
   return rankBuildPlans(plans, preferred)
 }
 async function runAutoConfig(identity: string, token: number, championKey: number, position: Position, mode: QueueMode) {
-  const guard = () => token === operation && identity === currentAutoKey && preferences.autoConfig && identity !== lastAutoKey
+  const guard = () => token === operation && identity === currentAutoKey && identity !== lastAutoKey
   if (!guard()) return
+  // A changed hero can arrive while the previous write is still compensating.
+  const waitForPreviousWrite = () => {
+    if (!configuration.isBusy) return false
+    autoTimer = setTimeout(() => void runAutoConfig(identity, token, championKey, position, mode), 400)
+    return true
+  }
+  if (waitForPreviousWrite()) return
+  const target = { championId: championKey, position, mode, sessionId: state.client.sessionId }
   const champion = data.byKey(championKey)
   if (!champion) {
-    updateState({ lastConfig: { ok: false, message: '当前英雄资料尚未就绪，请稍后刷新。', at: Date.now() } })
+    updateState({ lastConfig: { ok: false, target, message: '当前英雄资料尚未就绪，请稍后刷新。', at: Date.now() } })
     return
   }
   try {
     const plans = await loadPlans(champion.id, position, mode)
-    if (!guard()) return
+    if (!guard() || waitForPreviousWrite()) return
     const preferred = preferences.selectedPlans[planKey(champion.id, position, mode)]
     const plan = plans.find((entry) => entry.id === preferred) || plans[0]
+    if (!plan) throw new Error('暂时没有本局推荐方案，请刷新后重试。')
     const result = await applyPlan(champion.id, plan, guard)
+    if (!guard()) return
     lastAutoKey = identity
-    updateState({ lastConfig: { ...result, at: Date.now() } })
+    updateState({ lastConfig: { ...result, target: { ...target, planId: plan.id }, at: Date.now() } })
   } catch (error) {
-    if (token === operation) updateState({ lastConfig: { ok: false, message: messageOf(error), at: Date.now() } })
+    if (token === operation) updateState({ lastConfig: { ok: false, target, message: messageOf(error), at: Date.now() } })
   } finally { updateConfigurationState() }
 }
 async function applyPlan(championId: string, plan: BuildPlan, guard: () => boolean) {
   if (state.update?.status === 'installing') throw new Error('助手正在安装更新，请重启后配置。')
   const version = await lcu.request<string>('GET', '/lol-patch/v1/game-version')
-  const includeSpells = preferences.includeSpells
+  const includeSpells = plan.mode !== 'aram-mayhem'
   await data.verifyPlan(plan, version, includeSpells)
   return configuration.apply(data.byId(championId)!, plan, includeSpells, guard)
 }
 const validPosition = (value: unknown): value is Position => ['top', 'jungle', 'mid', 'adc', 'support'].includes(String(value))
-const validMode = (value: unknown): value is QueueMode => value === 'ranked' || value === 'aram' || value === 'aram-mayhem'
+const validMode = (value: unknown): value is QueueMode => typeof value === 'string' && isLoadoutMode(value as QueueMode)
 function planKey(championId: string, position: Position, mode: QueueMode) { return `${championId}:${position}:${mode}` }
 function registeredPlan(championId: unknown, planId: unknown) {
   const found = planRegistry.get(String(planId))
   if (!found || found.championId !== championId || Date.now() - found.plan.fetchedAt > 15 * 60_000) throw new Error('这套方案已过期，请点更新重新获取。')
   return found
 }
+
+ipcMain.handle('rift:coach-save', async (event, input: CoachSettingsInput) => {
+  requireMainWindow(event)
+  const settings = await coachSettings.save(input)
+  coachGeneration++
+  coach.reset()
+  syncSharedAI()
+  updateState({ coach: settings })
+  return settings
+})
+ipcMain.handle('rift:coach-models', (event, input: CoachSettingsInput) => {
+  requireMainWindow(event)
+  return coach.models(coachSettings.resolve(input, false))
+})
+ipcMain.handle('rift:coach-test', (event, input: CoachSettingsInput) => {
+  requireMainWindow(event)
+  return coach.test(coachSettings.resolve(input))
+})
+ipcMain.handle('rift:coach-cancel', (event) => { requireMainWindow(event); coachGeneration++; coach.cancel() })
+ipcMain.handle('rift:coach-analyze', async (event, input: CoachRequest) => {
+  requireMainWindow(event)
+  if (!input || !validPosition(input.position) || !validMode(input.mode) ||
+    (input.championId !== null && !data.byId(input.championId)) ||
+    (input.opponentId !== undefined && (!Number.isSafeInteger(input.opponentId) || !data.byKey(input.opponentId)))) throw new Error('请先选择有效的英雄、分路与对位。')
+  const settings = coachSettings.current
+  if (!settings.apiKey || !settings.model) throw new Error('请先在偏好设置中配置 AI 教练。')
+  const generation = ++coachGeneration
+  const snapshot = () => coachDraft(input, { ...state.client, patch: data.getPatch() }, data.getChampions())
+  const draft = snapshot()
+  const evidence = await coachEvidence.get(draft)
+  if (generation !== coachGeneration || coachDraftKey(draft) !== coachDraftKey(snapshot())) throw new Error('阵容已变化，请基于最新选人重新分析。')
+  const analysis = await coach.analyze(settings, draft, data.getChampions(), evidence)
+  if (generation !== coachGeneration || coachDraftKey(draft) !== coachDraftKey(snapshot())) throw new Error('阵容已变化，请基于最新选人重新分析。')
+  return analysis
+})
 
 ipcMain.handle('rift:get-state', () => state)
 ipcMain.handle('rift:get-champions', () => data.getChampions())
@@ -344,14 +444,17 @@ ipcMain.handle('rift:apply-config', async (_event, input) => {
   try {
     if (!configurationReady) throw new Error('本地快照尚未就绪，请查看偏好设置中的状态。')
     const { championId, plan } = registeredPlan(input?.championId, input?.planId)
-    updateState({ lastConfig: { ok: false, busy: true, message: plan.mode === 'aram-mayhem' ? '正在同步装备参考方案…' : '正在同步符文与装备方案…', at: Date.now() } })
+    const target = { championId: data.byId(championId)!.key, position: plan.position, mode: plan.mode, sessionId: state.client.sessionId, planId: plan.id }
+    updateState({ lastConfig: { ok: false, busy: true, target, message: plan.mode === 'aram-mayhem' ? '正在同步装备参考方案…' : '正在同步符文、召唤师技能与装备方案…', at: Date.now() } })
     const result = await applyPlan(championId, plan, () => operation === token)
-    lastAutoKey = currentAutoKey
-    updateState({ lastConfig: { ...result, at: Date.now() } })
+    if (operation === token) {
+      lastAutoKey = currentAutoKey
+      updateState({ lastConfig: { ...result, target, at: Date.now() } })
+    }
     return result
   } catch (error) {
     const result = { ok: false, message: messageOf(error) }
-    updateState({ lastConfig: { ...result, at: Date.now() } })
+    if (operation === token) updateState({ lastConfig: { ...result, target: state.lastConfig?.target, at: Date.now() } })
     return result
   } finally { if (configurationReady) updateConfigurationState() }
 })
@@ -383,57 +486,146 @@ ipcMain.handle('rift:keep-current-config', async () => {
   } catch (error) { return { ok: false, message: messageOf(error) } }
   finally { updateConfigurationState() }
 })
-ipcMain.handle('rift:set-auto-config', async (_event, enabled: unknown) => {
-  if (typeof enabled !== 'boolean') return
-  preferences.autoConfig = enabled
-  operation++
-  if (autoTimer) clearTimeout(autoTimer)
-  updateState({ autoConfig: enabled, ...(state.lastConfig?.busy ? { lastConfig: { ok: false, message: '待执行的自动配置已取消。', at: Date.now() } } : {}) })
-  await persistPreferences()
-  const client = state.client
-  const champion = client.championId ? data.byKey(client.championId) : undefined
-  const position = client.position || (champion ? preferences.positions[champion.id] : null) || (client.mode === 'aram' || client.mode === 'aram-mayhem' ? 'mid' : null)
-  if (enabled && currentAutoKey && champion && position && validMode(client.mode)) scheduleAutoConfig(currentAutoKey, champion.key, position, client.mode)
-})
-ipcMain.handle('rift:set-include-spells', async (_event, enabled: unknown) => {
-  if (typeof enabled !== 'boolean') return
-  preferences.includeSpells = enabled
-  updateState({ includeSpells: enabled })
-  await persistPreferences()
-})
 ipcMain.handle('rift:set-dock', async (_event, enabled: unknown) => {
   if (typeof enabled !== 'boolean') return
   preferences.dock = enabled
-  dock.setEnabled(enabled)
+  dock.setEnabled(enabled && state.client.connected)
   updateState({ dock: enabled })
   await persistPreferences()
 })
-ipcMain.handle('rift:jungle-enabled', async (_event, enabled: unknown) => {
-  if (typeof enabled !== 'boolean') return
-  preferences.jungleEnabled = enabled
-  jungle.configure(enabled, preferences.jungleRules)
-  jungle.updateClient(state.client)
+ipcMain.handle('rift:native-jungle-enabled', async (_event, enabled: unknown) => {
+  if (typeof enabled !== 'boolean') throw new Error('无效的小地图计时偏好。')
+  preferences.nativeJungleEnabled = enabled
+  nativeJungle.configure(enabled)
+  nativeJungle.updateClient(state.client)
   await persistPreferences()
 })
-ipcMain.handle('rift:jungle-rules', async (_event, rules: unknown) => {
-  if (!validJungleRules(rules)) throw new Error('刷新间隔需为 30–1200 秒的整数。')
-  preferences.jungleRules = { ...rules }
-  jungle.configure(preferences.jungleEnabled, preferences.jungleRules)
+ipcMain.handle('rift:native-jungle-check', async () => {
+  await refreshClientState()
+  return nativeJungle.refresh()
+})
+ipcMain.handle('rift:combat-preferences', async (event, value: unknown) => {
+  requireMainWindow(event)
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('无效的战斗语音偏好。')
+  preferences.combat = combatPreferences(value, preferences.combat)
+  combat.configure(preferences.combat)
   await persistPreferences()
 })
-ipcMain.handle('rift:jungle-mark', (event, input) => {
-  if (event.sender !== jungleOverlay?.window?.webContents) throw new Error('请通过本局计时悬浮窗标记。')
-  jungle.mark(input?.gameId, input?.id, input?.clear === true)
+ipcMain.handle('rift:combat-preview', (event, category: unknown) => {
+  requireMainWindow(event)
+  if (category !== 'praise' && category !== 'taunt') throw new Error('无效的语音试听类型。')
+  return combat.preview(category)
 })
-ipcMain.handle('rift:jungle-layout', (event, input) => {
-  if (event.sender === jungleOverlay?.window?.webContents && typeof input?.collapsed === 'boolean' && typeof input?.camps === 'boolean') jungleOverlay.layout(input.collapsed, input.camps)
+ipcMain.handle('rift:combat-stop-preview', (event) => { requireMainWindow(event); combat.stopPreview() })
+ipcMain.handle('rift:combat-ai-settings', async (event, value: unknown) => {
+  requireMainWindow(event)
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('无效的 OpenAI 设置。')
+  const input = value as { baseUrl?: unknown; apiKey?: unknown; clearApiKey?: unknown; model?: unknown; prompt?: unknown }
+  // Compatibility bridge: all edits still go to the single encrypted connection store.
+  const settings = await coachSettings.save({ ...coachSettings.publicSettings,
+    ...(input.baseUrl !== undefined ? { baseUrl: input.baseUrl as string } : {}),
+    ...(input.model !== undefined ? { model: input.model as string } : {}),
+    ...(input.apiKey !== undefined ? { apiKey: input.apiKey as string } : {}),
+    ...(input.prompt !== undefined ? { combatPrompt: input.prompt as string } : {}), clearApiKey: input.clearApiKey === true })
+  coachGeneration++; coach.reset(); syncSharedAI(); updateState({ coach: settings })
 })
-ipcMain.handle('rift:jungle-interact', () => jungleOverlay?.toggleInteraction(true))
-ipcMain.handle('rift:jungle-hide', (event) => { if (event.sender === jungleOverlay?.window?.webContents) jungleOverlay.hide() })
+
+function syncSharedAI() {
+  const next = sharedCombatConnection(coachSettings)
+  combatAI.configure(next.apiKey, next.model, next.prompt, next.baseUrl)
+  combat.updateAI()
+}
 ipcMain.handle('rift:open-source', async (_event, source: string) => {
   if (source === 'updates') { await shell.openExternal('https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/latest'); return }
   const urls: Record<string, string> = { opgg: 'https://op.gg/lol/champions', ddragon: 'https://developer.riotgames.com/docs/lol#data-dragon', github: 'https://github.com/LeagueAkari/LeagueAkari' }
   if (Object.hasOwn(urls, source)) await shell.openExternal(urls[source])
+})
+function requireMainWindow(event: Electron.IpcMainInvokeEvent) {
+  if (!mainWindow || event.sender !== mainWindow.webContents || quitting) throw new Error('请在助手主窗口中操作。')
+}
+async function scanGameClient(force = false) {
+  const next = await launcher.scan(preferences.launcherPath, force)
+  if (next.selectedPath && next.selectedPath !== preferences.launcherPath) {
+    preferences.launcherPath = next.selectedPath
+    await persistPreferences()
+  }
+  return next
+}
+ipcMain.handle('rift:scan-game-client', (event) => {
+  requireMainWindow(event)
+  if (tclsLogin?.isBusy) throw new Error('请先停止自动填写，再重新查找客户端。')
+  return scanGameClient(true)
+})
+ipcMain.handle('rift:choose-game-client', async (event) => {
+  requireMainWindow(event)
+  if (process.platform !== 'win32') throw new Error('请选择 Windows 设备上的英雄联盟客户端。')
+  if (launcher.isBusy || tclsLogin?.isBusy) throw new Error('正在查找、启动客户端或自动填写，请稍后。')
+  const result = await dialog.showOpenDialog(mainWindow!, { title: '选择英雄联盟客户端（不经过 WeGame）',
+    properties: ['openFile'], filters: [{ name: '英雄联盟官方启动程序', extensions: ['exe'] }] })
+  if (result.canceled || !result.filePaths[0]) return
+  preferences.launcherPath = await launcher.select(result.filePaths[0])
+  await persistPreferences()
+})
+ipcMain.handle('rift:launch-game-client', async (event, options?: { manualLogin?: boolean }) => {
+  requireMainWindow(event)
+  if (options !== undefined && (!options || typeof options !== 'object' || Array.isArray(options) || (options.manualLogin !== undefined && typeof options.manualLogin !== 'boolean'))) throw new Error('无效的启动选项。')
+  const manualLogin = options?.manualLogin === true
+  if (state.update?.status === 'installing') return { ok: false, message: '助手正在安装更新，请重启后再启动游戏。' }
+  if (tclsLogin?.isBusy) return { ok: false, message: '已有自动登录任务，请等待或先停止自动填写。' }
+  return launcher.launch(async (installation) => {
+    if (!tclsLogin) return { ok: false, message: '登录设置尚未就绪，请稍后重试。' }
+    if (!manualLogin) {
+      const login = tclsLogin.validateForLaunch(installation)
+      if (!login.ok) return login
+    }
+    if (!performance) return { ok: false, message: '性能检查尚未就绪，请稍后重试。' }
+    if (preferences.optimizeBeforeLaunch) {
+      const result = await performance.prepare()
+      return quitting ? { ok: false, message: '助手正在退出，已取消客户端启动。' } : result
+    }
+    return quitting ? { ok: false, message: '助手正在退出，已取消客户端启动。' } : { ok: true, message: '启动前优化已关闭。' }
+  }, async () => { await performance?.restore('客户端未能启动，已恢复原性能设置。') }, {
+    tencentOnly: !manualLogin && tclsLogin?.state.enabled,
+    afterLaunch: (installation) => { if (!quitting && !manualLogin) tclsLogin?.start(installation) },
+  })
+})
+ipcMain.handle('rift:tcls-login-save', async (event, input: unknown) => {
+  requireMainWindow(event)
+  if (!tclsLogin) return { ok: false, message: '登录设置尚未就绪。' }
+  if (launcher.isBusy || performance?.isBusy) return { ok: false, message: '请等待启动或性能操作完成后再修改登录设置。' }
+  try { await tclsLogin.save(input); return { ok: true, message: tclsLogin.state.message } }
+  catch (error) { return { ok: false, message: error instanceof Error ? error.message : '登录设置保存失败。' } }
+})
+ipcMain.handle('rift:tcls-login-clear', async (event) => {
+  requireMainWindow(event)
+  if (!tclsLogin) return { ok: false, message: '登录设置尚未就绪。' }
+  if (launcher.isBusy || performance?.isBusy) return { ok: false, message: '请等待启动或性能操作完成后再清除账号。' }
+  try { await tclsLogin.clear(); return { ok: true, message: tclsLogin.state.message } }
+  catch { return { ok: false, message: '账号清除失败，请重试。' } }
+})
+ipcMain.handle('rift:tcls-login-cancel', async (event) => {
+  requireMainWindow(event)
+  return tclsLogin?.cancel() || { ok: false, message: '登录设置尚未就绪。' }
+})
+ipcMain.handle('rift:select-game-client', async (event, path: unknown) => {
+  requireMainWindow(event)
+  if (tclsLogin?.isBusy) throw new Error('请先停止自动填写，再选择客户端。')
+  if (typeof path !== 'string' || !launcher.state.installations.some((entry) => entry.path === path)) throw new Error('请从已找到的英雄联盟客户端中选择。')
+  preferences.launcherPath = await launcher.select(path)
+  await persistPreferences()
+})
+ipcMain.handle('rift:optimize-before-launch', async (event, enabled: unknown) => {
+  requireMainWindow(event)
+  if (typeof enabled !== 'boolean') throw new Error('无效的性能优化偏好。')
+  if (launcher.isBusy || performance?.isBusy || tclsLogin?.isBusy) throw new Error('正在启动、优化或自动填写，请完成后再切换。')
+  preferences.optimizeBeforeLaunch = enabled
+  await performance?.setEnabled(enabled)
+  await persistPreferences()
+})
+ipcMain.handle('rift:restore-performance', async (event) => {
+  requireMainWindow(event)
+  if (launcher.isBusy || performance?.isBusy || tclsLogin?.isBusy) return { ok: false, message: '请等待启动或优化完成，或停止自动填写后再恢复。' }
+  return performance?.restore() || { ok: false, message: '性能设置尚未就绪。' }
 })
 ipcMain.handle('rift:reconnect', () => refreshClientState())
 ipcMain.handle('rift:check-update', () => updates?.check())
@@ -447,17 +639,35 @@ else {
   app.on('second-instance', showAssistant)
   app.whenReady().then(async () => {
     await loadPreferences()
+    tclsLogin = new TclsLoginService(new TclsAccountStore(join(app.getPath('userData'), 'tcls-login.json'), safeStorage), new WindowsTclsLoginRuntime(), (next) => updateState({ tclsLogin: next }))
+    await tclsLogin.initialize()
+    coachSettings = new CoachSettingsStore(join(app.getPath('userData'), 'ai-coach.json'), safeStorage)
+    await coachSettings.load()
+    try {
+      await migrateSharedAI(coachSettings, preferences.combatAI ? { ...preferences.combatAI, apiKey: combatApiKey } : undefined)
+      if (preferences.combatAI && (!preferences.combatAI.encryptedApiKey || combatApiKey)) {
+        delete preferences.combatAI
+        await persistPreferences()
+      }
+    } catch { /* Keep legacy credentials on disk if migration cannot finish. */ }
+    combatApiKey = ''
+    syncSharedAI()
+    updateState({ coach: coachSettings.publicSettings })
+    performance = new PerformanceService((next) => updateState({ performance: next }), new WindowsPerformanceRuntime(), new FilePerformanceStore(join(app.getPath('userData'), 'performance.json')))
+    await performance.initialize(preferences.optimizeBeforeLaunch)
+    updateState({ launcher: launcher.state })
     await data.initialize()
     configuration = new ConfigurationManager(lcu.request, new FileJournal(join(app.getPath('userData'), 'configuration.json')))
     try { await configuration.initialize(); configurationReady = true; updateConfigurationState() }
     catch (error) { updateState({ recoveryNeeded: true, lastConfig: { ok: false, message: messageOf(error), at: Date.now() } }) }
     installSecurityHeaders()
-    jungleOverlay = new JungleOverlay(() => updateState({ jungle: { ...jungle.state, interactive: jungleOverlay?.interactive, shortcutAvailable: jungleOverlay?.shortcutAvailable } }))
-    jungle.configure(preferences.jungleEnabled, preferences.jungleRules)
-    jungleOverlay.registerShortcut()
+    nativeJungle.configure(preferences.nativeJungleEnabled)
+    combat.configure(preferences.combat)
     updates = new UpdateService((update) => updateState({ update }), async () => {
       await refreshClientState()
       if (configuration.isBusy || state.lastConfig?.busy || postGame.isBusy) throw new Error('正在写入配置或提交点赞，请完成后再安装更新。')
+      if (nativeJungle.isBusy) throw new Error('正在配置小地图计时，请完成后再安装更新。')
+      if (launcher.isBusy || performance?.isBusy || tclsLogin?.isBusy) throw new Error('正在启动客户端、优化性能或自动填写登录，请完成后再安装更新。')
       if (configuration.recoveryNeeded) throw new Error('请先恢复或保留当前配置，再安装更新。')
       if (gameWindow.suppressed) throw new Error('正在加载或进行对局，请返回大厅后再安装。')
       if (state.client.connected) {
@@ -465,11 +675,16 @@ else {
         if (!['None', 'Lobby', 'EndOfGame'].includes(phase)) throw new Error('请结束选人、匹配或对局，返回大厅后再安装。')
       }
       await preferencesWrites
+      if (performance?.state.canRestore || performance?.state.active) {
+        const restored = await performance.restore()
+        if (!restored.ok) throw new Error(restored.message)
+      }
       operation++
       if (autoTimer) clearTimeout(autoTimer)
     })
     makeTray()
     makeWindow()
+    void scanGameClient().catch(() => undefined)
     if (app.isPackaged && process.platform === 'win32') updateCheckTimer = setTimeout(() => void updates?.check(), 7_000)
     const refreshData = () => void data.refresh().then(() => updateState({ client: { ...state.client, patch: data.getPatch() } })).catch(() => undefined)
     refreshData()
@@ -477,15 +692,26 @@ else {
     startPolling()
   }).catch((error) => { console.error('Startup failed:', messageOf(error)); app.quit() })
 }
-app.on('before-quit', () => {
+app.on('before-quit', (event) => {
   quitting = true
+  tclsLogin?.dispose()
+  coachGeneration++
+  coach.cancel()
+  combat.dispose()
+  if (!performanceExitReady && performance && (performance.state.active || performance.state.canRestore || performance.isBusy)) {
+    event.preventDefault()
+    if (!performanceExitPending) {
+      performanceExitPending = true
+      void performance.shutdown().finally(() => { performanceExitReady = true; app.quit() })
+    }
+    return
+  }
   if (pollTimer) clearTimeout(pollTimer)
   if (refreshTimer) clearInterval(refreshTimer)
   if (autoTimer) clearTimeout(autoTimer)
   if (updateCheckTimer) clearTimeout(updateCheckTimer)
   operation++
-  jungle.dispose()
-  jungleOverlay?.destroy()
+  nativeJungle.dispose()
   dock.stop()
   tray?.destroy()
   tray = undefined

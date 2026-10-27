@@ -4,7 +4,7 @@ import { configurationStatus } from './configuration-status'
 
 const state: AppState = {
   client: { connected: true, phase: 'ChampSelect', championId: 103, championLocked: true, position: 'mid', mode: 'ranked' },
-  autoConfig: true, dock: true, includeSpells: false, canRestore: false, recoveryNeeded: false,
+  dock: true, canRestore: false, recoveryNeeded: false,
 }
 const get = (changes: Partial<AppState> = {}, rest = {}) => configurationStatus({
   state: { ...state, ...changes }, championKey: 103, mode: 'ranked', hasPlan: true, loading: false, busy: false, ...rest,
@@ -29,10 +29,33 @@ describe('configuration availability', () => {
     expect(get({ client: { ...state.client, phase } }).canApply).toBe(false)
   })
   it('enables the matching plan and describes only the actual write targets', () => {
-    expect(get()).toMatchObject({ canApply: true, caption: '自动配置已开启' })
-    expect(get({ autoConfig: false, includeSpells: true }).hint).toContain('召唤师技能')
-    const mayhem = get({ client: { ...state.client, mode: 'aram-mayhem' }, includeSpells: true }, { mode: 'aram-mayhem' })
+    expect(get()).toMatchObject({ canApply: true, caption: '本局将自动配置' })
+    expect(get().hint).toContain('召唤师技能')
+    const mayhem = get({ client: { ...state.client, mode: 'aram-mayhem' } }, { mode: 'aram-mayhem' })
     expect(mayhem.canApply).toBe(true)
     expect(mayhem.hint).not.toMatch(/符文|召唤师技能/)
+  })
+  it('requires a confirmed classic lane and accepts a saved lane for unassigned games', () => {
+    const client = { ...state.client, position: null }
+    expect(get({ client }).caption).toBe('选择本局分路')
+    expect(get({ client: { ...client, loadoutPosition: 'top' } }, { position: 'top' }).canApply).toBe(true)
+    expect(get({}, { position: 'top' }).caption).toBe('正在浏览其他分路')
+  })
+  it('labels only the plan verified for the current game as applied', () => {
+    const lastConfig = { ok: true, message: '已同步', at: 1, target: { championId: 103, mode: 'ranked' as const, position: 'mid' as const, sessionId: 'game-1', planId: 'plan-1' } }
+    const client = { ...state.client, sessionId: 'game-1' }
+    expect(get({ client, lastConfig }, { position: 'mid', planId: 'plan-1' })).toMatchObject({ applied: true, caption: '本局配置已就绪', buttonLabel: '重新应用' })
+    expect(get({ client, lastConfig }, { position: 'mid', planId: 'plan-2' })).toMatchObject({ applied: false, caption: '已选择其他方案' })
+    expect(get({ client: { ...client, sessionId: 'game-2' }, lastConfig }, { planId: 'plan-1' }).applied).toBe(false)
+    expect(get({ client, lastConfig: { ...lastConfig, target: { ...lastConfig.target, championId: 157 } } }, { planId: 'plan-1' }).applied).toBe(false)
+  })
+  it('keeps real configuration failures actionable without carrying them into another game', () => {
+    const lastConfig = { ok: false, message: '客户端没有保留预期的召唤师技能。', at: 1, target: { championId: 103, mode: 'ranked' as const, position: 'mid' as const, sessionId: 'game-1' } }
+    expect(get({ client: { ...state.client, sessionId: 'game-1' }, lastConfig })).toMatchObject({ canApply: true, tone: 'warning', hint: lastConfig.message, buttonLabel: '重试配置' })
+    expect(get({ client: { ...state.client, sessionId: 'game-2' }, lastConfig }).tone).toBe('ready')
+  })
+  it('describes undo without implying another automatic write is pending', () => {
+    expect(get({ lastConfig: { ok: false, busy: true, message: '正在恢复原配置…', at: 1 } }, { busy: true })).toMatchObject({ caption: '正在恢复原配置…', canApply: false })
+    expect(get({ lastConfig: { ok: true, message: '已恢复', at: 2 } })).toMatchObject({ caption: '已恢复原配置', hint: '需要时可重新应用本局方案', applied: false })
   })
 })

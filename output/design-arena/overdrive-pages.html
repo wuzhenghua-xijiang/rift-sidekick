@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>街头暴走 · 全页设计板</title>
+  <link rel="icon" href="data:,">
+  <style>
+    @font-face{font-family:Barlow;src:url('assets/barlow-condensed-latin-800-normal.woff2') format('woff2');font-weight:800;font-display:swap}
+    *{box-sizing:border-box}body{margin:0;background:#161618;color:#efede6;font-family:'PingFang SC','Microsoft YaHei UI',sans-serif}a{color:inherit;text-decoration:none}
+    header{max-width:1872px;margin:auto;padding:30px 40px 25px;border-bottom:1px solid #46464b;display:flex;align-items:center;justify-content:space-between;gap:24px}header>div{display:flex;align-items:center;gap:20px}header b{font:800 51px/.9 Barlow;color:#f95a2c;transform:skew(-6deg)}h1{font-size:29px;letter-spacing:-.03em;margin:0;font-weight:800}header p{font-size:12px;line-height:1.8;color:#c5beaf;margin:9px 0 0}header>a{border:1px solid #69645a;padding:11px 15px;font-size:12px}
+    main{max-width:1872px;margin:auto;padding:28px 40px 32px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:27px 24px}article{min-width:0}article>div{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}h2{font-size:15px;font-weight:700;margin:0}article span{font:800 15px Barlow;color:#ff8055;letter-spacing:.035em}article img{display:block;width:100%;height:auto;aspect-ratio:430/720;object-fit:contain;object-position:top;border:1px solid #4a4640}article a:hover img{outline:2px solid #f95a2c;outline-offset:3px}footer{max-width:1872px;margin:auto;border-top:1px solid #46464b;padding:18px 40px 24px;display:flex;justify-content:space-between;gap:20px;font-size:11px;color:#b7af9f}
+    @media(max-width:1400px){main{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:1050px){main{grid-template-columns:repeat(2,minmax(0,1fr))}header{align-items:flex-start}header>a{flex:none}}@media(max-width:640px){header{padding:24px 18px;flex-wrap:wrap}header b{font-size:43px}h1{font-size:25px}main{grid-template-columns:1fr;padding:24px 18px}footer{padding:18px;flex-direction:column}}
+    body.export{width:1872px}body.export main{grid-template-columns:repeat(4,430px)}body.export header>a{display:none}body.minimum article img{aspect-ratio:390/560}body.minimum.export{width:1712px}body.minimum.export main{grid-template-columns:repeat(4,390px)}
+  </style>
+</head>
+<body>
+  <header><div><b>R/</b><div><h1>街头暴走 · 全页设计</h1><p id="summary">430px 吸附小窗 · 纸白 / 墨黑 / 燃橙 · 点击页面进入交互预览</p></div></div><a id="other-size" href="?size=minimum">查看 390px 小窗</a></header>
+  <main id="pages"></main>
+  <footer><span>登录页独立设计 · 小窗最小宽 390px · OpenAI 统一入口</span><span>本地设计预览 · 所有数据与状态均为示意</span></footer>
+  <script>
+    const q=new URLSearchParams(location.search),minimum=q.get('size')==='minimum';
+    if(q.has('export'))document.body.classList.add('export');
+    if(minimum){document.body.classList.add('minimum');document.querySelector('#summary').textContent='390px 最小小窗 · 纸白 / 墨黑 / 燃橙 · 点击页面进入交互预览';document.querySelector('#other-size').href='?';document.querySelector('#other-size').textContent='查看 430px 小窗';}
+    const pages=[['ready','备战','LOADOUT'],['matchup','对位','MATCHUP'],['coach','AI 教练','DRAFT'],['history','战绩','MATCH HISTORY'],['tft','云顶','DEPLOYMENT'],['champions','英雄图鉴','CHAMPIONS'],['voice','局内语音','BROADCAST'],['settings','设置','CONTROL']];
+    document.querySelector('#pages').innerHTML=pages.map(([id,name,en])=>`<article><div><h2>${name}</h2><span>${en}/</span></div><a href="./?concept=overdrive&view=app&presentation=solo&section=${id}&rev=full${minimum?'&size=minimum':''}"><img src="../playwright/overdrive-all-pages/${id}${minimum?'-minimum':''}.png" width="${minimum?390:430}" height="${minimum?560:720}" alt="${name}页面设计" loading="eager"></a></article>`).join('');
+  </script>
+</body>
+</html>

@@ -89,16 +89,19 @@ export class ConfigurationManager {
       ])
       const summonerId = Number(summoner.summonerId || summoner.id)
       if (!Number.isSafeInteger(summonerId) || summonerId <= 0) throw new Error('无法读取当前账号，请重新连接客户端。')
-      const beforePage = pages.find((page) => page.id === this.journal.managedPages?.[summonerId] && page.isDeletable && page.isEditable !== false && !page.isTemporary)
+      let beforePage = pages.find((page) => page.id === this.journal.managedPages?.[summonerId] && page.isDeletable && page.isEditable !== false && !page.isTemporary)
       if (runes && !beforePage) {
         const inventory = await this.request<{ canAddCustomPage?: boolean }>('GET', '/lol-perks/v1/inventory')
-        if (inventory.canAddCustomPage !== true) throw new Error('没有空闲符文页。请在客户端腾出一个空位，助手不会覆盖你的其他符文页。')
+        if (inventory.canAddCustomPage !== true) {
+          beforePage = pages.find((page) => (page.current || page.isActive) && isEditablePerkPage(page)) || pages.find(isEditablePerkPage)
+          if (!beforePage) throw new Error('没有可编辑的符文页。请在客户端保留一个可编辑页面后重试。')
+        }
       }
       const beforeItems = await this.request<ItemSetDocument>('GET', itemPath(summonerId))
       if (!Array.isArray(beforeItems.itemSets)) throw new Error('客户端的装备方案接口暂不可用。')
       const local = selection.session.myTeam?.find((member) => member.cellId === selection.session.localPlayerCellId)
       const beforeSpells = local?.spell1Id && local.spell2Id ? { spell1Id: local.spell1Id, spell2Id: local.spell2Id } : undefined
-      if (applySpells && !beforeSpells) throw new Error('无法备份原召唤师技能。可在偏好设置关闭技能同步后重试。')
+      if (applySpells && !beforeSpells) throw new Error('暂时无法读取本局召唤师技能，请稍后重试或重新连接客户端。')
       const managedKey = `${summonerId}:${champion.key}:${plan.mode}`
       const targetItems = createItemSet(champion, plan, this.journal.managedItems[managedKey])
       snapshot = {
@@ -108,7 +111,7 @@ export class ConfigurationManager {
         beforeItems, beforeSpells,
         targetPage: runes ? {
           ...(beforePage ? { id: beforePage.id } : {}),
-          name: `Rift · ${champion.name} · ${randomUUID().slice(0, 6)}`.slice(0, 48),
+          name: runePageName(champion, plan),
           isEditable: true,
           primaryStyleId: runes.primaryStyleId,
           subStyleId: runes.secondaryStyleId,
@@ -334,6 +337,12 @@ export class ConfigurationManager {
 }
 
 function itemPath(id: number) { return `/lol-item-sets/v1/item-sets/${id}/sets` }
+function isEditablePerkPage(page: PerkPage) {
+  return page.isEditable !== false && page.isDeletable !== false && !page.isTemporary
+}
+function runePageName(champion: Champion, plan: BuildPlan) {
+  return `Rift · ${champion.name} · ${plan.title || '推荐符文'}`.slice(0, 48)
+}
 function same(a: unknown, b: unknown): boolean { return stable(a) === stable(b) }
 function stable(value: unknown): string {
   if (value === undefined) return 'undefined'

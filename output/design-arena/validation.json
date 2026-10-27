@@ -1,0 +1,18 @@
+{
+  "scope": "local design concepts only",
+  "concepts": 5,
+  "screens": 10,
+  "screenSize": [1440, 880],
+  "brokenImages": 0,
+  "settingsEntrancesPerScreen": 1,
+  "primaryActionsWithinViewport": true,
+  "championsFooterBottom": 805.28125,
+  "statusBarTop": 846,
+  "smoke": ["login transition", "plan selection", "mode switching", "mayhem hides ordinary runes and synthetic winrates", "six feature views", "single OpenAI form", "Escape closes settings"],
+  "mobileGallery": {"viewportWidth": 390, "scrollWidth": 390},
+  "pageErrors": [],
+  "review": "ship at five-concept prototype scope",
+  "settledCapture": {"settingsDrawerOpacity": 1, "settingsDrawerRight": 1440, "mobileSingleViewport": [390, 2380], "galleryHeaders": 1, "galleryCards": 5},
+  "assetOriginScan": {"rasters": 42, "missing": 0},
+  "staticDetector": {"findings": [], "limitation": "HTML parsers unavailable; regex fallback, no computed contrast evaluation"}
+}

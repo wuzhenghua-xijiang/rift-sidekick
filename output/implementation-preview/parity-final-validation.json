@@ -1,0 +1,20 @@
+{
+  "errors": [],
+  "pages": [
+    "备战",
+    "对位",
+    "教练",
+    "战绩",
+    "云顶",
+    "图鉴",
+    "语音",
+    "设置",
+    "登录",
+    "结算"
+  ],
+  "checks": [
+    "history navigation restores current debrief",
+    "non-ranked matchup offers return action",
+    "all comparison images load"
+  ]
+}

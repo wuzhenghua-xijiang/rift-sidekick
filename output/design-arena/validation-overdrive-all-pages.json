@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-27",
+  "scope": "Complete OVERDRIVE secondary-page design in the local prototype",
+  "browser": "Microsoft Edge via Playwright CLI",
+  "sources": ["overdrive-pages.js", "overdrive-pages.css", "overdrive-v2.js", "app.js", "index.html", "overdrive-pages.html"],
+  "syntax": {"overdrive-pages.js": "pass", "overdrive-v2.js": "pass", "app.js": "pass", "design.json": "pass"},
+  "views": ["ready", "matchup", "coach", "history", "tft", "champions", "voice", "settings"],
+  "settingsTabs": ["openai", "voice", "game"],
+  "layouts": [
+    {"window": [430, 720], "mainClientWidth": 383, "mainScrollWidth": 383, "footerBottom": 720, "allEightViews": "pass", "settingsSubtabs": "pass"},
+    {"window": [390, 560], "mainClientWidth": 343, "mainScrollWidth": 343, "footerBottom": 560, "allEightViews": "pass", "settingsSubtabs": "pass"}
+  ],
+  "interactions": {
+    "matchupTabs": "pass; combo shows E, Q, A, R",
+    "coachTabsAndSelection": "pass; Ban tab changes recommendations; selected recommendation reports aria-pressed=true",
+    "coachGenerationFeedback": "pass; busy state returns to enabled without AI requests",
+    "matchExpansion": "pass; one match detail opens",
+    "tftSelection": "pass; selecting Thresh updates the core kit label",
+    "librarySearch": "pass; jinx yields one result",
+    "libraryEmptyState": "pass; combining jinx and upper-lane filter shows empty state",
+    "libraryClear": "pass; restores 15 cards",
+    "libraryAlias": "pass; searching 瞎子 selects 李青",
+    "voiceSwitchAndEvent": "pass; switch aria-checked and selected-event aria-pressed update",
+    "mutedPreview": {"initialVolume": 0, "audioOrVideoElements": 0},
+    "oneOpenAIKey": "pass at both dock widths and in pre-login settings",
+    "promptTabs": "pass at both widths",
+    "gamePreferenceSwitch": "pass at both widths",
+    "fixedSaveAction": "visible at both widths; demo save returns to ready",
+    "settingsActiveTab": "pass after transition completion; voice and game use ink selected background",
+    "crossPageFeedback": "pass; prior coach feedback is cleared on navigation",
+    "loginSettingsEscape": "pass; dialog closes"
+  },
+  "reviewBoards": [
+    {"viewportWidth": 1872, "bodyScrollWidth": 1872, "screens": 8, "brokenImages": 0},
+    {"viewportWidth": 1712, "bodyScrollWidth": 1712, "screens": 8, "brokenImages": 0},
+    {"mobileViewportWidth": 390, "bodyScrollWidth": 390}
+  ],
+  "brokenImagesAcrossCapturedViews": 0,
+  "uncaughtPageErrors": [],
+  "failedHttpResponses": [],
+  "console": "Chromium informational password-field-outside-form messages for the demo API Key; no runtime exception.",
+  "screenshots": "../playwright/overdrive-all-pages/",
+  "limits": [
+    "All data, recommendations and connection states are illustrative.",
+    "No game, AI, audio or storage service is invoked; input is not saved or sent.",
+    "Production React and Electron files were not changed by this refinement.",
+    "Browser checks do not replace native Windows docking acceptance or formal accessibility certification."
+  ]
+}

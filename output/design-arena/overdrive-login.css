@@ -1,0 +1,38 @@
+/* Chosen direction: official Arcane skin poster + a complete ink/orange login desk. */
+.od-login-remix .od-login-chrome{background:#1b1b1c;color:#efede6;border-color:#47433a}
+.od-login-remix .od-login-chrome .brand-monogram{color:#f95a2c}.od-login-remix .od-login-chrome>span,.od-login-remix .od-login-chrome>div:last-child>span{color:#c4bbab}
+.od-login-remix .od-login-chrome button:hover{background:#34312c;color:#ff8055}
+.od-login-remix .od-login-body{grid-template-columns:616px 1fr}
+.od-login-remix .od-login-poster>h1{top:29px;left:29px;font-size:108px;letter-spacing:-.025em}
+.od-login-remix .od-poster-image{left:-25px;right:-35px;top:195px;height:432px;border-width:5px;transform:rotate(-5deg)}
+.od-login-remix .od-poster-image>img{object-position:49% 37%;filter:none}
+.od-login-remix .od-poster-tape{left:27px;bottom:91px;transform:rotate(-5deg);padding:12px 16px;font-size:16px;background:#1b1b1c;color:#efede6;box-shadow:4px 4px 0 #efede6}
+.od-login-remix .od-poster-tape>svg{color:#ff8055}
+.od-login-remix .od-poster-base{bottom:24px;left:29px;right:27px}
+.od-login-remix .od-poster-base>span{font:10px/1.7 'PingFang SC','Microsoft YaHei UI',sans-serif;letter-spacing:0}.od-login-remix .od-poster-base>span strong{font-size:12px;font-weight:800}.od-login-remix .od-poster-base>b{font-size:43px}
+.od-login-remix .od-login-panel{padding:30px 39px 0;background:#1b1b1c;color:#efede6;position:relative;isolation:isolate;border-left:1px solid #f95a2c}
+.od-login-remix .od-login-title{position:relative;display:flex;align-items:center;justify-content:space-between;min-height:129px;border-bottom:2px solid #f95a2c;padding-bottom:20px}
+.od-login-remix .od-login-title h2{font-size:48px;line-height:1.1;font-weight:900;letter-spacing:-.04em;position:relative;z-index:1}
+.od-login-remix .od-login-title h2>span{display:block;color:#ff8055;margin-top:4px}.od-login-remix .od-login-title h2 i{font:900 70px/.7 Barlow;font-style:normal;color:#efede6;display:inline-block;transform:rotate(12deg);margin-left:7px;vertical-align:-4px}
+.od-login-remix .od-login-title>.od-login-bolt{padding:0;display:grid;place-items:center;width:67px;height:79px;background:#f95a2c;color:#1b1b1c;transform:rotate(7deg);clip-path:polygon(0 0,100% 0,100% 86%,82% 100%,0 100%);margin-right:5px}
+.od-login-remix .od-login-form{margin-top:20px}
+.od-login-remix .od-login-form>label{font-size:11px;font-weight:600;color:#e1d8c8;margin-top:16px}
+.od-login-remix .od-login-form .login-input{height:49px;background:#efede6;border:0;margin-top:8px;padding:0 12px;color:#1b1b1c;gap:11px;position:relative}
+.od-login-remix .od-login-form .login-input>svg{color:#8a3016}.od-login-remix .od-login-form .login-input input{font-size:13px;color:#1b1b1c;caret-color:#a33c1d;outline:none!important}
+.od-login-remix .od-login-form .login-input input::placeholder{color:#675e50}
+.od-login-remix .od-login-form .login-input:focus-within{outline:2px solid #f95a2c;outline-offset:3px}
+.od-login-remix .od-login-form .login-input button{width:26px;height:30px;display:grid;place-items:center;color:#51483b}
+.od-login-remix .od-login-form .login-options{margin:17px 0 22px}.od-login-remix .od-login-form .login-options label{color:#dbd2c1;font-size:11px;font-weight:400}
+.od-login-remix .od-login-form .login-options input{width:14px;height:14px;accent-color:#f95a2c}
+.od-login-remix .od-launch-button{min-height:61px;height:61px;width:100%;padding:0 10px 0 18px!important;gap:12px;box-shadow:4px 4px 0 #efede6;font-size:18px;font-weight:900;color:#1b1b1c!important;margin-bottom:7px}
+.od-login-remix .od-launch-button>.od-launch-icon{display:grid;place-items:center;background:#1b1b1c;color:#efede6;width:43px;height:43px;flex:none}
+.od-login-remix .od-launch-button:disabled{opacity:.65}.od-login-remix .od-launch-button:hover:not(:disabled)>.od-launch-icon{color:#ff8055}
+.od-login-remix .od-official-login{min-height:39px;height:39px;color:#e4dccd;border-color:#8c8270!important;background:transparent!important;margin-top:14px;justify-content:space-between;padding:0 14px;font-size:11px}
+.od-login-remix .od-official-login>svg{color:#ff8055}.od-login-remix .od-official-login:hover{background:#34312c!important}
+.od-login-remix .od-login-note{font-size:10px!important;color:#bfb4a0;margin-top:12px!important}
+.od-login-remix .od-game-path{border-top:1px solid #716855;padding-top:17px;margin-top:20px;gap:11px}
+.od-login-remix .od-game-path>svg{box-sizing:content-box;padding:10px;background:#f95a2c;color:#1b1b1c;width:18px;height:18px}
+.od-login-remix .od-game-path b{color:#efede6;font-size:12px}.od-login-remix .od-game-path small{color:#bfb4a0;font-size:9px;line-height:1.5}
+.od-login-remix .od-game-path button{color:#ff8055;font-size:11px}
+.od-login-remix .od-login-panel-footer{position:absolute;bottom:21px;left:39px;right:39px;border-top:0;padding:0;margin:0;color:#bfb4a0;font-size:9px}
+.od-login-remix .od-login-panel-footer>b{font:800 16px/.9 Barlow;color:#efede6;letter-spacing:.025em}.od-login-remix .od-login-panel-footer>b>span{color:#f95a2c;margin:0 2px}

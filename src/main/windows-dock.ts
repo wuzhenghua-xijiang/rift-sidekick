@@ -36,24 +36,12 @@ while ($true) {
       $value = @{ visible = ([RiftSidekickNative]::IsWindowVisible($hwnd) -and -not [RiftSidekickNative]::IsIconic($hwnd)); x = $r.Left; y = $r.Top; width = ($r.Right - $r.Left); height = ($r.Bottom - $r.Top); foreground = ($foregroundProcess -eq $p.Id -or $foregroundProcess -eq SIDEKICK_PROCESS_ID) }
     }
   }
-  $g = Get-Process -Name 'League of Legends' -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
-  $game = @{ visible = $false }
-  if ($null -ne $g) {
-    $gr = New-Object RiftSidekickNative+RECT
-    if ([RiftSidekickNative]::GetWindowRect([IntPtr]$g.MainWindowHandle, [ref]$gr)) {
-      [uint32]$fg = 0
-      [void][RiftSidekickNative]::GetWindowThreadProcessId([RiftSidekickNative]::GetForegroundWindow(), [ref]$fg)
-      $game = @{ visible = ([RiftSidekickNative]::IsWindowVisible([IntPtr]$g.MainWindowHandle) -and -not [RiftSidekickNative]::IsIconic([IntPtr]$g.MainWindowHandle)); foreground = ($fg -eq $g.Id -or $fg -eq SIDEKICK_PROCESS_ID); x = $gr.Left; y = $gr.Top; width = ($gr.Right - $gr.Left); height = ($gr.Bottom - $gr.Top) }
-    }
-  }
-  $value.game = $game
   $json = $value | ConvertTo-Json -Compress
   if ($json -ne $last) { [Console]::Out.WriteLine($json); [Console]::Out.Flush(); $last = $json }
   Start-Sleep -Milliseconds 400
 }
 `
-export interface ObservedWindow { visible: boolean; x?: number; y?: number; width?: number; height?: number; foreground?: boolean }
-interface ClientWindow extends ObservedWindow { game?: ObservedWindow }
+interface ClientWindow { visible: boolean; x?: number; y?: number; width?: number; height?: number; foreground?: boolean }
 
 export class WindowsDock {
   private helper?: ChildProcessWithoutNullStreams
@@ -64,15 +52,6 @@ export class WindowsDock {
   private lastBounds = ''
   private sawClient = false
   private suppressed = false
-  private gameObserver?: (window: ObservedWindow) => void
-  private lastGame: ObservedWindow = { visible: false }
-
-  observeGame(observer?: (window: ObservedWindow) => void) {
-    this.gameObserver = observer
-    observer?.(this.lastGame)
-    if (this.enabled || observer) this.start()
-    else this.stop()
-  }
 
   setSuppressed(value: boolean) {
     if (this.suppressed === value) return
@@ -89,7 +68,9 @@ export class WindowsDock {
     this.enabled = enabled
     if (enabled) this.start()
     else {
-      if (!this.gameObserver) this.stop()
+      this.stop()
+      this.lastBounds = ''
+      this.sawClient = false
       if (this.window && !this.window.isDestroyed()) {
         this.window.setAlwaysOnTop(false)
         if (this.hiddenByDock && !this.suppressed) this.window.show()
@@ -98,7 +79,7 @@ export class WindowsDock {
     }
   }
   start() {
-    if (process.platform !== 'win32' || this.helper || (!this.enabled && !this.gameObserver)) return
+    if (process.platform !== 'win32' || this.helper || !this.enabled) return
     const script = WINDOW_SCRIPT.replaceAll('SIDEKICK_PROCESS_ID', String(process.pid))
     this.helper = spawn('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true, stdio: 'pipe' })
     let buffer = ''
@@ -113,8 +94,8 @@ export class WindowsDock {
       }
     })
     this.helper.stderr.resume()
-    this.helper.on('error', () => { this.clearObservation(); this.scheduleRestart() })
-    this.helper.on('exit', () => { this.helper = undefined; this.clearObservation(); this.scheduleRestart() })
+    this.helper.on('error', () => { this.clearTopmost(); this.scheduleRestart() })
+    this.helper.on('exit', () => { this.helper = undefined; this.clearTopmost(); this.scheduleRestart() })
   }
   stop() {
     if (this.restartTimer) clearTimeout(this.restartTimer)
@@ -122,20 +103,16 @@ export class WindowsDock {
     const helper = this.helper
     this.helper = undefined
     if (helper) { helper.removeAllListeners(); helper.kill() }
-    this.clearObservation()
+    this.clearTopmost()
   }
-  private clearObservation() {
-    this.lastGame = { visible: false }
-    this.gameObserver?.(this.lastGame)
+  private clearTopmost() {
     if (this.window && !this.window.isDestroyed()) this.window.setAlwaysOnTop(false)
   }
   private scheduleRestart() {
-    if ((!this.enabled && !this.gameObserver) || this.restartTimer || this.window?.isDestroyed()) return
+    if (!this.enabled || this.restartTimer || this.window?.isDestroyed()) return
     this.restartTimer = setTimeout(() => { this.restartTimer = undefined; this.helper = undefined; this.start() }, 8_000)
   }
   private move(client: ClientWindow) {
-    this.lastGame = client.game || { visible: false }
-    this.gameObserver?.(this.lastGame)
     const window = this.window
     if (!this.enabled || this.suppressed || !window || window.isDestroyed()) return
     if (!client.visible || !client.width || !client.height) {

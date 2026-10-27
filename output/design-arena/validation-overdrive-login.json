@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-27",
+  "scope": "OVERDRIVE login poster and account-panel refinement",
+  "browser": "Microsoft Edge via Playwright CLI",
+  "skin": {
+    "name": "双城之战2 破碎者 金克丝",
+    "number": 60,
+    "origin": "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_60.jpg",
+    "metadata": "https://ddragon.leagueoflegends.com/cdn/16.21.1/data/zh_CN/champion/Jinx.json",
+    "attribution": "Riot Games / Data Dragon",
+    "naturalSize": [1215, 717]
+  },
+  "layout": {
+    "window": [1100, 740],
+    "bodyScrollWidth": 1100,
+    "accountPanelBackground": "rgb(27, 27, 28)",
+    "launchButtonTop": 445.09375,
+    "launchButtonBottom": 506.09375,
+    "footerBottom": 719,
+    "brokenImages": 0
+  },
+  "galleryMobile": { "viewportWidth": 390, "bodyScrollWidth": 390, "behavior": "Desktop design scaled for review" },
+  "interactions": {
+    "passwordReveal": "pass; type changes to text and back",
+    "launchTransition": "pass; one dock appears and credential form is removed",
+    "inputSubmission": "Preview only; input is cleared, not stored or sent"
+  },
+  "syntax": { "overdrive-v2.js": "pass", "skinSourceJson": "pass" },
+  "uncaughtPageErrors": [],
+  "failedHttpResponses": [],
+  "screenshots": "../playwright/overdrive-v2/login.png",
+  "limits": ["Local design prototype; production login and native behavior were not changed."]
+}

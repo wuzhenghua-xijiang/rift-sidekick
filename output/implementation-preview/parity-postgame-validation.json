@@ -1,0 +1,122 @@
+{
+  "results": [
+    {
+      "size": 430,
+      "state": "win",
+      "body": 430,
+      "available": 430,
+      "content": 383,
+      "contentWidth": 383,
+      "footer": 54,
+      "metrics": [
+        "68%",
+        "28%",
+        "7.8"
+      ],
+      "brokenImages": []
+    },
+    {
+      "size": 430,
+      "state": "loss",
+      "body": 430,
+      "available": 430,
+      "content": 383,
+      "contentWidth": 383,
+      "footer": 54,
+      "metrics": [
+        "68%",
+        "28%",
+        "7.8"
+      ],
+      "brokenImages": []
+    },
+    {
+      "size": 430,
+      "state": "missing",
+      "body": 430,
+      "available": 430,
+      "content": 383,
+      "contentWidth": 383,
+      "footer": 54,
+      "metrics": [
+        "—",
+        "—",
+        "—"
+      ],
+      "brokenImages": []
+    },
+    {
+      "size": 430,
+      "state": "error",
+      "body": 430,
+      "available": 430,
+      "content": 383,
+      "contentWidth": 383,
+      "footer": 54,
+      "metrics": [],
+      "brokenImages": []
+    },
+    {
+      "size": 390,
+      "state": "win",
+      "body": 390,
+      "available": 390,
+      "content": 343,
+      "contentWidth": 343,
+      "footer": 54,
+      "metrics": [
+        "68%",
+        "28%",
+        "7.8"
+      ],
+      "brokenImages": []
+    },
+    {
+      "size": 390,
+      "state": "loss",
+      "body": 390,
+      "available": 390,
+      "content": 343,
+      "contentWidth": 343,
+      "footer": 54,
+      "metrics": [
+        "68%",
+        "28%",
+        "7.8"
+      ],
+      "brokenImages": []
+    },
+    {
+      "size": 390,
+      "state": "missing",
+      "body": 390,
+      "available": 390,
+      "content": 343,
+      "contentWidth": 343,
+      "footer": 54,
+      "metrics": [
+        "—",
+        "—",
+        "—"
+      ],
+      "brokenImages": []
+    },
+    {
+      "size": 390,
+      "state": "error",
+      "body": 390,
+      "available": 390,
+      "content": 343,
+      "contentWidth": 343,
+      "footer": 54,
+      "metrics": [],
+      "brokenImages": []
+    }
+  ],
+  "errors": [],
+  "checks": [
+    "victory and defeat; missing metrics and loading failure",
+    "expanded real debrief; one honor dispatch; recent history",
+    "voice link always opens the shared OpenAI tab"
+  ]
+}

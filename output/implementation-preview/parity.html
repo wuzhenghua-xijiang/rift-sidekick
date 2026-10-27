@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"><title>街头暴走 · 设计复刻对照</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#efede6;color:#1b1b1c;font:14px/1.6 'PingFang SC','Microsoft YaHei UI',sans-serif}header{padding:18px 24px;background:#1b1b1c;color:#efede6}h1{font-size:21px;margin:0}header p{margin:3px 0 0;color:#c9beab;font-size:12px}nav{display:flex;gap:6px;flex-wrap:wrap;padding:14px 24px;position:sticky;top:0;background:#efede6;z-index:2;border-bottom:1px solid #b8b09f}button,a{font:inherit;color:inherit}button{border:1px solid #1b1b1c;background:transparent;padding:6px 12px;cursor:pointer}button[aria-pressed=true]{background:#f95a2c}a{margin-left:auto;padding:6px 0;text-underline-offset:4px}main{padding:18px 24px;overflow-x:auto}#pair{display:flex;gap:24px;align-items:flex-start;width:max-content;margin:auto}figure{margin:0;width:430px}figcaption{margin-bottom:8px;font-weight:700}img{display:block;width:100%;height:auto;border:1px solid #1b1b1c}#note{font-size:12px;margin:14px auto;max-width:884px;color:#675e50}button:focus-visible,a:focus-visible{outline:2px solid #a1391b;outline-offset:3px}
+</style>
+<header><h1>设计稿 / 当前实现</h1><p>同尺寸截图 · 当前组件使用示例数据 · 原设计稿保持原样</p></header>
+<nav aria-label="对照页面"></nav><main><div id="pair"><figure><figcaption>已确认设计稿</figcaption><img id="reference" alt="已确认设计稿"></figure><figure><figcaption>正式组件 · 示例数据</figcaption><img id="implementation" alt="当前实现"></figure></div><p id="note">构图、尺寸和样式按原稿复刻。英雄、胜率、装备和建议以真实数据为准；缺少云顶图片时显示名称。</p></main>
+<script>
+const pages=[['ready','备战'],['matchup','对位'],['coach','教练'],['history','战绩'],['tft','云顶'],['champions','图鉴'],['voice','语音'],['settings','设置'],['login','登录'],['postgame','结算']];
+const nav=document.querySelector('nav');
+function show(id){document.querySelectorAll('nav button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.page===id)));const login=id==='login',post=id==='postgame';document.querySelectorAll('figure').forEach(figure=>figure.style.width=login?'550px':'430px');document.querySelector('#reference').src=login?'../playwright/overdrive-v2/login.png':post?'../playwright/overdrive-v2/postgame.png':'../playwright/overdrive-all-pages/'+id+'.png';document.querySelector('#implementation').src='../playwright/'+(login?'parity-login-1100.png':post?'parity-postgame-win-430.png':'parity-'+id+'-430.png');}
+for(const [id,label] of pages){const button=document.createElement('button');button.type='button';button.dataset.page=id;button.textContent=label;button.setAttribute('aria-pressed','false');button.onclick=()=>show(id);nav.append(button)}
+const link=document.createElement('a');link.href='./?surface=dock';link.textContent='打开当前交互预览 ↗';nav.append(link);show('ready');
+</script>
+</html>

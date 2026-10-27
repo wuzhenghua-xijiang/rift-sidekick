@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-27T04:06:48Z",
+  "title": "Design System: Rift Sidekick · OVERDRIVE V2",
+  "extensions": {
+    "loginRefinement": { "source": "overdrive-login.css", "officialArt": "assets/Jinx-arcane-fractured.jpg", "skin": "双城之战2 破碎者 金克丝", "skinNum": 60, "layout": [1100, 740], "posterWidth": 616, "panel": "ink with orange display lettering and paper input fields", "primaryActionHeight": 61, "sourceRecord": "assets/Jinx-arcane-fractured.jpg.json" },
+    "secondarySurfaces": { "source": ["overdrive-pages.js", "overdrive-pages.css"], "review": "overdrive-pages.html", "views": ["matchup", "coach", "history", "tft", "champions", "voice", "settings"], "settingsTabs": ["openai", "voice", "game"], "signature": ["versus poster", "BP recommendations", "match result strips", "hex deployment board", "champion card album", "silent broadcast console", "shared connection panel"], "footer": "Contextual action, always visible at both dock widths" },
+    "selectedDirection": { "id": "overdrive", "iteration": 2, "status": "local prototype", "login": [1100, 740], "dock": [430, 720], "minimumPreview": [390, 560], "rail": 47, "fixedFooter": 54, "compactSignature": ["orange diagonal hero", "ink selected loadout", "33px orange win rate", "3px hard orange shadow", "orange fixed action bar"], "source": ["overdrive-v2.css", "overdrive-v2.js"] },
+    "shadows": [
+      { "name": "gallery-stage", "value": "0 22px 60px #0006", "purpose": "Neutral gallery preview frame only." },
+      { "name": "settings-drawer", "value": "-20px 0 70px #0006", "purpose": "Shared global settings drawer." },
+      { "name": "overdrive-action", "value": "4px 4px 0 #f95a2c", "purpose": "OVERDRIVE primary action; its secondary screens use 3px 3px 0 with the same accent." },
+      { "name": "nightops-access", "value": "10px 20px 60px #0005", "purpose": "NIGHT OPS login access console only." },
+      { "name": "hextech-orbit-node", "value": "0 3px 14px #b2924833", "purpose": "HEXTECH summoning apparatus nodes only." }
+    ],
+    "motion": [
+      { "name": "button-state", "value": "background .16s, color .16s, border-color .16s", "purpose": "Shared button state transition." },
+      { "name": "drawer-entry", "value": "drawer-in .2s ease-out", "purpose": "Shared settings drawer: translateX(60px) and opacity .5 to translateX(0) and opacity 1." },
+      { "name": "toast-opacity", "value": "opacity .18s", "purpose": "Design-preview action feedback." },
+      { "name": "reduced-motion", "value": "@media(prefers-reduced-motion:reduce)", "purpose": "Disables animation and transition and sets scroll-behavior:auto for all elements and pseudo-elements." }
+    ],
+    "breakpoints": [
+      { "name": "gallery-two-columns", "value": "1250px" },
+      { "name": "gallery-one-column", "value": "700px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "REDLINE action",
+      "kind": "button",
+      "refersTo": "button-redline",
+      "description": "REDLINE only: sharp red action with one cut corner.",
+      "html": "<button class=\"ds-redline-action\">优化并启动</button>",
+      "css": ".ds-redline-action{display:flex;align-items:center;justify-content:center;min-height:45px;padding:0 24px;border:0;background:#ff4d3d;color:#fff;font:600 13px 'PingFang SC','Microsoft YaHei UI',sans-serif;clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%);cursor:pointer;transition:background .16s,color .16s,border-color .16s}.ds-redline-action:hover{filter:brightness(1.1)}.ds-redline-action:focus-visible{outline:2px solid #ff4d3d;outline-offset:4px}"
+    },
+    {
+      "name": "HEXTECH action",
+      "kind": "button",
+      "refersTo": "button-hextech",
+      "description": "HEXTECH only: brass gradient and eight clipped corners.",
+      "html": "<button class=\"ds-hextech-action\">唤醒峡谷</button>",
+      "css": ".ds-hextech-action{display:flex;align-items:center;justify-content:center;min-height:45px;padding:0 24px;border:1px solid #e5ca95;background:linear-gradient(110deg,#b6965a,#e1c78b);color:#182330;font:600 13px 'PingFang SC','Microsoft YaHei UI',sans-serif;letter-spacing:.08em;clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 9px,100% calc(100% - 9px),calc(100% - 9px) 100%,9px 100%,0 calc(100% - 9px),0 9px);cursor:pointer;transition:background .16s,color .16s,border-color .16s}.ds-hextech-action:hover{filter:brightness(1.1)}.ds-hextech-action:focus-visible{outline:2px solid #c8aa6e;outline-offset:4px}"
+    },
+    {
+      "name": "OVERDRIVE action",
+      "kind": "button",
+      "refersTo": "button-overdrive",
+      "description": "OVERDRIVE only: black ink button with a solid orange offset shadow.",
+      "html": "<button class=\"ds-overdrive-action\">开一局</button>",
+      "css": ".ds-overdrive-action{display:flex;align-items:center;justify-content:center;min-height:45px;padding:0 24px;border:0;border-radius:0;background:#1b1b1c;color:#fff;font:600 13px 'PingFang SC','Microsoft YaHei UI',sans-serif;box-shadow:4px 4px 0 #f95a2c;cursor:pointer;transition:background .16s,color .16s,border-color .16s}.ds-overdrive-action:hover{filter:brightness(1.1)}.ds-overdrive-action:focus-visible{outline:2px solid #f95a2c;outline-offset:4px}"
+    },
+    {
+      "name": "NIGHT OPS action",
+      "kind": "button",
+      "refersTo": "button-nightops",
+      "description": "NIGHT OPS only: quiet rectangular mint deployment action.",
+      "html": "<button class=\"ds-nightops-action\">部署并启动</button>",
+      "css": ".ds-nightops-action{display:flex;align-items:center;justify-content:center;min-height:45px;padding:0 24px;border:0;background:#65ddc3;color:#0a1a16;font:600 12px 'PingFang SC','Microsoft YaHei UI',sans-serif;cursor:pointer;transition:background .16s,color .16s,border-color .16s}.ds-nightops-action:hover{filter:brightness(1.1)}.ds-nightops-action:focus-visible{outline:2px solid #65ddc3;outline-offset:4px}"
+    },
+    {
+      "name": "CHAMPIONS workspace action",
+      "kind": "button",
+      "refersTo": "button-champions",
+      "description": "CHAMPIONS build workspace only: compact charcoal action; the login action has its own gold treatment.",
+      "html": "<button class=\"ds-champions-action\">采用方案</button>",
+      "css": ".ds-champions-action{display:flex;align-items:center;justify-content:center;min-height:35px;padding:0 16px;border:0;background:#20211e;color:#f2f0e8;font:600 10px 'PingFang SC','Microsoft YaHei UI',sans-serif;letter-spacing:.03em;cursor:pointer;transition:background .16s,color .16s,border-color .16s}.ds-champions-action:hover{filter:brightness(1.1)}.ds-champions-action:focus-visible{outline:2px solid #b9954d;outline-offset:4px}"
+    },
+    {
+      "name": "Shared settings field — REDLINE sample",
+      "kind": "input",
+      "refersTo": "settings-input",
+      "description": "One shared connection form; this sample uses the dark drawer and REDLINE accent. Current concept supplies accent and drawer tone at runtime.",
+      "html": "<label class=\"ds-setting-label\">接口地址<input class=\"ds-setting-input\" type=\"url\" placeholder=\"https://api.openai.com/v1\" autocomplete=\"off\"></label>",
+      "css": ".ds-setting-label{display:block;margin:19px 0;padding:0;color:#eff0f4;font:12px 'PingFang SC','Microsoft YaHei UI',sans-serif;background:#17191e}.ds-setting-input{display:block;width:100%;margin-top:9px;padding:12px;border:1px solid #7777;border-radius:4px;background:#ffffff06;color:inherit;font:13px 'PingFang SC','Microsoft YaHei UI',sans-serif;caret-color:#ff4d3d}.ds-setting-input:focus-visible{outline:2px solid #ff4d3d;outline-offset:4px}"
+    },
+    {
+      "name": "Neutral gallery navigation",
+      "kind": "nav",
+      "refersTo": "gallery-navigation",
+      "description": "Gallery shell only; selection indicates which exploration is visible, not a chosen final brand.",
+      "html": "<nav aria-label=\"方案\"><button class=\"ds-gallery-choice\" aria-current=\"page\">赤焰赛场</button></nav>",
+      "css": ".ds-gallery-choice{padding:11px 12px;border:1px solid #46464d;border-radius:5px;background:#29292d;color:#fff;font:12px 'PingFang SC','Microsoft YaHei UI',sans-serif;cursor:pointer;transition:background .16s,color .16s,border-color .16s}.ds-gallery-choice:hover{background:#232326;color:#fff}.ds-gallery-choice:focus-visible{outline:2px solid #ff5847;outline-offset:4px}"
+    },
+    {
+      "name": "REDLINE role chips",
+      "kind": "chip",
+      "refersTo": "role-chip-redline",
+      "description": "REDLINE hero-poster position controls; other namespaces retain their own selected treatments.",
+      "html": "<div role=\"group\" aria-label=\"分路\"><button class=\"ds-role-chip\">上路</button> <button class=\"ds-role-chip ds-role-selected\" aria-pressed=\"true\">中路</button></div>",
+      "css": ".ds-role-chip{min-width:46px;min-height:30px;padding:7px 12px;border:1px solid #ffffff1c;border-radius:0;background:#12131699;color:#bdbfc0;font:10px 'PingFang SC','Microsoft YaHei UI',sans-serif;cursor:pointer;transition:background .16s,color .16s,border-color .16s}.ds-role-selected{background:#ff4d3d;border-color:#ff4d3d;color:#fff}.ds-role-chip:focus-visible{outline:2px solid #ff4d3d;outline-offset:4px}"
+    },
+    {
+      "name": "REDLINE selected loadout row",
+      "kind": "card",
+      "refersTo": "loadout-redline",
+      "description": "Representative selected build row; equipment imagery and illustrative statistics are omitted from this small component sample.",
+      "html": "<button class=\"ds-loadout-row\" aria-pressed=\"true\"><span class=\"ds-loadout-index\">01</span><span class=\"ds-loadout-title\">暴击流 <small class=\"ds-loadout-state\">已选择</small></span></button>",
+      "css": ".ds-loadout-row{display:flex;gap:14px;width:100%;text-align:left;padding:15px 17px;border:1px solid #ff4d3d;background:color-mix(in srgb,#ff4d3d 6%,#111214);color:#f0efea;cursor:pointer;transition:background .16s,color .16s,border-color .16s}.ds-loadout-index{padding-top:2px;font:400 11px DM,monospace;color:#96969a}.ds-loadout-title{display:flex;align-items:center;gap:10px;min-height:22px;font:600 14px 'PingFang SC','Microsoft YaHei UI',sans-serif}.ds-loadout-state{font-size:9px;font-weight:400;color:#ff4d3d}.ds-loadout-row:focus-visible{outline:2px solid #ff4d3d;outline-offset:4px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "登录前炸场，登录后贴边助攻",
+    "overview": "用户已选街头暴走。V2 使用独立启动窗与原尺寸吸附小窗；其余四案及首轮大工作台保留为探索记录。生产接入尚未进行。",
+    "keyCharacteristics": [
+      "五个命名空间独立成立，中性画廊只负责比较与切换。",
+      "登录/启动与启动后的客户端分别组织；英雄图像承担首屏识别。",
+      "OpenAI 连接只有一处配置，教练和语音共享连接、分别设置提示词。"
+    ],
+    "rules": [
+      { "name": "The Separate Worlds Rule", "body": "当前默认方向为 OVERDRIVE，其他四套命名空间保留用于对照；不向选定方向混入其他案的装饰或色板。", "section": "colors" }
+    ],
+    "dos": [
+      "Do 在同一方向中保持其配色、字形、构图和材料一致。",
+      "Do 使用已核对来源的 Riot Data Dragon 英雄、装备、符文与地图图像；来源保存在 `assets/sources.json`。",
+      "Do 保留简短功能文案与示意状态说明，让英雄和主要动作优先。"
+    ],
+    "donts": [
+      "Don't 把五套方向混成统一色板；当前已选街头暴走，其他案只作对照。",
+      "Don't 将固定桌面稿缩放预览当作生产移动布局、字号下限或侧边停靠验收。",
+      "Don't 将本轮十张桌面稿、桌面/手机画廊和共享设置的视觉审阅当作无障碍合规认证；静态检测仅使用正则回退，未计算对比度。"
+    ]
+  }
+}

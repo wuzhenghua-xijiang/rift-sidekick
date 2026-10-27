@@ -9,5 +9,4 @@ it.runIf(process.platform === 'win32')('compiles the actual Win32 observer and r
   const { stdout } = await promisify(execFile)('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', script], { timeout: 25000, windowsHide: true })
   const frame = JSON.parse(stdout.trim())
   expect(typeof frame.visible).toBe('boolean')
-  expect(typeof frame.game.visible).toBe('boolean')
 }, 30000)

@@ -1,0 +1,38 @@
+Riot Games artwork
+
+The login poster uses the official Data Dragon splash artwork for Arcane
+Fractured Jinx (skin 60), named 双城之战2 破碎者 金克丝 in zh_CN metadata.
+Source: https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_60.jpg
+Copyright Riot Games, Inc. This independent assistant is not endorsed by Riot Games.
+
+TCLS rendered-login geometry and automation approach
+
+Adapted from shecong/LOL-GameAssistant, commit
+f823b2c1a757ee9abbd106698235cb39eff7f04b:
+https://github.com/shecong/LOL-GameAssistant
+
+The upstream LICENSE.txt is reproduced below, including its placeholder
+copyright notice. The local implementation uses Windows UI Automation and
+Windows OCR rather than the upstream FlaUI and PaddleOCR dependencies.
+
+MIT License
+
+Copyright (c) [year] [fullname]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
