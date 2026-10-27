@@ -104,6 +104,7 @@ LCU 与 Live Client Data 仅在各自本机 loopback HTTPS 请求接受自签名
 ## 验证记录
 
 - 0.2.0：类型检查、生产构建和本地 265 项测试通过，2 项平台相关测试跳过。正式组件完成 31 个界面 / 状态场景对照及主要按钮桥接验证，见 [设计对照](DESIGN-PARITY.md)。发布工作流另在 Windows 执行检查与打包；实局验收仍单独记录。
+- 0.2.0 的 [Windows 检查](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40466923617) 和 [签名发布](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40466923012) 成功，32 个测试文件、267 项测试全部通过，产物为 Windows x64 NSIS 安装器。
 - 2026-10-27 待发布选人自动化：TypeScript、生产构建与 189 项测试通过，1 项 Windows 检查按平台跳过。新增主进程调度测试覆盖旧开关关闭、经典/普通大乱斗/海克斯、缺少分路、重复轮询、延迟推荐取消及旧写入补偿等待。Playwright 在 430×900、390×520 的隔离渲染样例中确认自动切页、关闭残留搜索、切换方案应用反馈、设置入口移除、装备优先布局与错误重试；截图位于 `output/playwright/`。样例数据不能替代 Windows LCU 实际对局验收。
 - TypeScript 类型检查通过。
 - 0.1.8 本地 156 项测试通过、1 项 Windows 原生脚本检查因平台跳过（20 个测试文件），类型检查和生产构建通过。覆盖装备创建/补偿、大小龙事件与手动计时、断线与跨局清空、悬浮窗/托盘交互，以及既有客户端配置、赛后与更新生命周期；原生脚本由 Windows CI 执行。

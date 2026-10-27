@@ -6,7 +6,7 @@ Windows x64《英雄联盟》侧边助手。工作区采用「街头暴走」设
 
 0.2.0 中，选人时自动识别模式与英雄并打开英雄选择页，锁定后直接同步符文、召唤师技能与装备，移除原有设置开关。野怪计时仅保留游戏原生高级模式，连接后通过客户端设置接口自动开启，在小地图各营地位置显示。旧手动列表、悬浮窗、快捷键与托盘操作入口已移除。完整变更见 [发布说明](docs/releases/v0.2.0.md)。
 
-[GitHub 仓库](https://github.com/wuzhenghua-xijiang/rift-sidekick) · [Windows 正式版发布](https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/latest) · [查看新版侧栏](docs/screenshots/review-overview.png) · [查看对位建议](docs/screenshots/matchup-preview.png) · [查看分路热门榜](docs/screenshots/lane-hot-preview.png) · [功能审查与改进建议](docs/PRODUCT-REVIEW.md)
+[GitHub 仓库](https://github.com/wuzhenghua-xijiang/rift-sidekick) · [Windows 正式版发布](https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/latest) · [查看新版界面](output/playwright/parity-all-pages.png) · [查看对位建议](output/playwright/parity-matchup-430.png) · [设计与实现对照](docs/DESIGN-PARITY.md) · [功能审查与改进建议](docs/PRODUCT-REVIEW.md)
 
 新增「游戏启动」：自动识别英雄联盟位置，先完成性能优化，再直接启动游戏内官方程序，不调用 WeGame。国服支持在助手内输入 QQ 账号密码，自动填写 TCLS；默认仅本次会话使用，可选 Windows 本机加密记住，验证码和大区选择在官方窗口完成。支持停止填写、清除账号、优化失败阻断与原设置恢复。详见 [启动与优化说明](docs/GAME-LAUNCH.md)。Windows 实机行为待验收。
 

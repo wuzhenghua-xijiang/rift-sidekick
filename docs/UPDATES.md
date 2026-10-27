@@ -37,6 +37,8 @@
 
 2026-10-27，0.1.8 的 [Windows CI](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40431315723) 和 [签名发布](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40431316281) 成功，157 项测试通过。用同一实际 NSIS 下载器模拟从 0.1.7 更新，通过镜像版本目录完整下载 125817376 字节的正式安装器；内置公钥验证清单签名，SHA-512 与 SHA-256 均一致，后者为 `42261e2318add335ad8a488caed594e690492a919fa1de970bde12e4af7331e2`。没有执行安装器，不代表 Windows 安装重启或实际游戏联动已通过。
 
+2026-10-27，0.2.0 的 [Windows CI](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40466923617) 与 [签名发布](https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40466923012) 均成功，32 个测试文件、267 项测试全部通过。已从正式 Release 完整下载 126200536 字节安装器，直接使用客户端 `update-policy.ts` 确认从 0.1.8 升级可被接受，Ed25519 清单签名与 SHA-512 / SHA-256 均通过；同时核对 `latest.yml`、`SHA256SUMS.txt`、五份附件的大小及 GitHub 摘要。SHA-256 为 `b683795dbe40eed0d32503960bd1d3abe43caf14dd13e62cc5f7e96b537428ca`。应用内更新镜像 API 已返回 v0.2.0；本次完整下载来自 GitHub 正式附件，未执行 Windows 安装器，实际安装重启与游戏联动仍待 Windows 验收。
+
 - 从旧安装版检查更新，确认版本和进度；断网后重试，当前功能仍可用。
 - 校验失败不得出现安装按钮；下载完成后替换缓存文件应拒绝安装。
 - 选人、对局和正在恢复配置期间不得重启；返回大厅后同一包可继续安装。
