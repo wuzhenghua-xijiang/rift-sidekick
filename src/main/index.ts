@@ -170,7 +170,11 @@ function makeWindow() {
     hideAssistant()
   })
   mainWindow.on('query-session-end', () => { quitting = true })
-  mainWindow.on('closed', () => { mainWindow = undefined })
+  mainWindow.on('closed', () => {
+    mainWindow = undefined
+    // A hidden timer window must not keep a tray-less assistant running after Close.
+    if (!quitting) app.quit()
+  })
 }
 
 async function refreshClientState() {
