@@ -1,6 +1,6 @@
 # 实现说明与 PRD 对齐
 
-交付版本：0.1.7。覆盖“识别 → 推荐 → 配置 → 开局隐藏 → 赛后分析与点赞”，并支持 GitHub 正式版应用内更新：镜像检索、Ed25519 清单签名、下载后/安装前 SHA-512 与 SHA-256 校验、静默安装重启。Windows 客户端联动和安装重启仍需实机验收。完整审查见 [产品审查](PRODUCT-REVIEW.md)，更新和发布流程见 [UPDATES.md](UPDATES.md)。
+交付版本：0.1.8。覆盖“识别 → 推荐 → 配置 → 开局隐藏 → 赛后分析与点赞”，新增独立野怪计时小窗，并支持 GitHub 正式版应用内更新：镜像检索、Ed25519 清单签名、下载后/安装前 SHA-512 与 SHA-256 校验、静默安装重启。用户已在 Windows 确认符文与召唤师技能生效；本轮装备显示、贴边吸附及计时仍待实局复测。完整审查见 [产品审查](PRODUCT-REVIEW.md)，更新和发布流程见 [UPDATES.md](UPDATES.md)。
 
 ## 能力矩阵
 
@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | Windows 版本 | 已实现 | x64 NSIS 安装器，不提供 macOS/Linux 发布包 |
 | GitHub 与应用内更新 | 已发布，安装重启待 Windows 实测 | GitHub Actions 构建正式 Release，镜像检索/下载，固定仓库与版本，Ed25519 签名、双哈希和安装前重验；下载进度/失败重试/安装重启。对局、选人、匹配、配置或点赞写入期间阻止安装，普通关闭不自动安装 |
-| 客户端侧边吸附 | 已实现，待 Windows 实测 | 原生窗口矩形、DPI 转换、多屏工作区、右侧优先、最小化跟随；不会绘制到游戏画面内 |
+| 客户端侧边吸附 | 已优化，待 Windows 复测 | 取消 6px 间隔，优先 DWM 可见窗口边框，兼容 DPI 转换、多屏工作区、左右贴边及最小化跟随 |
 | 托盘与后台唤回 | 已实现，待 Windows 实测 | Windows 托盘双击显示，右键显示/隐藏/彻底退出；关闭按钮在托盘可用时隐藏。手动隐藏暂停吸附唤回，赛后仍可恢复；托盘创建失败时正常关闭 |
 | 经典峡谷排位/匹配/自定义识别 | 已实现 | 按地图、队列和模式判断，显示经典模式及单双排/灵活；统一使用峡谷推荐策略；明确的特殊模式不因地图 11 被误判 |
 | 大乱斗/海克斯/云顶/斗魂/特殊模式识别 | 已实现 | 队列 2400 或 KIWI 优先识别海克斯；未知模式不冒用峡谷配置；云顶切换阵容页；斗魂当前仅识别 |
@@ -18,7 +18,7 @@
 | 多套方案卡片 | 已实现，有数据边界 | 最多 5 套，来源真实的不同核心成装或主副系；按胜率降序，偏好不置顶，缺少胜率排末尾；单卡展示主系基石、副系两枚符文、召唤师技能的官方图标，及成装和准确标注的样本胜率；小众英雄/模式可能不足三套 |
 | 侧栏与配置状态 | 已实现 | 紧凑英雄/分路区、对位摘要默认折叠、热门榜置于方案之后；区分离线预览/未锁定/正在加载/可以配置/需要恢复。浏览其他英雄或模式可回到本局，“已选择”不代表已写入 |
 | 场景/来源筛选 | 部分实现 | 可切换模式、分路、方案；对位页可筛选本局英雄。暂无优势/均势/劣势标签和职业选手/自定义来源 |
-| 符文/商店装备/召唤师技能 | 已实现，待 Windows 实测 | 经典与普通大乱斗默认同步完整符文及装备，召唤师技能可开启；只保留核心成装、鞋子及后续成装。海克斯只同步装备 |
+| 符文/商店装备/召唤师技能 | 符文与技能已获用户实测，装备修正待复测 | 新装备套装先 POST 创建注册，再合并 PUT 并读回核验。游戏按 P → 物品套装选择 Rift 方案，不替换原生推荐页。只保留核心成装、鞋子及后续成装；海克斯只同步装备 |
 | 锁定后自动配置 | 已实现，待 Windows 实测 | 1150ms 防抖、一次选人状态只自动成功一次；优先保存的偏好，无偏好用胜率最高的一套，海克斯用首套装备参考；取消/换英雄时放弃旧请求 |
 | 写入与恢复 | 已实现并有故障测试 | 串行互斥、持久化意图、读取确认、失败补偿、账号/对局校验、手动编辑冲突提示 |
 | 游戏开始/结束窗口联动 | 已实现，待 Windows 实测 | GameStart/InProgress/Reconnect 隐藏窗口并暂停吸附；短暂掉线保持隐藏，结算或明确返回大厅等阶段恢复一次、不主动抢焦点，并打开本局复盘 |
@@ -28,7 +28,8 @@
 | 对位建议与注意事项 | 已实现 | 开局页和对位页显示双方 Data Dragon 基础技巧、分路提醒及可用的对阵样本；可折叠、手动修正，支持外号搜索。不声称实时冷却、视野或版本数值精准；剔除含数值调参的静态技巧 |
 | 当前分路热门英雄 | 已实现 | OP.GG 全球/全段位/排位数据，按登场率排列，显示胜率、样本和版本，点选可看方案；经典峡谷可参考，不用于 ARAM/海克斯等模式 |
 | 阵容总胜率/线杀率 | 未实现 | 没有可信、可用且版本明确的数据与模型，不组合单英雄胜率伪造队伍概率 |
-| Buff/大招/水晶/眼位计时 | 未实现 | 当前没有合适的数据接入，不以抓包/读内存补齐 |
+| 野怪计时 | 已实现，待 Windows 实局复测 | 经典峡谷独立小窗；大小龙公开事件自动计时，Buff、普通营地、河蟹手动标记；支持鼠标穿透、快捷键/托盘、规则设置和断线隐藏。估算不代表当前存活，模式白名单详见 [说明](JUNGLE-TIMERS.md) |
+| 大招/水晶/眼位计时 | 未实现 | 不读取隐藏信息，不以抓包/读内存补齐 |
 | 对线提醒/打野来向 | 未实现 | 缺少可靠的可用输入 |
 | 死亡回放/对局分析 | 部分实现 | 结算展示本局 KDA、参团率、伤害占比、补刀/分钟、视野、我方伤害对比和事实性复盘提示；同次运行切页/回大厅/继续匹配保留只读报告，断连或新选人清除。仍有历史战绩及整场回放请求，没有阵亡即时视频或逐帧复盘 |
 | 赛后一键点赞 | 已实现，待 Windows 实测 | 按客户端实际票数和可选玩家勾选，手动点击后逐人提交 HEART 并完成荣誉投票；提交前核验账号、阶段、游戏编号和新票单，开始写入后不自动重试 |
@@ -57,12 +58,18 @@ main/index.ts（偏好、调度、已注册方案、自动配置）
     ├─ postgame.ts → 本局结算解析、荣誉票单校验与手动提交
     ├─ shared/gameflow.ts + shared/matchup.ts → 窗口阶段策略、已锁定同位置对手判断
     ├─ shared/configuration-status.ts → 与偏好选中区分的即时配置状态
-    └─ windows-dock.ts → 单个 PowerShell 辅助进程 → Win32 窗口位置
+    ├─ jungle-service.ts → 本机 Live Client Data → shared/jungle.ts 事件与手动标记
+    ├─ jungle-overlay.ts → 独立系统小窗、前台跟随、鼠标穿透与快捷键
+    └─ windows-dock.ts → 单个 PowerShell 辅助进程 → 客户端及游戏 Win32 可见窗口
 ```
 
 客户端读取：`/lol-gameflow/v1/gameflow-phase`、`/lol-gameflow/v1/session`、`/lol-champ-select/v1/session`、`/lol-summoner/v1/current-summoner`、`/lol-patch/v1/game-version`。
 
 写入：`/lol-perks/v1/pages`、`/lol-perks/v1/pages/{id}`、`/lol-perks/v1/currentpage`、`/lol-item-sets/v1/item-sets/{summonerId}/sets`，可选 `/lol-champ-select/v1/session/my-selection`。
+
+装备新建使用 POST，集合更新使用 PUT。写入确认包括类型、地图、模式、适用英雄和各装备组；成功提示给出物品套装入口，接口不保证选中游戏商店标签。
+
+游戏内计时仅在支持的经典峡谷队列读取 `https://127.0.0.1:2999/liveclientdata/allgamedata`，间隔 2 秒；大小龙使用公开击杀事件，其他营地由用户确认后标记。不向游戏进程注入，也不读取迷雾中的击杀。窗口观察进程退出或报错、游戏失去前台、数据读取失败时隐藏小窗。
 
 战绩与回放：`/lol-match-history/v1/products/lol/current-summoner/matches`、`/lol-champion-mastery/v1/local-player/champion-mastery`、`/lol-ranked/v1/current-ranked-stats`、`/lol-replays/v1/rofls/{gameId}/download|watch`。回放仅接受本机刚查询的自己的战绩编号，且不在选人/游戏阶段启动。
 
@@ -86,12 +93,12 @@ LCU 没有跨符文、装备和技能的事务。使用“先保存意图 → �
 
 荣誉提交只接受已展示过的本局分析，并在每次提交前重新读取阶段、账号与票单；剔除自己、机器人及重复身份，校验资格和剩余票数。逐人写入与最终完成并非服务端原子事务，开始写入后发生超时或失败会锁定本局再次提交，提示到客户端确认；写入前的资格变化可以刷新后重选。没有自动点赞或接口变体试写。
 
-请求 LCU 时仅对带本机凭证的 loopback HTTPS 接受自签名证书。远程资源使用正常 HTTPS；渲染进程没有 Node 权限，启用隔离、沙箱和 CSP，外部链接限固定来源。恢复日志包含账号编号与配置内容，不包含 LCU token。
+LCU 与 Live Client Data 仅在各自本机 loopback HTTPS 请求接受自签名证书，LCU 凭证不会发给游戏数据或远程服务。远程资源使用正常 HTTPS；渲染进程没有 Node 权限，启用隔离、沙箱和 CSP，外部链接限固定来源。恢复日志包含账号编号与配置内容，不包含 LCU token。
 
 ## 验证记录
 
 - TypeScript 类型检查通过。
-- 139 项测试、16 个测试文件通过，类型检查和生产构建通过。包括客户端配置、赛后与更新生命周期；更新检查覆盖正式版筛选、真实签名校验、额外安装文件/摘要不匹配、下载失败重试、安装阶段保护及本地缓存篡改。
+- 0.1.8 本地 156 项测试通过、1 项 Windows 原生脚本检查因平台跳过（20 个测试文件），类型检查和生产构建通过。覆盖装备创建/补偿、大小龙事件与手动计时、断线与跨局清空、悬浮窗/托盘交互，以及既有客户端配置、赛后与更新生命周期；原生脚本由 Windows CI 执行。
 - 内置腾讯 173 位英雄的搜索关键词及社区别名，搜索规则与来源见 [词库说明](CHAMPION-SEARCH.md)。
 - 真实查询 OP.GG 阿狸中路及炸弹人普通大乱斗，各获得 5 套方案，通过 Data Dragon 16.21.1 成装与符文目录校验；海克斯分支生成 5 套明确标注的普通大乱斗装备参考，无符文/胜率/对位数据。
 - 真实查询云顶返回十套阵容，已在实际 Electron 窗口检查站位、统计和装备显示。
@@ -104,7 +111,8 @@ LCU 没有跨符文、装备和技能的事务。使用“先保存意图 → �
 - 0.1.6 已在本机生成 Windows x64 NSIS 安装包并确认 `app-update.yml` 使用 GitHub 镜像 generic feed；本机用临时测试密钥验证签名脚本能绑定版本、安装包和 latest.yml SHA-512，正式私钥仅存在 GitHub Actions Secret。当前 macOS 无法替代 Windows 实测下载、安装重启和托盘生命周期。
 - 0.1.6 已通过 GitHub Windows runner 构建并公开发布，镜像完整下载 125809506 字节，使用内置公钥验证正式清单签名并确认 SHA-512/SHA-256 一致。0.1.7 补上安装前重验、安装阶段保护、可重试状态与更新提示。具体流程和 Windows 升级验收见 [UPDATES.md](UPDATES.md)。
 - 0.1.7 GitHub Windows CI 与签名发布成功；用真实 electron-updater 的 NSIS 下载器从镜像下载正式包 125810285 字节，确认 Ed25519、SHA-512 和 SHA-256 通过。验收进程仅模拟旧版本及 Windows 频道来检查下载，不执行 Windows 安装器；实际安装重启与 LOL 联动仍待 Windows 验收。
-- Windows 安装、LOL 实际写入、恢复、DPI 吸附、帧率/延迟及长期内存占用尚未实测，见 `WINDOWS-ACCEPTANCE.md`。
+- 0.1.8 在实际 Electron 隔离窗口核对大小龙/Buff、普通营地、鼠标操作状态、左右键标记、快捷键失败提示和窄侧栏规则保存。界面复核的两项问题（白色滚动条、快捷键失败后的提示）均已修正并复验，见 [计时说明与样例](JUNGLE-TIMERS.md)。
+- 用户已在 Windows 确认符文与召唤师技能生效。装备显示修正、计时原生鼠标穿透、DPI 贴边、实际安装重启、帧率/延迟及长期资源占用仍需 Windows 复测，见 [验收清单](WINDOWS-ACCEPTANCE.md)。
 
 ## 参考来源
 
@@ -117,6 +125,9 @@ LCU 没有跨符文、装备和技能的事务。使用“先保存意图 → �
 - [LeagueAkari](https://github.com/LeagueAkari/LeagueAkari)：LCU 实践、选人和战绩接口。
 - [LeagueAkari 荣誉接口](https://github.com/LeagueAkari/LeagueAkari/blob/dev/src/shared/http-api-axios-helper/league-client/honor.ts)：读取票单、逐人点赞和完成投票的不同请求。
 - [LCU 与 Riot Client 接口定义](https://github.com/KebsCS/lcu-and-riotclient-api)：端点、请求和返回结构。
+- [league-runes 装备写入](https://github.com/edunad/league-runes/blob/master/src/api/items.ts)：新套装先创建、再更新集合的实践参考。
+- [Riot Live Client Data](https://developer.riotgames.com/docs/lol#game-client-api_live-client-data-api) 与 [公开事件样例](https://static.developer.riotgames.com/docs/lol/liveclientdata_events.json)：本地只读数据及大小龙事件。
+- [Riot 26.1 补丁说明](https://www.leagueoflegends.com/en-us/news/game-updates/patch-26-1-notes/)：经典峡谷首刷参考；特殊模式不套用此计时规则。
 - [Electron Tray](https://www.electronjs.org/docs/latest/api/tray) 和 [app 退出事件](https://www.electronjs.org/docs/latest/api/app#event-before-quit)：Windows 托盘图标、右键菜单与退出生命周期；另经 `gh` 核对 Electron 仓库原始 API 文档。
 - [Riot Data Dragon](https://developer.riotgames.com/docs/lol#data-dragon)：静态资源目录。
 - [Riot 队列目录](https://static.developer.riotgames.com/docs/lol/queues.json)：普通 ARAM 与队列 2400 的区分。

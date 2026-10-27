@@ -15,6 +15,59 @@
   --gold: #ffc86d;
 }
 
+.jungle-settings { padding: 0 3px 12px; color: #bcb1c5; font-size: 11px; line-height: 1.7; }
+.jungle-settings p { margin: 7px 0; }
+.jungle-settings kbd { color: #e7e0ed; background: #292433; border-radius: 3px; padding: 1px 4px; font: 10px 'DM Mono', monospace; }
+.jungle-settings-status { display: flex; align-items: flex-start; gap: 7px; color: var(--cyan); }
+.jungle-settings-status > svg { flex-shrink: 0; margin-top: 10px; }
+.jungle-settings summary { color: #e0d8e8; cursor: pointer; padding: 7px 0; }
+.jungle-rule-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.jungle-rule-grid label { display: flex; align-items: center; justify-content: space-between; gap: 5px; }
+.jungle-rule-grid input { width: 62px; min-height: 30px; border: 1px solid #514658; border-radius: 5px; background: #191823; color: #eee8f3; padding: 4px; font-variant-numeric: tabular-nums; }
+.jungle-rule-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.jungle-rule-warning { color: var(--gold); }
+body.jungle-surface { min-width: 0; background: #191823; }
+.jungle-widget { height: 100vh; padding: 10px; display: flex; flex-direction: column; background: #191823; color: #eee8f3; overflow: hidden; user-select: none; }
+.jungle-widget button { -webkit-app-region: no-drag; }
+.jungle-widget button:focus-visible { outline: 2px solid var(--acid); outline-offset: -2px; }
+.jungle-widget-head { display: flex; align-items: center; gap: 7px; min-height: 26px; flex-shrink: 0; color: var(--acid); }
+.jungle-widget.interactive .jungle-widget-head { -webkit-app-region: drag; }
+.jungle-widget-head > b { font-size: 12px; color: #eee8f3; }
+.jungle-widget-head time { margin-left: auto; color: #d5c9e0; font: 11px 'DM Mono', monospace; }
+.jungle-widget-head button { display: grid; place-items: center; width: 24px; height: 26px; padding: 0; background: none; border: 0; border-radius: 4px; color: #bcb1c5; cursor: pointer; }
+.jungle-widget-head button:hover:not(:disabled) { background: #393143; color: white; }
+.jungle-tabs { display: flex; gap: 3px; flex-shrink: 0; margin: 8px 0 5px; padding: 3px; background: #11101a; border-radius: 6px; }
+.jungle-tabs button { flex: 1; min-height: 26px; padding: 3px 4px; border: 0; background: none; border-radius: 4px; color: #bcb1c5; font-size: 11px; cursor: pointer; }
+.jungle-tabs button[aria-pressed=true] { background: #373044; color: #f5eff8; }
+.jungle-timers { min-height: 0; flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #514658 #191823; }
+.jungle-timers::-webkit-scrollbar { width: 5px; }
+.jungle-timers::-webkit-scrollbar-track { background: #191823; }
+.jungle-timers::-webkit-scrollbar-thumb { border-radius: 5px; background: #514658; }
+.jungle-timer { width: 100%; min-height: 36px; padding: 4px 5px; display: flex; align-items: center; justify-content: space-between; gap: 5px; text-align: left; border: 0; border-bottom: 1px solid #332c3b; background: none; cursor: pointer; }
+.jungle-timer:last-child { border-bottom: 0; }
+.jungle-timer:hover:not(:disabled) { background: #302938; }
+.jungle-camp-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.jungle-camp-name b { font-weight: 500; color: #eee8f3; font-size: 11px; }
+.jungle-camp-name i { font-style: normal; margin-right: 6px; color: #82c7ff; font-size: 10px; }
+.jungle-timer.chaos .jungle-camp-name i { color: #ff9fbe; }
+.jungle-camp-name small { color: #b4a7c0; font-size: 9px; }
+.jungle-timer > strong { color: #efe7fa; font: 16px 'DM Mono', monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.jungle-timer.ready > strong { color: var(--acid); font: 11px 'Microsoft YaHei UI', sans-serif; }
+.jungle-widget button:disabled { opacity: 1; cursor: default; }
+.jungle-widget-foot { flex-shrink: 0; padding-top: 8px; font-size: 10px; line-height: 1.65; }
+.jungle-widget-foot > span { display: flex; align-items: center; gap: 5px; color: #bcb1c5; }
+.jungle-widget.interactive .jungle-widget-foot > span { color: var(--pink); }
+.jungle-widget-foot > b { color: #f4edf9; font: 11px 'DM Mono', monospace; }
+.jungle-widget-foot > b small { color: #c2b4d0; font: 10px 'Microsoft YaHei UI', sans-serif; margin-left: 4px; }
+.jungle-widget-foot > b.jungle-tray-fallback { font: 10px 'Microsoft YaHei UI', sans-serif; }
+.jungle-tray-fallback small { display: block; margin-left: 0; }
+.jungle-widget-foot > p { display: flex; align-items: center; gap: 4px; color: #b4a7c0; margin: 5px 0 0; font-size: 9px; }
+.jungle-widget-foot > p svg { flex-shrink: 0; }
+.jungle-widget-error { display: flex; gap: 5px; color: var(--gold); background: #34282a; padding: 7px; font-size: 10px; }
+.jungle-widget-error button { background: none; border: 0; padding: 0; margin-left: auto; color: var(--gold); }
+.jungle-widget.collapsed { padding: 6px 10px; }
+.jungle-collapsed-hint { font-size: 9px; color: #bcb1c5; padding-left: 23px; }
+
 /* A compact draft notebook, lane pulse and the post-game debrief. */
 .battle-text-button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 4px 0; border: 0; background: none; color: #c5bacd; font-size: 10px; cursor: pointer; }
 .battle-text-button:hover { color: var(--acid); }

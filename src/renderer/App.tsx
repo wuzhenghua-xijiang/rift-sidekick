@@ -3,7 +3,7 @@ import {
   ArrowRight, ArrowUpRight, BookOpen, Check, ChevronDown, Download,
   CircleHelp, Gamepad2, Gem, Grip, Minus, MousePointer2,
   PanelRightClose, RefreshCw, RotateCcw, Search, Settings2, Shield, Sparkles, Swords,
-  WandSparkles, X, Zap, History, Trophy,
+  WandSparkles, X, Zap, History, Trophy, Timer,
 } from 'lucide-react'
 import type { AppState, ApplyResult, BuildPlan, Champion, Position, QueueMode, RuneBuild, UpdateState } from '@shared/types'
 import { searchChampions } from '@shared/champion-search'
@@ -11,6 +11,7 @@ import { isPlaying, isPostGame } from '@shared/gameflow'
 import { configurationStatus } from '@shared/configuration-status'
 import { FieldGuide, HistoryPage, TftPage } from './Extras'
 import { LaneHotList, MatchupCard, PostGamePanel, useLaneRankings } from './Battle'
+import { JungleSettings } from './Jungle'
 
 type Page = 'recommend' | 'champions' | 'field' | 'history' | 'tft' | 'settings'
 const PAGE_COPY: Record<Page, [string,string]> = {
@@ -232,13 +233,15 @@ export default function App() {
             <SettingsRow icon={<WandSparkles size={19} />} title="锁定后自动配置" description="优先使用保存的方案；无偏好时选胜率最高的，海克斯用首套装备参考" control={<Toggle label="锁定后自动配置" checked={state.autoConfig} onChange={() => perform(window.rift.setAutoConfig(!state.autoConfig))} />} />
             <SettingsRow icon={<Zap size={19} />} title="同时同步召唤师技能" description="开启后，一键配置也会替换当前召唤师技能" control={<Toggle label="同步召唤师技能" checked={state.includeSpells} onChange={() => perform(window.rift.setIncludeSpells(!state.includeSpells))} />} />
             <SettingsRow icon={<PanelRightClose size={19} />} title="吸附在客户端右侧" description="跟随客户端移动、缩放和最小化；空间不足时移至左侧" control={<Toggle label="吸附客户端" checked={state.dock} onChange={() => perform(window.rift.setDock(!state.dock))} />} />
-            <div className="game-focus-note"><Gamepad2 size={17} /><div><b>开局专注，战后再见</b><span>进入加载和对局时自动隐藏；结束后恢复并打开本局分析。{state.backgroundAvailable ? '关闭窗口会留在托盘，双击托盘图标可唤回；右键可彻底退出。' : '需要时可再次启动助手唤回。'}</span></div></div>
+            <SettingsRow icon={<Timer size={19} />} title="游戏内野怪计时" description="独立悬浮窗，大小龙事件计时；红蓝 Buff 与普通营地手动标记" control={<Toggle label="游戏内野怪计时" checked={state.jungle?.enabled ?? true} onChange={() => perform(window.rift.setJungleEnabled(!(state.jungle?.enabled ?? true)))} />} />
+            <JungleSettings state={state.jungle} run={perform} />
+            <div className="game-focus-note"><Gamepad2 size={17} /><div><b>开局专注，战后再见</b><span>进入加载和对局时主侧栏自动隐藏；野怪计时按上方开关独立显示。结束后恢复并打开本局分析。{state.backgroundAvailable ? '关闭窗口会留在托盘，双击托盘图标可唤回；右键可彻底退出。' : '需要时可再次启动助手唤回。'}</span></div></div>
             <SettingsRow icon={<RotateCcw size={19} />} title="恢复原配置" description={state.recoveryNeeded ? '上次操作未完全恢复，请连接原账号后重试' : state.canRestore ? '撤回最近一次配置，保留其他符文页和装备方案' : '成功配置后，这里会保留最近一次恢复入口'} control={<button className="outline-button" disabled={!state.canRestore || !client.connected || busy} onClick={() => void restore()}>恢复</button>} />
             {state.recoveryNeeded && state.canRestore && <SettingsRow icon={<Check size={19} />} title="保留当前配置" description="已手动调整？保留客户端当前内容并放弃上次恢复快照" control={<button className="outline-button" disabled={busy} onClick={() => { void window.rift.keepCurrentConfig().then(setToast).catch(report) }}>保留</button>} />}
             <SettingsRow icon={<RefreshCw size={19} />} title="客户端连接" description={client.connected ? `${phaseLabel} · ${client.modeLabel || '等待对局'}` : client.message || '打开 Windows 英雄联盟客户端后自动连接'} control={<button className="outline-button" onClick={() => perform(window.rift.reconnect())}>重连</button>} />
             {state.lastConfig?.message && <Feedback state={state} />}
             <div className="source-card"><div className="source-heading"><span className="source-logo">RS</span><div><b>配方有出处，变阵有说明</b><small>DATA CREDITS</small></div></div><p><b>OP.GG</b> 提供对局统计。卡片展示不同核心成装或符文组合，胜率注明对应样本，不推算整套胜率。海克斯装备使用普通大乱斗参考并明确标注。<b>Data Dragon</b> 提供英雄和图标；其版本号不代表推荐统计版本。</p><p>LCU 为社区整理的客户端接口，可能随更新失效。接口不可用时仍可浏览方案；加载中和对局内不写入配置。</p><div className="source-links"><button onClick={() => perform(window.rift.openSource('opgg'))}>OP.GG <ArrowUpRight size={12} /></button><button onClick={() => perform(window.rift.openSource('ddragon'))}>Data Dragon <ArrowUpRight size={12} /></button><button onClick={() => perform(window.rift.openSource('github'))}>LCU 参考 <ArrowUpRight size={12} /></button></div></div>
-            <div className="about-row"><span><Gem size={13} /> RIFT SIDEKICK · {state.update?.currentVersion || '0.1.7'}</span><span>为了下一场高光 ✦</span></div>
+            <div className="about-row"><span><Gem size={13} /> RIFT SIDEKICK · {state.update?.currentVersion || '0.1.8'}</span><span>为了下一场高光 ✦</span></div>
           </section>}
         </main>
         {page === 'recommend' && <footer className={`action-dock action-${action.tone}`}><div className="action-caption"><span><span className={`tiny-live ${canApply ? '' : 'off'}`} />{action.caption}</span>{state.canRestore && <button disabled={busy || !client.connected} onClick={() => void restore()}><RotateCcw size={12} />撤回</button>}</div><button className={`apply-button ${busy ? 'busy' : ''}`} onClick={() => void applySelected()} disabled={!canApply}><span className="button-spark"><WandSparkles size={19} /></span><span>{busy ? '正在同步你的配方…' : '一键配置所选方案'}</span><ArrowUpRight size={19} /></button><p className="apply-hint">{action.hint}</p></footer>}

@@ -145,9 +145,17 @@ export class ConfigurationManager {
       const latestItems = await this.request<ItemSetDocument>('GET', itemPath(summonerId))
       snapshot.attempted.items = true
       await this.save(snapshot)
+      // Use the client's explicit creation endpoint for new shop sets, then merge
+      // the collection. Read-back verifies data, not which in-game shop tab is open.
+      if (!latestItems.itemSets.some((set) => set.uid === targetItems.uid)) {
+        await this.request('POST', itemPath(summonerId), targetItems)
+        await checkSelection()
+      }
+      const registeredItems = await this.request<ItemSetDocument>('GET', itemPath(summonerId))
+      if (!registeredItems.itemSets.some((set) => set.uid === targetItems.uid)) throw new Error('客户端未完成装备套装创建，请重新连接后重试。')
       await this.request('PUT', itemPath(summonerId), {
-        ...latestItems,
-        itemSets: [targetItems, ...latestItems.itemSets.filter((set) => set.uid !== targetItems.uid)],
+        ...registeredItems,
+        itemSets: [targetItems, ...registeredItems.itemSets.filter((set) => set.uid !== targetItems.uid)],
         timestamp: Date.now(),
       })
 
@@ -178,7 +186,7 @@ export class ConfigurationManager {
       if (pageId) this.journal.managedPages[summonerId] = pageId
       this.journal.managedItems[managedKey] = targetItems.uid
       await this.save(snapshot)
-      return { ok: true, message: `已配好${runes ? '符文、' : ''}商店装备方案${applySpells ? '和召唤师技能' : ''}，开冲！`, summary: [plan.title, ...(snapshot.targetPage ? [String(snapshot.targetPage.name)] : []), targetItems.title] }
+      return { ok: true, message: `已配好${runes ? '符文、' : ''}装备方案${applySpells ? '和召唤师技能' : ''}。游戏内按 P → 物品套装，选择「${targetItems.title}」。`, summary: [plan.title, ...(snapshot.targetPage ? [String(snapshot.targetPage.name)] : []), targetItems.title] }
     } catch (error) {
       if (snapshot && Object.values(snapshot.attempted).some(Boolean)) {
         const errors = await this.compensate(snapshot)
@@ -334,7 +342,7 @@ function stable(value: unknown): string {
   return JSON.stringify(value)
 }
 function pageFingerprint(page: Omit<PerkPage, 'id'>) { return stable([page.name, page.primaryStyleId, page.subStyleId, page.selectedPerkIds]) }
-function itemFingerprint(set?: ItemSet) { return set ? stable([set.uid, set.title, set.associatedChampions, set.associatedMaps, set.blocks.map((group) => [group.type, group.items])]) : '' }
+function itemFingerprint(set?: ItemSet) { return set ? stable([set.uid, set.title, set.type, set.map, set.mode, set.associatedChampions, set.associatedMaps, set.blocks.map((group) => [group.type, group.items, group.hideIfSummonerSpell, group.showIfSummonerSpell])]) : '' }
 export function messageOf(error: unknown) { return error instanceof Error ? error.message : '客户端暂时无法完成操作' }
 
 function validatePlan(plan: BuildPlan) {

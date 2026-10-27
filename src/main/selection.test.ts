@@ -52,8 +52,11 @@ describe('mode and locked champion detection', () => {
 describe('window docking in DIP coordinates', () => {
   it('docks at the right edge, and falls back to the left when there is no room', () => {
     const work = { x: 0, y: 0, width: 1920, height: 1040 }
-    expect(dockBounds({ x: 50, y: 80, width: 1280, height: 720 }, work)).toEqual({ x: 1336, y: 80, width: 430, height: 720 })
-    expect(dockBounds({ x: 500, y: 80, width: 1280, height: 720 }, work).x).toBe(64)
+    const right = dockBounds({ x: 50, y: 80, width: 1280, height: 720 }, work)
+    expect(right).toEqual({ x: 1330, y: 80, width: 430, height: 720 })
+    expect(right.x).toBe(50 + 1280)
+    const left = dockBounds({ x: 500, y: 80, width: 1280, height: 720 }, work)
+    expect(left.x + left.width).toBe(500)
   })
   it('handles negative monitor origins and limited work areas', () => {
     const bounds = dockBounds({ x: -1700, y: -20, width: 1280, height: 1200 }, { x: -1920, y: 0, width: 1920, height: 800 })

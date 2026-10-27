@@ -22,7 +22,7 @@ function harness() {
     spell1Id: 4, spell2Id: 12, championId: 103, completed: true, canAdd: true, phase: 'ChampSelect', summonerId: 99, gameId: 1234,
     queue: { id: 420, mapId: 11, gameMode: 'CLASSIC' },
     failPostOnce: false, failItemsAfterWriteOnce: false, failRollbackItems: false, additionalSetOnFailure: false,
-    dropPageWrite: false, dropPageDelete: false,
+    dropPageWrite: false, dropPageDelete: false, dropItemRegistration: false,
     writes: [] as string[],
     beforeRequest: undefined as undefined | ((method: string, path: string) => Promise<void>),
   }
@@ -55,7 +55,12 @@ function harness() {
     else if (path === '/lol-perks/v1/currentpage') db.pages.forEach((page) => { page.current = page.id === Number(raw) })
     else if (path.includes('/lol-item-sets/')) {
       if (method === 'GET') value = db.items
+      else if (method === 'POST') {
+        if (!db.dropItemRegistration) db.items.itemSets.push(structuredClone(raw) as ItemSetDocument['itemSets'][number])
+      }
       else {
+        const incoming = raw as ItemSetDocument
+        if (incoming.itemSets.some((set) => !db.items.itemSets.some((current) => current.uid === set.uid))) throw new Error('装备方案尚未通过 POST 注册')
         if (db.failRollbackItems && !db.failItemsAfterWriteOnce) throw new Error('恢复接口离线')
         db.items = structuredClone(raw) as ItemSetDocument
         if (db.failItemsAfterWriteOnce) {
@@ -86,7 +91,7 @@ describe('LCU configuration transaction', () => {
     expect(db.pages).toEqual(originalPages)
     expect(db.spell2Id).toBe(12)
     expect(db.items.itemSets[0].associatedMaps).toEqual([12])
-    expect(db.writes).toEqual(['PUT /lol-item-sets/v1/item-sets/99/sets'])
+    expect(db.writes).toEqual(['POST /lol-item-sets/v1/item-sets/99/sets', 'PUT /lol-item-sets/v1/item-sets/99/sets'])
     await manager.restore()
     expect(db.items.itemSets).toEqual(originalItems.itemSets)
     expect(db.pages).toEqual(originalPages)
@@ -114,7 +119,9 @@ describe('LCU configuration transaction', () => {
     const originalPage = structuredClone(db.pages[0])
     const originalSets = structuredClone(db.items.itemSets)
     await manager.initialize()
-    expect((await manager.apply(champion, plan, true)).ok).toBe(true)
+    const result = await manager.apply(champion, plan, true)
+    expect(result.ok).toBe(true)
+    expect(result.message).toContain('物品套装')
     expect(db.pages).toHaveLength(2)
     expect(db.pages[0].name).toBe('我的原符文')
     expect(db.items.itemSets).toHaveLength(2)
@@ -125,6 +132,14 @@ describe('LCU configuration transaction', () => {
     expect(db.items.itemSets).toEqual(originalSets)
     expect(db.spell2Id).toBe(12)
     expect(manager.canRestore).toBe(false)
+  })
+  it('requires a registered shop entry instead of accepting a collection-only write', async () => {
+    const { db, manager } = harness()
+    db.dropItemRegistration = true
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, false)).rejects.toThrow('已恢复')
+    expect(db.items.itemSets.map((set) => set.uid)).toEqual(['player-owned'])
+    expect(db.pages).toHaveLength(1)
   })
   it('cleans up a new page even if POST applied but its response was lost', async () => {
     const { db, manager } = harness()

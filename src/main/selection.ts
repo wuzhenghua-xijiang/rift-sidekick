@@ -60,6 +60,7 @@ export function readSelection(session: ChampSelectSession, flow: GameflowSession
     championLocked,
     position: normalizePosition(local?.assignedPosition),
     ...mode,
+    queueId: flow.gameData?.queue?.id,
     sessionId: String(flow.gameData?.gameId || session.gameId || session.chatDetails?.multiUserChatId || ''),
     enemyChampionIds: (session.theirTeam || []).map((member) => member.championId || 0).filter((id) => id > 0),
     enemies: (session.theirTeam || []).filter((member) => Number(member.championId) > 0).map((member) => ({

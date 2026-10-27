@@ -50,6 +50,7 @@ export class LcuService {
           } catch { /* public session data can be unavailable during loading */ }
         }
         return { ...offline, connected: true, phase: phase || 'None', ...(postGame && !flow.gameData?.queue && previous ? { mode: previous.mode, modeLabel: previous.modeLabel } : detectMode(flow)),
+          queueId: flow.gameData?.queue?.id ?? (postGame ? previous?.queueId : undefined),
           ...(postGame && gameId ? { sessionId: String(gameId), position: previous?.position || null } : {}),
           ...(inGame && this.gameIdentity && this.gameIdentity.gameId === gameId ? { championId: this.gameIdentity.championId, championLocked: true, position: previous?.position || null, sessionId: String(gameId) } : {}),
         }

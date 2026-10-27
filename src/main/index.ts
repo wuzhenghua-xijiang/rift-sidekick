@@ -16,11 +16,16 @@ import { fetchTftGuide } from './tft'
 import { LaneRankingService } from './lane-rankings'
 import { PostGameService } from './postgame'
 import { UpdateService } from './update-service'
+import { JungleService } from './jungle-service'
+import { JungleOverlay } from './jungle-overlay'
+import { DEFAULT_JUNGLE_RULES, validJungleRules, type JungleRules } from '@shared/jungle'
 
 interface Preferences {
   autoConfig: boolean
   dock: boolean
   includeSpells: boolean
+  jungleEnabled: boolean
+  jungleRules: JungleRules
   selectedPlans: Record<string, string>
   positions: Record<string, Position>
 }
@@ -35,6 +40,7 @@ const replayGames = new Map<number, number>()
 const tftCodes = new Map<string, string>()
 let configuration: ConfigurationManager
 let updates: UpdateService | undefined
+let jungleOverlay: JungleOverlay | undefined
 let configurationReady = false
 let mainWindow: BrowserWindow | undefined
 let tray: Tray | undefined
@@ -51,15 +57,22 @@ let previousPhase = ''
 let operation = 0
 let quitting = false
 let preferencesWrites: Promise<void> = Promise.resolve()
-let preferences: Preferences = { autoConfig: true, dock: true, includeSpells: false, selectedPlans: {}, positions: {} }
+let preferences: Preferences = { autoConfig: true, dock: true, includeSpells: false, jungleEnabled: true, jungleRules: { ...DEFAULT_JUNGLE_RULES }, selectedPlans: {}, positions: {} }
 let state: AppState = {
   client: { connected: false, phase: 'ClientOffline', championId: null, championLocked: false, position: null, mode: 'ranked', message: '等待英雄联盟客户端…' },
   autoConfig: true, dock: true, includeSpells: false, canRestore: false, recoveryNeeded: false,
 }
+const jungle = new JungleService((next) => {
+  jungleOverlay?.update(next)
+  updateState({ jungle: { ...next, interactive: jungleOverlay?.interactive, shortcutAvailable: jungleOverlay?.shortcutAvailable } })
+  dock.observeGame(['waiting', 'live', 'unavailable'].includes(next.status) ? (game) => jungleOverlay?.observe(game) : undefined)
+})
 
 function updateState(next: Partial<AppState>) {
   state = { ...state, ...next }
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('rift:state', state)
+  const overlay = jungleOverlay?.window
+  if (overlay && !overlay.isDestroyed()) overlay.webContents.send('rift:state', state)
 }
 function updateConfigurationState() {
   updateState({ canRestore: configuration.canRestore, recoveryNeeded: configuration.recoveryNeeded })
@@ -78,7 +91,8 @@ function persistPreferences() {
 async function loadPreferences() {
   try {
     const value = JSON.parse(await readFile(join(app.getPath('userData'), 'preferences.json'), 'utf8')) as Partial<Preferences>
-    for (const key of ['autoConfig', 'dock', 'includeSpells'] as const) if (typeof value[key] === 'boolean') preferences[key] = value[key]
+    for (const key of ['autoConfig', 'dock', 'includeSpells', 'jungleEnabled'] as const) if (typeof value[key] === 'boolean') preferences[key] = value[key]
+    if (validJungleRules(value.jungleRules)) preferences.jungleRules = value.jungleRules
     if (value.selectedPlans && typeof value.selectedPlans === 'object') preferences.selectedPlans = value.selectedPlans
     if (value.positions && typeof value.positions === 'object') preferences.positions = value.positions
   } catch { /* use defaults on first launch */ }
@@ -117,6 +131,7 @@ function makeTray() {
     tray.setContextMenu(Menu.buildFromTemplate([
       { label: '显示助手', click: showAssistant },
       { label: '隐藏到后台', click: hideAssistant },
+      { label: '显示/操作野怪计时', click: () => jungleOverlay?.toggleInteraction(true) },
       { type: 'separator' },
       { label: '退出助手', click: () => app.quit() },
     ]))
@@ -128,7 +143,7 @@ function makeWindow() {
   const work = screen.getPrimaryDisplay().workArea
   mainWindow = new BrowserWindow({
     width: 430, height: Math.min(900, work.height), minWidth: 390, maxWidth: 520, minHeight: 520,
-    show: false, frame: false, backgroundColor: '#11101a', title: 'Rift Sidekick', autoHideMenuBar: true,
+    show: false, frame: false, roundedCorners: false, backgroundColor: '#11101a', title: 'Rift Sidekick', autoHideMenuBar: true,
     webPreferences: { preload: join(__dirname, '../preload/index.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true },
   })
   mainWindow.setMenu(null)
@@ -174,6 +189,7 @@ async function doRefreshClientState() {
   const next = { ...client, patch: data.getPatch() }
   if (JSON.stringify(old) !== JSON.stringify(next)) updateState({ client: next })
   const windowAction = gameWindow.update(client)
+  jungle.updateClient(client)
   if (windowAction === 'restore') backgroundHidden = false
   dock.setSuppressed(gameWindow.suppressed || backgroundHidden)
   if (windowAction === 'hide') mainWindow?.hide()
@@ -388,6 +404,28 @@ ipcMain.handle('rift:set-dock', async (_event, enabled: unknown) => {
   updateState({ dock: enabled })
   await persistPreferences()
 })
+ipcMain.handle('rift:jungle-enabled', async (_event, enabled: unknown) => {
+  if (typeof enabled !== 'boolean') return
+  preferences.jungleEnabled = enabled
+  jungle.configure(enabled, preferences.jungleRules)
+  jungle.updateClient(state.client)
+  await persistPreferences()
+})
+ipcMain.handle('rift:jungle-rules', async (_event, rules: unknown) => {
+  if (!validJungleRules(rules)) throw new Error('刷新间隔需为 30–1200 秒的整数。')
+  preferences.jungleRules = { ...rules }
+  jungle.configure(preferences.jungleEnabled, preferences.jungleRules)
+  await persistPreferences()
+})
+ipcMain.handle('rift:jungle-mark', (event, input) => {
+  if (event.sender !== jungleOverlay?.window?.webContents) throw new Error('请通过本局计时悬浮窗标记。')
+  jungle.mark(input?.gameId, input?.id, input?.clear === true)
+})
+ipcMain.handle('rift:jungle-layout', (event, input) => {
+  if (event.sender === jungleOverlay?.window?.webContents && typeof input?.collapsed === 'boolean' && typeof input?.camps === 'boolean') jungleOverlay.layout(input.collapsed, input.camps)
+})
+ipcMain.handle('rift:jungle-interact', () => jungleOverlay?.toggleInteraction(true))
+ipcMain.handle('rift:jungle-hide', (event) => { if (event.sender === jungleOverlay?.window?.webContents) jungleOverlay.hide() })
 ipcMain.handle('rift:open-source', async (_event, source: string) => {
   if (source === 'updates') { await shell.openExternal('https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/latest'); return }
   const urls: Record<string, string> = { opgg: 'https://op.gg/lol/champions', ddragon: 'https://developer.riotgames.com/docs/lol#data-dragon', github: 'https://github.com/LeagueAkari/LeagueAkari' }
@@ -410,6 +448,9 @@ else {
     try { await configuration.initialize(); configurationReady = true; updateConfigurationState() }
     catch (error) { updateState({ recoveryNeeded: true, lastConfig: { ok: false, message: messageOf(error), at: Date.now() } }) }
     installSecurityHeaders()
+    jungleOverlay = new JungleOverlay(() => updateState({ jungle: { ...jungle.state, interactive: jungleOverlay?.interactive, shortcutAvailable: jungleOverlay?.shortcutAvailable } }))
+    jungle.configure(preferences.jungleEnabled, preferences.jungleRules)
+    jungleOverlay.registerShortcut()
     updates = new UpdateService((update) => updateState({ update }), async () => {
       await refreshClientState()
       if (configuration.isBusy || state.lastConfig?.busy || postGame.isBusy) throw new Error('正在写入配置或提交点赞，请完成后再安装更新。')
@@ -439,6 +480,8 @@ app.on('before-quit', () => {
   if (autoTimer) clearTimeout(autoTimer)
   if (updateCheckTimer) clearTimeout(updateCheckTimer)
   operation++
+  jungle.dispose()
+  jungleOverlay?.destroy()
   dock.stop()
   tray?.destroy()
   tray = undefined

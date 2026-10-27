@@ -1,3 +1,5 @@
+import type { JungleRules, JungleState, JungleTimerId } from './jungle'
+
 export type Position = 'top' | 'jungle' | 'mid' | 'adc' | 'support'
 export type QueueMode = 'ranked' | 'aram' | 'aram-mayhem'
 export type GameMode = QueueMode | 'tft' | 'arena' | 'other'
@@ -69,6 +71,7 @@ export interface ClientState {
   position: Position | null
   mode: GameMode
   modeLabel?: string
+  queueId?: number
   sessionId?: string
   enemyChampionIds?: number[]
   enemies?: Array<{ championId: number; position: Position | null; locked: boolean }>
@@ -79,6 +82,7 @@ export interface ClientState {
 export interface AppState {
   backgroundAvailable?: boolean
   update?: UpdateState
+  jungle?: JungleState
   client: ClientState
   autoConfig: boolean
   dock: boolean
@@ -161,6 +165,12 @@ export interface RiftBridge {
   setAutoConfig(enabled: boolean): Promise<void>
   setIncludeSpells(enabled: boolean): Promise<void>
   setDock(enabled: boolean): Promise<void>
+  setJungleEnabled(enabled: boolean): Promise<void>
+  setJungleRules(rules: JungleRules): Promise<void>
+  markJungle(input: { gameId: string; id: JungleTimerId; clear?: boolean }): Promise<void>
+  jungleLayout(input: { collapsed: boolean; camps: boolean }): Promise<void>
+  jungleInteract(): Promise<void>
+  hideJungle(): Promise<void>
   reconnect(): Promise<void>
   checkUpdate(): Promise<UpdateState | undefined>
   downloadUpdate(): Promise<UpdateState | undefined>

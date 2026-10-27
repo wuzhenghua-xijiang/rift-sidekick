@@ -3,7 +3,7 @@ import { screen, type BrowserWindow } from 'electron'
 import { dockBounds } from './dock-bounds'
 
 // A single helper keeps Win32 declarations loaded. Nothing is injected into the game process.
-const WINDOW_SCRIPT = String.raw`
+export const WINDOW_SCRIPT = String.raw`
 $ErrorActionPreference = 'Stop'
 Add-Type -TypeDefinition @'
 using System;
@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 public static class RiftSidekickNative {
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+  [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr hWnd, int attribute, out RECT rect, int size);
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
@@ -27,17 +28,32 @@ while ($true) {
     $hwnd = [IntPtr]$p.MainWindowHandle
     $r = New-Object RiftSidekickNative+RECT
     if ([RiftSidekickNative]::GetWindowRect($hwnd, [ref]$r)) {
+      # GetWindowRect includes invisible resize borders on Windows 10/11.
+      $visibleFrame = New-Object RiftSidekickNative+RECT
+      if ([RiftSidekickNative]::DwmGetWindowAttribute($hwnd, 9, [ref]$visibleFrame, 16) -eq 0) { $r = $visibleFrame }
       [uint32]$foregroundProcess = 0
       [void][RiftSidekickNative]::GetWindowThreadProcessId([RiftSidekickNative]::GetForegroundWindow(), [ref]$foregroundProcess)
       $value = @{ visible = ([RiftSidekickNative]::IsWindowVisible($hwnd) -and -not [RiftSidekickNative]::IsIconic($hwnd)); x = $r.Left; y = $r.Top; width = ($r.Right - $r.Left); height = ($r.Bottom - $r.Top); foreground = ($foregroundProcess -eq $p.Id -or $foregroundProcess -eq SIDEKICK_PROCESS_ID) }
     }
   }
+  $g = Get-Process -Name 'League of Legends' -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+  $game = @{ visible = $false }
+  if ($null -ne $g) {
+    $gr = New-Object RiftSidekickNative+RECT
+    if ([RiftSidekickNative]::GetWindowRect([IntPtr]$g.MainWindowHandle, [ref]$gr)) {
+      [uint32]$fg = 0
+      [void][RiftSidekickNative]::GetWindowThreadProcessId([RiftSidekickNative]::GetForegroundWindow(), [ref]$fg)
+      $game = @{ visible = ([RiftSidekickNative]::IsWindowVisible([IntPtr]$g.MainWindowHandle) -and -not [RiftSidekickNative]::IsIconic([IntPtr]$g.MainWindowHandle)); foreground = ($fg -eq $g.Id -or $fg -eq SIDEKICK_PROCESS_ID); x = $gr.Left; y = $gr.Top; width = ($gr.Right - $gr.Left); height = ($gr.Bottom - $gr.Top) }
+    }
+  }
+  $value.game = $game
   $json = $value | ConvertTo-Json -Compress
   if ($json -ne $last) { [Console]::Out.WriteLine($json); [Console]::Out.Flush(); $last = $json }
   Start-Sleep -Milliseconds 400
 }
 `
-interface ClientWindow { visible: boolean; x?: number; y?: number; width?: number; height?: number; foreground?: boolean }
+export interface ObservedWindow { visible: boolean; x?: number; y?: number; width?: number; height?: number; foreground?: boolean }
+interface ClientWindow extends ObservedWindow { game?: ObservedWindow }
 
 export class WindowsDock {
   private helper?: ChildProcessWithoutNullStreams
@@ -48,6 +64,15 @@ export class WindowsDock {
   private lastBounds = ''
   private sawClient = false
   private suppressed = false
+  private gameObserver?: (window: ObservedWindow) => void
+  private lastGame: ObservedWindow = { visible: false }
+
+  observeGame(observer?: (window: ObservedWindow) => void) {
+    this.gameObserver = observer
+    observer?.(this.lastGame)
+    if (this.enabled || observer) this.start()
+    else this.stop()
+  }
 
   setSuppressed(value: boolean) {
     if (this.suppressed === value) return
@@ -64,7 +89,7 @@ export class WindowsDock {
     this.enabled = enabled
     if (enabled) this.start()
     else {
-      this.stop()
+      if (!this.gameObserver) this.stop()
       if (this.window && !this.window.isDestroyed()) {
         this.window.setAlwaysOnTop(false)
         if (this.hiddenByDock && !this.suppressed) this.window.show()
@@ -73,8 +98,8 @@ export class WindowsDock {
     }
   }
   start() {
-    if (process.platform !== 'win32' || this.helper || !this.enabled) return
-    const script = WINDOW_SCRIPT.replace('SIDEKICK_PROCESS_ID', String(process.pid))
+    if (process.platform !== 'win32' || this.helper || (!this.enabled && !this.gameObserver)) return
+    const script = WINDOW_SCRIPT.replaceAll('SIDEKICK_PROCESS_ID', String(process.pid))
     this.helper = spawn('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true, stdio: 'pipe' })
     let buffer = ''
     this.helper.stdout.on('data', (chunk: Buffer) => {
@@ -88,8 +113,8 @@ export class WindowsDock {
       }
     })
     this.helper.stderr.resume()
-    this.helper.on('error', () => this.scheduleRestart())
-    this.helper.on('exit', () => { this.helper = undefined; this.scheduleRestart() })
+    this.helper.on('error', () => { this.clearObservation(); this.scheduleRestart() })
+    this.helper.on('exit', () => { this.helper = undefined; this.clearObservation(); this.scheduleRestart() })
   }
   stop() {
     if (this.restartTimer) clearTimeout(this.restartTimer)
@@ -97,12 +122,20 @@ export class WindowsDock {
     const helper = this.helper
     this.helper = undefined
     if (helper) { helper.removeAllListeners(); helper.kill() }
+    this.clearObservation()
+  }
+  private clearObservation() {
+    this.lastGame = { visible: false }
+    this.gameObserver?.(this.lastGame)
+    if (this.window && !this.window.isDestroyed()) this.window.setAlwaysOnTop(false)
   }
   private scheduleRestart() {
-    if (!this.enabled || this.restartTimer || this.window?.isDestroyed()) return
+    if ((!this.enabled && !this.gameObserver) || this.restartTimer || this.window?.isDestroyed()) return
     this.restartTimer = setTimeout(() => { this.restartTimer = undefined; this.helper = undefined; this.start() }, 8_000)
   }
   private move(client: ClientWindow) {
+    this.lastGame = client.game || { visible: false }
+    this.gameObserver?.(this.lastGame)
     const window = this.window
     if (!this.enabled || this.suppressed || !window || window.isDestroyed()) return
     if (!client.visible || !client.width || !client.height) {
