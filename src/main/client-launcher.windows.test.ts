@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
-import { copyFile, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises'
+import { copyFile, mkdir, mkdtemp, readFile, realpath, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it, vi } from 'vitest'
@@ -12,7 +12,8 @@ it.runIf(process.platform === 'win32')('checks a cold Windows launch without tre
 }, 30_000)
 
 it.runIf(process.platform === 'win32')('opens and confirms a native official-style window despite a residual background process, then focuses it on the next click', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'rift 英雄联盟（启动测试） '))
+  // CI's TEMP can contain RUNNER~1; compare canonical paths just like the production launcher.
+  const directory = await realpath(await mkdtemp(join(tmpdir(), 'rift 英雄联盟（启动测试） ')))
   const launcher = join(directory, 'Launcher')
   const file = join(launcher, 'Client.exe')
   await mkdir(launcher)
@@ -71,12 +72,12 @@ Add-Type -TypeDefinition $source -ReferencedAssemblies 'System','System.Windows.
   } finally {
     // Stop only the fixture at its exact temporary path; never terminate a real game process.
     await powershell(String.raw`
-Get-Process -Name 'Client' -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq ${psString(file)} } | Stop-Process -Force
+Get-Process -Name 'Client' -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq ${psString(file)} } | Stop-Process -Force -PassThru | Wait-Process -Timeout 10
 `)
     const closed = once(residual, 'close')
     residual.kill()
     await closed
-    await rm(directory, { recursive: true, force: true })
+    await rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   }
 }, 90_000)
 
