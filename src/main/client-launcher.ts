@@ -6,6 +6,17 @@ import type { GameInstallation, LauncherState } from '@shared/desktop-tools'
 import { powershell } from './powershell'
 import { DirectLaunchError, tencentLaunchCandidates } from './tencent-launch-paths'
 import { startTencentClient, verifyTencentLaunch } from './tencent-launch'
+import { WINDOWS_PROCESS_IDENTITY } from './windows-process-identity'
+
+type LaunchStage = '检查客户端状态' | '显示已运行的客户端' | '检查客户端文件' | '启动前性能优化' | '启动官方客户端'
+function launchErrorCode(error: unknown) {
+  if (!error || typeof error !== 'object') return ''
+  const value = error as { code?: unknown; killed?: unknown }
+  if (value.killed) return '（系统检查超时）'
+  if (typeof value.code === 'number' && Number.isSafeInteger(value.code)) return `（系统进程退出码 ${value.code}）`
+  if (typeof value.code === 'string' && /^(ENOENT|EACCES|EPERM|ETIMEDOUT|ENOEXEC|EINVAL)$/.test(value.code)) return `（系统错误 ${value.code}）`
+  return ''
+}
 
 export interface LauncherRuntime {
   platform: string
@@ -97,30 +108,35 @@ export class ClientLauncher {
     if (this.runtime.platform !== 'win32') return { ok: false, message: this.state.message }
     if (this.scanJob) await this.scanJob
     let prepared = false
+    let stage: LaunchStage = '检查客户端状态'
     try {
       if (this.connected || await this.runtime.clientRunning()) {
+        stage = '显示已运行的客户端'
         await this.runtime.focus()
         const message = this.connected ? '已请求显示英雄联盟客户端。' : '客户端已在运行，已请求显示；下次从助手启动时会先优化。'
         this.publish({ message })
         return { ok: true, message }
       }
+      stage = '检查客户端文件'
       const selected = this.state.selectedPath
       const installation = selected ? await this.resolvePreferred(selected) : undefined
       if (!installation) { this.publish({ status: 'not-found', message: '客户端文件不存在，请重新查找或选择游戏位置。' }); return { ok: false, message: this.state.message } }
       if (installation.path !== selected) this.publish({ selectedPath: installation.path,
         installations: [installation, ...this.state.installations.filter((entry) => ![selected?.toLowerCase(), installation.path.toLowerCase()].includes(entry.path.toLowerCase()))] })
       this.publish({ status: 'launching', message: '正在完成启动前性能优化…' })
+      stage = '启动前性能优化'
       const preparation = await beforeLaunch(installation)
       if (!preparation.ok) { this.publish({ status: 'error', message: preparation.message }); return preparation }
       prepared = true
       this.publish({ message: '启动前检查已完成，正在打开并确认官方客户端；如出现 Windows 授权窗口，请完成授权。' })
+      stage = '启动官方客户端'
       await this.runtime.launch(installation)
       this.publish({ status: this.connected ? 'connected' : 'waiting-login',
         message: this.connected ? '已连接英雄联盟客户端。' : '已打开官方客户端，请在官方窗口完成登录；助手会自动连接。' })
       return { ok: true, message: this.state.message }
     } catch (error) {
       if (prepared) await failedLaunch().catch(() => undefined)
-      const detail = error instanceof DirectLaunchError ? error.message : '客户端启动失败，请确认文件可用及权限正常后重试。'
+      const detail = error instanceof DirectLaunchError ? error.message : `${stage}失败${launchErrorCode(error)}，请重试；若仍失败，请反馈这条完整提示。`
       this.publish({ status: 'error', message: this.state.selectedPath ? `${detail} 启动路径：${this.state.selectedPath}` : detail })
       return { ok: false, message: this.state.message }
     }
@@ -217,6 +233,32 @@ while ($queue.Count -gt 0 -and $clock.ElapsedMilliseconds -lt 45000 -and $visite
 ConvertTo-Json -InputObject @($found) -Compress
 `
 
+// A residual process is not an open client. Use the same session/window checks for detection and focus.
+const RUNNING_CLIENT_WINDOW = String.raw`
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+${WINDOWS_PROCESS_IDENTITY}
+public static class RiftRunningClientWindow {
+  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr handle);
+  [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr handle, int command);
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr handle);
+}
+'@
+function Find-RiftRunningClientWindow {
+  $session = [Diagnostics.Process]::GetCurrentProcess().SessionId
+  foreach ($client in @(Get-Process -Name 'LeagueClientUx','LeagueClient','Client' -ErrorAction SilentlyContinue)) {
+    try {
+      if ($client.SessionId -ne $session -or $client.MainWindowHandle -eq [IntPtr]::Zero) { continue }
+      if (-not [RiftRunningClientWindow]::IsWindowVisible($client.MainWindowHandle)) { continue }
+      if ($client.ProcessName -eq 'Client' -and [RiftProcessIdentity]::PathFor($client.Id) -notmatch '\\Launcher\\Client\.exe$') { continue }
+      return $client.MainWindowHandle
+    } catch { continue }
+  }
+  return [IntPtr]::Zero
+}
+`
+
 export class WindowsLauncherRuntime implements LauncherRuntime {
   platform = process.platform
   async resolve(path: string) {
@@ -259,30 +301,18 @@ export class WindowsLauncherRuntime implements LauncherRuntime {
     else await start()
   }
   async clientRunning() {
-    return await powershell(String.raw`
-$clients = @(Get-Process -Name 'LeagueClient','LeagueClientUx' -ErrorAction SilentlyContinue)
-$login = @(Get-Process -Name 'Client' -ErrorAction SilentlyContinue | Where-Object {
-  try { $_.Path -match '\\Launcher\\Client\.exe$' -and $_.MainWindowTitle -like '*英雄联盟*' } catch { $false }
-})
-if ($clients.Count -gt 0 -or $login.Count -gt 0) { 'running' } else { 'stopped' }
+    return await powershell(RUNNING_CLIENT_WINDOW + String.raw`
+if ((Find-RiftRunningClientWindow) -ne [IntPtr]::Zero) { 'running' } else { 'stopped' }
 `) === 'running'
   }
   async focus() {
-    await powershell(String.raw`
-Add-Type -TypeDefinition @'
-using System;
-using System.Runtime.InteropServices;
-public static class RiftLaunchWindow {
-  [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr handle, int command);
-  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr handle);
-}
-'@
-$client = Get-Process -Name 'LeagueClientUx','LeagueClient','Client' -ErrorAction SilentlyContinue | Where-Object {
-  $_.MainWindowHandle -ne 0 -and ($_.ProcessName -ne 'Client' -or ($_.Path -match '\\Launcher\\Client\.exe$' -and $_.MainWindowTitle -like '*英雄联盟*'))
-} | Select-Object -First 1
-if ($null -eq $client) { throw 'No client window' }
-[void][RiftLaunchWindow]::ShowWindowAsync($client.MainWindowHandle, 9)
-[void][RiftLaunchWindow]::SetForegroundWindow($client.MainWindowHandle)
+    const result = await powershell(RUNNING_CLIENT_WINDOW + String.raw`
+$window = Find-RiftRunningClientWindow
+if ($window -eq [IntPtr]::Zero) { 'closed'; return }
+[void][RiftRunningClientWindow]::ShowWindowAsync($window, 9)
+[void][RiftRunningClientWindow]::SetForegroundWindow($window)
+'focused'
 `)
+    if (result !== 'focused') throw new DirectLaunchError('客户端窗口已关闭或暂不可用，请再点一次启动。')
   }
 }
