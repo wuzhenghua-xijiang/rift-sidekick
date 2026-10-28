@@ -73,7 +73,7 @@ main/index.ts（偏好、调度、已注册方案、自动配置）
 
 写入：`/lol-perks/v1/pages`、`/lol-perks/v1/pages/{id}`、`/lol-perks/v1/currentpage`、`/lol-item-sets/v1/item-sets/{summonerId}/sets`，可选 `/lol-champ-select/v1/session/my-selection`。
 
-装备新建使用 POST，集合更新使用 PUT。写入确认包括类型、地图、模式、适用英雄和各装备组；成功提示给出物品套装入口，接口不保证选中游戏商店标签。
+装备新建使用 POST，集合更新使用 PUT。游戏内自定义套装按 `sortrank` 降序排列，集合数组第一项不等于商店第一套；依据为 [Riot 旧版物品套装文档存档](https://github.com/CommunityDragon/HexDocs/blob/master/lol/misc/itemsets.md)。每次应用前读取最新集合，给当前助手套装设置高于其他自定义套装的排序值并复用已有助手 UID，保留其他套装。写入确认包括类型、地图、模式、适用英雄、各装备组和排序；如果读回的排序被丢弃或仍有其他套装优先，则失败并执行补偿。排序遵守 LCU int32 范围，达到上限时停止而非溢出。撤回恢复原套装内容及排序；成功提示给出物品套装第一套入口，接口不保证选中游戏商店标签。真实国服游戏中的第一页显示仍待复测；排序修复尚未进入已发布的 0.2.3。
 
 计时路径仅使用 `GET /lol-game-settings/v1/ready`、`GET/PATCH /lol-game-settings/v1/game-settings` 与 `POST /lol-game-settings/v1/save`，设置结构必须包含已知的 `HUD.MinimapEnableAllTimers`；只改此项并保留数值/字符串/布尔类型，读回及账号确认通过才显示已配置。未知选项、接口失败和保存未确认均提示游戏内设置；加载与对局不写入，不修改客户端文件。关闭偏好只停止自动配置，不反向关闭游戏设置。已移除旧手动计时、计时专用 2999 数据轮询和游戏窗口观察；旧计时偏好不再加载或保存。
 

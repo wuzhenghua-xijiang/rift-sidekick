@@ -146,6 +146,9 @@ export class ConfigurationManager {
       await checkSelection()
       // Merge into the latest collection so other client changes are preserved.
       const latestItems = await this.request<ItemSetDocument>('GET', itemPath(summonerId))
+      // The shop sorts custom sets by descending sortrank, independently of
+      // their position in the LCU collection. Rank the current plan first.
+      targetItems.sortrank = firstItemSetRank(latestItems.itemSets, targetItems.uid)
       snapshot.attempted.items = true
       await this.save(snapshot)
       // Use the client's explicit creation endpoint for new shop sets, then merge
@@ -179,7 +182,11 @@ export class ConfigurationManager {
         if (!afterPage || pageFingerprint(afterPage) !== pageFingerprint(snapshot.targetPage)) throw new Error('客户端没有保留预期的符文配置。')
         if (!afterPage.current && !afterPage.isActive) throw new Error('客户端没有切换到助手符文页。')
       }
-      if (itemFingerprint(afterItems.itemSets.find((set) => set.uid === targetItems.uid)) !== itemFingerprint(targetItems)) throw new Error('客户端没有保留预期的装备方案。')
+      const afterItemSet = afterItems.itemSets.find((set) => set.uid === targetItems.uid)
+      if (itemFingerprint(afterItemSet) !== itemFingerprint(targetItems)) throw new Error('客户端没有保留预期的装备方案。')
+      if (afterItemSet?.sortrank !== targetItems.sortrank || afterItems.itemSets.some((set) => set.uid !== targetItems.uid && set.type === 'custom' && set.sortrank >= targetItems.sortrank)) {
+        throw new Error('客户端没有将当前装备方案排到第一套，请重试。')
+      }
       if (snapshot.targetSpells) {
         const member = afterSelection.session.myTeam?.find((player) => player.cellId === afterSelection.session.localPlayerCellId)
         if (member?.spell1Id !== snapshot.targetSpells.spell1Id || member.spell2Id !== snapshot.targetSpells.spell2Id) throw new Error('客户端没有保留预期的召唤师技能。')
@@ -189,7 +196,7 @@ export class ConfigurationManager {
       if (pageId) this.journal.managedPages[summonerId] = pageId
       this.journal.managedItems[managedKey] = targetItems.uid
       await this.save(snapshot)
-      return { ok: true, message: `已配好${runes ? '符文、' : ''}装备方案${applySpells ? '和召唤师技能' : ''}。游戏内按 P → 物品套装，选择「${targetItems.title}」。`, summary: [plan.title, ...(snapshot.targetPage ? [String(snapshot.targetPage.name)] : []), targetItems.title] }
+      return { ok: true, message: `已配好${runes ? '符文、' : ''}装备方案${applySpells ? '和召唤师技能' : ''}。游戏内按 P → 物品套装，第一套为「${targetItems.title}」。`, summary: [plan.title, ...(snapshot.targetPage ? [String(snapshot.targetPage.name)] : []), targetItems.title] }
     } catch (error) {
       if (snapshot && Object.values(snapshot.attempted).some(Boolean)) {
         const errors = await this.compensate(snapshot)
@@ -284,7 +291,8 @@ export class ConfigurationManager {
         timestamp: Date.now(),
       })
       const verified = await this.request<ItemSetDocument>('GET', itemPath(snapshot.summonerId))
-      if (itemFingerprint(verified.itemSets.find((set) => set.uid === snapshot.targetItems.uid)) !== itemFingerprint(before)) throw new Error('客户端没有保留恢复后的装备方案')
+      const restored = verified.itemSets.find((set) => set.uid === snapshot.targetItems.uid)
+      if (itemFingerprint(restored) !== itemFingerprint(before) || restored?.sortrank !== before?.sortrank) throw new Error('客户端没有保留恢复后的装备方案')
       snapshot.attempted.items = false
     })
     const targetPage = snapshot.targetPage
@@ -337,6 +345,12 @@ export class ConfigurationManager {
 }
 
 function itemPath(id: number) { return `/lol-item-sets/v1/item-sets/${id}/sets` }
+function firstItemSetRank(sets: ItemSet[], uid: string): number {
+  const highest = sets.reduce((rank, set) => set.uid !== uid && set.type === 'custom' && Number.isInteger(set.sortrank) ? Math.max(rank, set.sortrank) : rank, 0)
+  // LCU stores sortrank as int32; never overflow into a negative, last-place rank.
+  if (highest >= 2_147_483_647) throw new Error('已有装备套装的排序值达到上限，请在客户端调整排序后重试。')
+  return highest + 1
+}
 function isEditablePerkPage(page: PerkPage) {
   return page.isEditable !== false && page.isDeletable !== false && !page.isTemporary
 }

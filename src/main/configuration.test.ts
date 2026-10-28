@@ -23,6 +23,7 @@ function harness() {
     queue: { id: 420, mapId: 11, gameMode: 'CLASSIC' },
     failPostOnce: false, failItemsAfterWriteOnce: false, failRollbackItems: false, additionalSetOnFailure: false,
     dropPageWrite: false, dropPageDelete: false, dropItemRegistration: false,
+    dropItemRankOnce: false,
     writes: [] as string[],
     beforeRequest: undefined as undefined | ((method: string, path: string) => Promise<void>),
   }
@@ -54,7 +55,7 @@ function harness() {
     }
     else if (path === '/lol-perks/v1/currentpage') db.pages.forEach((page) => { page.current = page.id === Number(raw) })
     else if (path.includes('/lol-item-sets/')) {
-      if (method === 'GET') value = db.items
+      if (method === 'GET') value = { ...db.items, itemSets: [...db.items.itemSets].sort((a, b) => b.sortrank - a.sortrank) }
       else if (method === 'POST') {
         if (!db.dropItemRegistration) db.items.itemSets.push(structuredClone(raw) as ItemSetDocument['itemSets'][number])
       }
@@ -63,6 +64,10 @@ function harness() {
         if (incoming.itemSets.some((set) => !db.items.itemSets.some((current) => current.uid === set.uid))) throw new Error('装备方案尚未通过 POST 注册')
         if (db.failRollbackItems && !db.failItemsAfterWriteOnce) throw new Error('恢复接口离线')
         db.items = structuredClone(raw) as ItemSetDocument
+        if (db.dropItemRankOnce) {
+          db.dropItemRankOnce = false
+          db.items.itemSets[0].sortrank = 0
+        }
         if (db.failItemsAfterWriteOnce) {
           db.failItemsAfterWriteOnce = false
           if (db.additionalSetOnFailure) db.items.itemSets.push({ ...createItemSet(champion, plan, 'external-new'), title: '同时新建的其他方案' })
@@ -158,6 +163,60 @@ describe('LCU configuration transaction', () => {
     await expect(manager.apply(champion, plan, false)).rejects.toThrow('已恢复')
     expect(db.items.itemSets.map((set) => set.uid)).toEqual(['player-owned'])
     expect(db.pages).toHaveLength(1)
+  })
+  it('puts the applied recommendation above existing shop sets by rank without changing their contents', async () => {
+    const { db, manager, request, store } = harness()
+    db.items.itemSets[0].sortrank = 25
+    const original = structuredClone(db.items.itemSets[0])
+    await manager.initialize()
+    const result = await manager.apply(champion, plan, false)
+    const sets = (await request<ItemSetDocument>('GET', '/lol-item-sets/v1/item-sets/99/sets')).itemSets
+    expect(sets[0].uid).toBe(store.journal?.snapshot?.targetItems.uid)
+    expect(sets[0].sortrank).toBeGreaterThan(original.sortrank)
+    expect(sets[0].blocks).toEqual(createItemSet(champion, plan).blocks)
+    expect(sets.find((set) => set.uid === original.uid)).toEqual(original)
+    expect(result.message).toContain('第一套')
+    await manager.restore()
+    expect(db.items.itemSets).toEqual([original])
+  })
+  it('overwrites the current managed shop set in first place when another recommendation is applied', async () => {
+    const { db, manager, request, store } = harness()
+    await manager.initialize()
+    await manager.apply(champion, plan, false)
+    const first = structuredClone(db.items.itemSets[0])
+    db.items.itemSets.push({ ...createItemSet(champion, plan, 'external-new'), title: '其他装备方案', sortrank: 40 })
+    const alternative = { ...plan, title: '备选', itemGroups: [{ label: '核心', ids: [3089, 3137], names: [] }] }
+    await manager.apply(champion, alternative, false)
+    const sets = (await request<ItemSetDocument>('GET', '/lol-item-sets/v1/item-sets/99/sets')).itemSets
+    expect(sets[0]).toMatchObject({ uid: first.uid, title: 'Rift · 阿狸 · 备选' })
+    expect(sets[0].sortrank).toBeGreaterThan(40)
+    expect(sets.filter((set) => set.uid === first.uid)).toHaveLength(1)
+    expect(sets).toHaveLength(3)
+    expect(store.journal?.snapshot?.targetItems.sortrank).toBe(sets[0].sortrank)
+    await manager.restore()
+    expect(db.items.itemSets.find((set) => set.uid === first.uid)).toEqual(first)
+    expect(db.items.itemSets.find((set) => set.uid === 'external-new')?.sortrank).toBe(40)
+  })
+  it('does not report success when the client keeps the items but discards their first-page rank', async () => {
+    const { db, manager } = harness()
+    db.items.itemSets[0].sortrank = 25
+    const original = structuredClone(db.items.itemSets)
+    db.dropItemRankOnce = true
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, false)).rejects.toThrow('没有将当前装备方案排到第一套')
+    expect(db.items.itemSets).toEqual(original)
+    expect(db.pages).toHaveLength(1)
+    expect(manager.canRestore).toBe(false)
+  })
+  it('does not overflow an existing maximum int32 shop rank or leave a partial configuration', async () => {
+    const { db, manager } = harness()
+    db.items.itemSets[0].sortrank = 2_147_483_647
+    const original = structuredClone(db.items.itemSets)
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, false)).rejects.toThrow('排序值达到上限')
+    expect(db.items.itemSets).toEqual(original)
+    expect(db.pages).toHaveLength(1)
+    expect(db.writes.some((write) => write.includes('/lol-item-sets/'))).toBe(false)
   })
   it('cleans up a new page even if POST applied but its response was lost', async () => {
     const { db, manager } = harness()
