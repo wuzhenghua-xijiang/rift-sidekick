@@ -43,4 +43,13 @@ describe('live lane statistics', () => {
     await expect(service.get('mid')).rejects.toThrow('offline')
     expect((await service.get('mid')).entries).toHaveLength(2)
   })
+  it('uses the champion role distribution for unassigned games and shares the lane cache', async () => {
+    const load = vi.fn(async () => raw())
+    const service = new LaneRankingService(load)
+    const [position, lanes] = await Promise.all([service.recommendedPosition(157), service.get('mid')])
+    expect(position).toBe('mid')
+    expect(lanes.entries).toHaveLength(2)
+    expect(await service.recommendedPosition(999)).toBeNull()
+    expect(load).toHaveBeenCalledOnce()
+  })
 })

@@ -32,10 +32,18 @@ export class LaneRankingService {
   private pending?: Promise<LaneRankings>
   constructor(private readonly load = fetchLaneStatistics) {}
   async get(position: Position): Promise<LaneRankings> {
+    return selectLaneRankings(await this.all(), position)
+  }
+  async recommendedPosition(championId: number): Promise<Position | null> {
+    const all = await this.all()
+    const roles = all.entries.filter((entry) => entry.championId === championId)
+    return roles.sort((a, b) => b.roleRate - a.roleRate || b.games - a.games)[0]?.position || null
+  }
+  private async all(): Promise<LaneRankings> {
     if (!this.cache || Date.now() - this.cache.fetchedAt >= 10 * 60_000) {
       this.pending ||= this.load().then((raw) => { this.cache = parseLaneStatistics(raw); return this.cache }).finally(() => { this.pending = undefined })
       await this.pending
     }
-    return selectLaneRankings(this.cache!, position)
+    return this.cache!
   }
 }

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BuildPlan, Champion, ClientState, Position, QueueMode } from '@shared/types'
+import { readSelection } from './selection'
 
 const fixture = vi.hoisted(() => ({
   client: {} as ClientState,
@@ -15,6 +16,7 @@ const fixture = vi.hoisted(() => ({
   apply: vi.fn(async () => ({ ok: true, message: '已读回确认' })),
   verify: vi.fn(async () => undefined),
   fetch: vi.fn<(...args: unknown[]) => Promise<BuildPlan[]>>(),
+  lanes: vi.fn<() => Promise<unknown>>(),
   champions: [
     { id: 'Ahri', key: 103, name: '阿狸', title: '', tags: [], icon: '', splash: '' },
     { id: 'Ziggs', key: 115, name: '吉格斯', title: '', tags: [], icon: '', splash: '' },
@@ -55,7 +57,7 @@ vi.mock('./configuration', () => ({ ConfigurationManager: class {
   async initialize() {} get recoveryNeeded() { return false } get canRestore() { return false }
   get isBusy() { return fixture.busy } apply = fixture.apply
 }, messageOf: (error: unknown) => error instanceof Error ? error.message : String(error) }))
-vi.mock('./opgg', () => ({ fetchRecommendedBuilds: fixture.fetch, fetchLaneStatistics: vi.fn() }))
+vi.mock('./opgg', () => ({ fetchRecommendedBuilds: fixture.fetch, fetchLaneStatistics: fixture.lanes }))
 vi.mock('./windows-dock', () => ({ WindowsDock: class { attach() {} setSuppressed() {} stop() {} setEnabled = fixture.dockEnabled } }))
 vi.mock('./native-jungle', () => ({ NativeJungleService: class { configure() {} updateClient() {} dispose() {} } }))
 vi.mock('./client-launcher', () => ({
@@ -81,6 +83,10 @@ beforeEach(() => {
   fixture.launch.mockClear()
   fixture.client = { connected: true, phase: 'ChampSelect', championId: 103, championLocked: true, position: 'mid', mode: 'ranked', sessionId: 'game-1' }
   fixture.fetch.mockReset().mockImplementation(async (...args) => plansFor(args[0] as Champion, args[1] as Position, args[2] as QueueMode))
+  fixture.lanes.mockReset().mockResolvedValue({ meta: { version: '16.21' }, data: [
+    { id: 103, positions: [{ name: 'MID', stats: { play: 100, win_rate: .5, pick_rate: .1, role_rate: .9 } }] },
+    { id: 115, positions: [{ name: 'ADC', stats: { play: 100, win_rate: .5, pick_rate: .1, role_rate: .8 } }] },
+  ] })
 })
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks() })
 
@@ -122,17 +128,55 @@ describe('automatic selection configuration from the main process', () => {
     await start(); await vi.advanceTimersByTimeAsync(1150)
     expect(fixture.apply).toHaveBeenCalledWith(fixture.champions[0], expect.objectContaining({ mode, position: 'mid' }), mode !== 'aram-mayhem', expect.any(Function))
   })
-  it('waits for lock and requires a lane only for classic games', async () => {
+  it('waits for lock, then applies an unassigned co-op selection using the champion primary role', async () => {
     fixture.client.championLocked = false
     fixture.client.position = null
     await start(); await vi.advanceTimersByTimeAsync(2600)
     expect(fixture.apply).not.toHaveBeenCalled()
-    fixture.client.championLocked = true
-    await refresh(); await vi.advanceTimersByTimeAsync(1150)
+    fixture.client = readSelection({ localPlayerCellId: 1, timer: { phase: 'FINALIZATION' },
+      myTeam: [{ cellId: 1, championId: 103, assignedPosition: '' }],
+      actions: [],
+    }, { gameData: { gameId: 123, queue: { id: 880, gameMode: 'CLASSIC', mapId: 11 } } })
+    await refresh(); await vi.advanceTimersByTimeAsync(2600)
+    expect(fixture.apply).toHaveBeenCalledOnce()
+    expect(fixture.apply).toHaveBeenCalledWith(fixture.champions[0], expect.objectContaining({ position: 'mid', mode: 'ranked' }), true, expect.any(Function))
+    expect(await fixture.handlers.get('rift:get-state')!()).toMatchObject({ client: { position: null, loadoutPosition: 'mid' }, lastConfig: { ok: true } })
+  })
+  it('keeps a manual role choice when the automatic role lookup arrives late', async () => {
+    fixture.client.position = null
+    let finish!: (value: unknown) => void
+    fixture.lanes.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve }))
+    await start()
+    await fixture.handlers.get('rift:select-position')!(undefined, { championId: 'Ahri', position: 'top' })
+    finish({ data: [{ id: 103, positions: [{ name: 'MID', stats: { play: 100, win_rate: .5, pick_rate: .1, role_rate: .9 } }] }] })
+    await vi.advanceTimersByTimeAsync(1150)
+    expect(fixture.apply).toHaveBeenCalledOnce()
+    expect(fixture.apply).toHaveBeenCalledWith(fixture.champions[0], expect.objectContaining({ position: 'top' }), true, expect.any(Function))
+  })
+  it('discards a role lookup from a previous champion and never blocks client polling', async () => {
+    fixture.client.position = null
+    let finish!: (value: unknown) => void
+    fixture.lanes.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve }))
+    await start()
+    fixture.client.championId = 115
+    await refresh()
+    finish({ data: [
+      { id: 103, positions: [{ name: 'MID', stats: { play: 100, win_rate: .5, pick_rate: .1, role_rate: .9 } }] },
+      { id: 115, positions: [{ name: 'ADC', stats: { play: 100, win_rate: .5, pick_rate: .1, role_rate: .8 } }] },
+    ] })
+    await vi.advanceTimersByTimeAsync(2600)
+    expect(fixture.apply).toHaveBeenCalledOnce()
+    expect(fixture.apply).toHaveBeenCalledWith(fixture.champions[1], expect.objectContaining({ position: 'adc' }), true, expect.any(Function))
+  })
+  it('allows manual configuration if primary role statistics cannot be loaded', async () => {
+    fixture.client.position = null
+    fixture.lanes.mockRejectedValueOnce(new Error('offline'))
+    await start(); await vi.advanceTimersByTimeAsync(3900)
     expect(fixture.apply).not.toHaveBeenCalled()
+    expect(fixture.lanes).toHaveBeenCalledOnce()
     await fixture.handlers.get('rift:select-position')!(undefined, { championId: 'Ahri', position: 'top' })
     await vi.advanceTimersByTimeAsync(1150)
-    expect(fixture.apply).toHaveBeenCalledWith(fixture.champions[0], expect.objectContaining({ position: 'top' }), true, expect.any(Function))
+    expect(fixture.apply).toHaveBeenCalledOnce()
   })
   it('discards delayed recommendations after a hero and mode change', async () => {
     let finish!: (plans: BuildPlan[]) => void

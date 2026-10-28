@@ -23,13 +23,16 @@ export class LcuHttpError extends Error {
 export class LcuService {
   private credentials?: Credentials
   private gameIdentity?: { gameId: number; championId: number }
+  private gameContext?: ClientState
+
+  constructor(private readonly platform: string = process.platform) {}
 
   async currentClientState(previous?: ClientState): Promise<ClientState> {
     const offline: ClientState = {
       connected: false, phase: 'ClientOffline', championId: null, championLocked: false,
       position: null, mode: previous?.mode || 'ranked',
     }
-    if (process.platform !== 'win32') return { ...offline, message: '当前为界面预览；客户端连接与吸附需在 Windows 上使用。' }
+    if (this.platform !== 'win32') return { ...offline, message: '当前为界面预览；客户端连接与吸附需在 Windows 上使用。' }
     try {
       const phase = await this.request<string>('GET', '/lol-gameflow/v1/gameflow-phase')
       if (phase !== 'ChampSelect') {
@@ -39,27 +42,39 @@ export class LcuService {
         }
         const inGame = isPlaying(phase)
         const postGame = isPostGame(phase)
-        const gameId = flow.gameData?.gameId || (postGame ? this.gameIdentity?.gameId || Number(previous?.sessionId) || undefined : undefined)
-        if (!inGame && !postGame) this.gameIdentity = undefined
+        const remembered = this.gameContext || previous
+        const context = (inGame || postGame) && remembered?.sessionId &&
+          (remembered.phase === 'ChampSelect' || isPlaying(remembered.phase) || isPostGame(remembered.phase)) &&
+          (!flow.gameData?.gameId || remembered.sessionId === String(flow.gameData.gameId)) ? remembered : undefined
+        const gameId = flow.gameData?.gameId || (context ? Number(context.sessionId) || undefined : undefined)
+        if (!inGame && !postGame) { this.gameIdentity = undefined; this.gameContext = undefined }
         if (inGame && gameId && this.gameIdentity?.gameId !== gameId) {
+          let championId = context?.championLocked ? context.championId : null
           try {
             const local = await this.request<{ puuid?: string; summonerId?: number }>('GET', '/lol-summoner/v1/current-summoner')
             const player = flow.gameData?.playerChampionSelections?.find((entry) => (local.puuid && entry.puuid === local.puuid) || (local.summonerId && entry.summonerId === local.summonerId))
-            const championId = player?.championId || (previous?.phase === 'ChampSelect' && previous.sessionId === String(gameId) && previous.championLocked ? previous.championId : null)
-            if (championId) this.gameIdentity = { gameId, championId }
+            championId = player?.championId || championId
           } catch { /* public session data can be unavailable during loading */ }
+          if (championId) this.gameIdentity = { gameId, championId }
         }
-        return { ...offline, connected: true, phase: phase || 'None', ...(postGame && !flow.gameData?.queue && previous ? { mode: previous.mode, modeLabel: previous.modeLabel } : detectMode(flow)),
-          queueId: flow.gameData?.queue?.id ?? (postGame ? previous?.queueId : undefined),
-          ...(postGame && gameId ? { sessionId: String(gameId), position: previous?.position || null } : {}),
-          ...(inGame && this.gameIdentity && this.gameIdentity.gameId === gameId ? { championId: this.gameIdentity.championId, championLocked: true, position: previous?.position || null, sessionId: String(gameId) } : {}),
+        const queue = flow.gameData?.queue
+        const hasMode = queue?.gameMode || queue?.mapId || queue?.id || flow.map?.gameMode || flow.map?.id
+        const next: ClientState = { ...offline, connected: true, phase: phase || 'None',
+          ...(!hasMode && context ? { mode: context.mode, modeLabel: context.modeLabel } : detectMode(flow)),
+          queueId: queue?.id ?? context?.queueId,
+          ...((inGame || postGame) && gameId ? { sessionId: String(gameId), position: context?.position || null } : {}),
+          ...(inGame && this.gameIdentity && this.gameIdentity.gameId === gameId ? { championId: this.gameIdentity.championId, championLocked: true } : {}),
         }
+        if (inGame || postGame) this.gameContext = next
+        return next
       }
       const [session, flow] = await Promise.all([
         this.request<ChampSelectSession>('GET', '/lol-champ-select/v1/session'),
         this.request<GameflowSession>('GET', '/lol-gameflow/v1/session'),
       ])
-      return readSelection(session, flow)
+      const next = readSelection(session, flow)
+      this.gameContext = next
+      return next
     } catch (error) {
       this.credentials = undefined
       return { ...offline, message: error instanceof Error ? error.message : '客户端连接暂时中断，正在重连。' }

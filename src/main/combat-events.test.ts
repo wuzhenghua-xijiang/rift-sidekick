@@ -99,4 +99,26 @@ describe('live LOL combat event inference', () => {
     expect(() => readCombatSnapshot(raw(100), ['观战账号#CN1'])).toThrow('登录账号不匹配')
     expect(() => readCombatSnapshot(raw(100), ['队友#CN1'])).toThrow('登录账号不匹配')
   })
+  it('recognizes co-op events identified by champion names while keeping account identity checks separate', () => {
+    const snapshot = (time: number, events: unknown[] = []) => ({
+      ...raw(time, events), allPlayers: [
+        { ...roster[0], championName: '九尾妖狐', rawChampionName: 'game_character_displayname_Ahri' },
+        { isBot: true, team: 'CHAOS', isDead: false, riotId: '', summonerName: '', championName: '黑暗之女', rawChampionName: 'game_character_displayname_Annie' },
+      ],
+    })
+    const analyzer = new CombatAnalyzer()
+    analyzer.ingest(readCombatSnapshot(snapshot(100), ['本人#CN1']))
+    const events = [kill(1, 101, 'Ahri', 'Annie')]
+    analyzer.ingest(readCombatSnapshot(snapshot(101, events), ['本人#CN1']))
+    expect(analyzer.ingest(readCombatSnapshot(snapshot(103, events), ['本人#CN1']))?.kind).toBe('kill')
+    expect(() => readCombatSnapshot(snapshot(103, events), ['Ahri'])).toThrow('登录账号不匹配')
+  })
+  it('ignores ambiguous champion events in mirror matches', () => {
+    const snapshot = (time: number, events: unknown[] = []) => ({ ...raw(time, events), allPlayers: roster.map((player, i) => ({ ...player, championName: i < 2 ? 'Ahri' : 'Annie' })) })
+    const analyzer = new CombatAnalyzer()
+    analyzer.ingest(readCombatSnapshot(snapshot(100)))
+    const events = [kill(1, 101, 'Ahri', 'Annie')]
+    analyzer.ingest(readCombatSnapshot(snapshot(101, events)))
+    expect(analyzer.ingest(readCombatSnapshot(snapshot(103, events)))).toBeUndefined()
+  })
 })

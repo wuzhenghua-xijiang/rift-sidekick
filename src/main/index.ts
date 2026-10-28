@@ -43,6 +43,7 @@ interface Preferences {
   selectedPlans: Record<string, string>
   positions: Record<string, Position>
 }
+interface InferredPosition { key: string; position?: Position; message?: string }
 const data = new DataService()
 const lcu = new LcuService()
 const dock = new WindowsDock()
@@ -74,6 +75,7 @@ let pollPromise: Promise<void> | undefined
 let autoGeneration = 0
 let lastAutoKey = ''
 let currentAutoKey = ''
+let inferredPosition: InferredPosition | undefined
 let previousPhase = ''
 let operation = 0
 let quitting = false
@@ -239,8 +241,31 @@ async function doRefreshClientState() {
   if (isChampSelect && previousPhase !== 'ChampSelect') autoGeneration++
   previousPhase = client.phase
   const champion = client.championId ? data.byKey(client.championId) : undefined
-  const position = client.position || (champion ? preferences.positions[champion.id] : null) || (client.mode === 'aram' || client.mode === 'aram-mayhem' ? 'mid' : null)
-  const next = { ...client, loadoutPosition: position || undefined, patch: data.getPatch() }
+  const explicitPosition = client.position || (champion ? preferences.positions[champion.id] : null)
+  const roleKey = isChampSelect && champion && client.championLocked && client.mode === 'ranked'
+    ? `${autoGeneration}:${client.sessionId}:${client.championId}` : ''
+  if (inferredPosition?.key !== roleKey) inferredPosition = undefined
+  if (roleKey && !explicitPosition && !inferredPosition) {
+    const lookup: InferredPosition = { key: roleKey }
+    inferredPosition = lookup
+    // Co-op, quickplay and custom games may not assign a lane. Keep LCU polling
+    // responsive while loading the champion's main role from the shared statistics.
+    void laneRankings.recommendedPosition(client.championId!).then((position) => {
+      lookup.position = position || undefined
+      if (!position) lookup.message = '当前英雄没有常用分路数据，请选择本局分路后配置。'
+    }).catch(() => {
+      lookup.message = '暂时无法获取常用分路，请选择本局分路后配置。'
+    }).finally(() => {
+      if (inferredPosition !== lookup || quitting) return
+      // A cached result may finish inside this refresh; wait for it to settle first.
+      void (pollPromise || Promise.resolve()).then(() => {
+        if (inferredPosition === lookup && !quitting) return refreshClientState()
+      })
+    })
+  }
+  const position = explicitPosition || inferredPosition?.position || (client.mode === 'aram' || client.mode === 'aram-mayhem' ? 'mid' : null)
+  const next = { ...client, loadoutPosition: position || undefined, patch: data.getPatch(),
+    message: client.message || (!position ? inferredPosition?.message : undefined) }
   if (JSON.stringify(old) !== JSON.stringify(next)) updateState({ client: next })
   syncWindowPresentation()
   const windowAction = gameWindow.update(client)

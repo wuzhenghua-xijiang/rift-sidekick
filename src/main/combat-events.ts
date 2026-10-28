@@ -4,7 +4,7 @@ type ObjectValue = Record<string, unknown>
 const object = (value: unknown): ObjectValue => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as ObjectValue : {}
 const name = (value: unknown) => typeof value === 'string' ? value.normalize('NFC').trim().toLowerCase() : ''
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
-interface Player { key: string; team: string; dead: boolean; aliases: string[] }
+interface Player { key: string; team: string; dead: boolean; aliases: string[]; championNames: string[] }
 interface Event extends CombatCue { name: string; killer?: Player; victim?: Player; assisters: Player[]; team: string; streak: number }
 export interface CombatSnapshot { time: number; local: Player; health: number | null; events: Event[] }
 
@@ -17,9 +17,11 @@ export function readCombatSnapshot(raw: unknown, expectedPlayerNames?: readonly 
     const value = object(entry)
     if (!['ORDER', 'CHAOS'].includes(String(value.team)) || typeof value.isDead !== 'boolean') continue
     const fullId = name(value.riotId) || (name(value.riotIdGameName) && name(value.riotIdTagLine) ? `${name(value.riotIdGameName)}#${name(value.riotIdTagLine)}` : '')
-    const key = fullId || name(value.summonerName)
+    const championNames = [...new Set([name(value.championName), name(value.rawChampionName).replace(/^game_character_displayname_/, '')].filter(Boolean))]
+    const key = fullId || name(value.summonerName) || (value.isBot === true && championNames.length ? `bot:${players.length}` : '')
     if (!key) continue
-    players.push({ key, team: String(value.team), dead: value.isDead, aliases: [...new Set([fullId, name(value.summonerName), name(value.riotIdGameName), fullId.split('#')[0]].filter(Boolean))] })
+    players.push({ key, team: String(value.team), dead: value.isDead, championNames,
+      aliases: [...new Set([fullId, name(value.summonerName), name(value.riotIdGameName), fullId.split('#')[0]].filter(Boolean))] })
   }
   const resolve = (value: unknown): Player | undefined => {
     const alias = name(value)
@@ -34,12 +36,22 @@ export function readCombatSnapshot(raw: unknown, expectedPlayerNames?: readonly 
   const health = finite(stats.currentHealth) && finite(stats.maxHealth) && stats.maxHealth > 0 && stats.currentHealth >= 0 && stats.currentHealth <= stats.maxHealth
     ? stats.currentHealth / stats.maxHealth : null
   const events: Event[] = []
+  // Live Client events can use champion names, including bots with no Riot ID.
+  // This fallback is only for event actors; never use a champion to verify the account.
+  const resolveActor = (value: unknown): Player | undefined => {
+    const alias = name(value)
+    if (!alias) return
+    const accounts = players.filter((player) => player.aliases.includes(alias))
+    if (accounts.length) return accounts.length === 1 ? accounts[0] : undefined
+    const champions = players.filter((player) => player.championNames.includes(alias))
+    return champions.length === 1 ? champions[0] : undefined
+  }
   for (const entry of object(data.events).Events as unknown[]) {
     const value = object(entry)
     if (!Number.isSafeInteger(value.EventID) || Number(value.EventID) < 0 || !finite(value.EventTime) || value.EventTime < 0) continue
     events.push({ kind: 'kill', eventId: Number(value.EventID), gameTime: value.EventTime, name: String(value.EventName),
-      killer: resolve(value.KillerName), victim: resolve(value.VictimName),
-      assisters: Array.isArray(value.Assisters) ? value.Assisters.flatMap((alias) => resolve(alias) || []) : [],
+      killer: resolveActor(value.KillerName), victim: resolveActor(value.VictimName),
+      assisters: Array.isArray(value.Assisters) ? value.Assisters.flatMap((alias) => resolveActor(alias) || []) : [],
       team: String(value.AcingTeam || ''), streak: finite(value.KillStreak) ? value.KillStreak : 0 })
   }
   return { time: game.gameTime, local, health, events: events.sort((a, b) => a.gameTime - b.gameTime || a.eventId - b.eventId) }

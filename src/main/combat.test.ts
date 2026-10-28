@@ -5,16 +5,19 @@ import { CombatService } from './combat'
 import type { CombatJudge } from './combat-openai'
 
 const playing: ClientState = { connected: true, phase: 'InProgress', mode: 'ranked', championId: 1, championLocked: true, position: 'mid', sessionId: '123' }
-function harness(ai?: CombatJudge) {
+function harness(ai?: CombatJudge, coOp = false) {
   let time = 100, dead = false, health = 12
   const events: unknown[] = []
   const read = vi.fn(async (_signal: AbortSignal): Promise<unknown> => ({ gameData: { gameTime: time }, activePlayer: { riotId: 'self#1', championStats: { currentHealth: health, maxHealth: 100 } },
-    allPlayers: [{ riotId: 'self#1', team: 'ORDER', isDead: dead }, { riotId: 'enemy#1', team: 'CHAOS', isDead: false }], events: { Events: events } }))
+    allPlayers: [{ riotId: 'self#1', team: 'ORDER', isDead: dead, championName: '九尾妖狐', rawChampionName: 'game_character_displayname_Ahri' },
+      coOp ? { isBot: true, team: 'CHAOS', isDead: false, championName: '黑暗之女', rawChampionName: 'game_character_displayname_Annie' }
+        : { riotId: 'enemy#1', team: 'CHAOS', isDead: false }], events: { Events: events } }))
   const voice = { speak: vi.fn(async (_text: string, _volume: number) => undefined), stop: vi.fn() }
-  const service = new CombatService(read, voice, vi.fn(), { platform: 'win32', now: Date.now, random: () => 0 }, ai)
+  const service = new CombatService(read, voice, vi.fn(), { platform: 'win32', now: Date.now, random: () => 0 }, ai, async () => ['self#1'])
   const step = async (seconds = 1) => { for (let n = 0; n < seconds; n++) { time++; await vi.advanceTimersByTimeAsync(1000) } }
-  const kill = () => events.push({ EventID: events.length + 1, EventTime: time + 1, EventName: 'ChampionKill', KillerName: 'self#1', VictimName: 'enemy#1', Assisters: [] })
-  return { service, voice, read, events, step, kill, set dead(value: boolean) { dead = value }, set health(value: number) { health = value } }
+  const kill = () => events.push({ EventID: events.length + 1, EventTime: time + 1, EventName: 'ChampionKill', KillerName: coOp ? 'Ahri' : 'self#1', VictimName: coOp ? 'Annie' : 'enemy#1', Assisters: [] })
+  const death = () => { dead = true; events.push({ EventID: events.length + 1, EventTime: time + 1, EventName: 'ChampionKill', KillerName: coOp ? 'Annie' : 'enemy#1', VictimName: coOp ? 'Ahri' : 'self#1', Assisters: [] }) }
+  return { service, voice, read, events, step, kill, death, set dead(value: boolean) { dead = value }, set health(value: number) { health = value } }
 }
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(1_000_000) })
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers() })
@@ -26,6 +29,19 @@ describe('background combat reactions', () => {
     expect(f.service.state.lastReaction?.kind).toBe('clutch')
     f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledTimes(1)
     await f.step(20); f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledTimes(2)
+    f.service.dispose()
+  })
+  it('speaks for a co-op bot kill and repeated deaths with champion-named events', async () => {
+    const f = harness(undefined, true)
+    f.service.updateClient({ ...playing, queueId: 880, position: null }); await vi.advanceTimersByTimeAsync(0)
+    f.kill(); await f.step(3)
+    expect(f.voice.speak).toHaveBeenCalledOnce()
+    expect(f.service.state.lastReaction?.kind).toBe('clutch')
+    await f.step(20); f.death(); await f.step(3)
+    expect(f.voice.speak).toHaveBeenCalledOnce()
+    await f.step(30); f.death(); await f.step(3)
+    expect(f.voice.speak).toHaveBeenCalledTimes(2)
+    expect(f.service.state.lastReaction?.kind).toBe('rough')
     f.service.dispose()
   })
   it.each(['tft', 'arena', 'other'] as const)('never polls or speaks in %s', async (mode) => {
@@ -42,6 +58,7 @@ describe('background combat reactions', () => {
     const f = harness(); let finish!: (value: unknown) => void
     f.read.mockImplementationOnce(async () => new Promise((resolve) => { finish = resolve }))
     f.service.updateClient(playing)
+    await vi.advanceTimersByTimeAsync(0)
     const signal = f.read.mock.calls[0][0]
     f.service.configure({ enabled: false })
     expect(signal.aborted).toBe(true); expect(f.voice.stop).toHaveBeenCalled()
@@ -70,6 +87,26 @@ describe('background combat reactions', () => {
     f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledTimes(1)
     f.service.updateClient({ ...playing, connected: false }); f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
     f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledTimes(1); f.service.dispose()
+  })
+  it('previews praise without a running client and reports a voice failure before allowing a retry', async () => {
+    const f = harness()
+    f.service.configure({ volume: 2 })
+    expect(await f.service.preview('praise')).toMatchObject({ ok: true })
+    expect(f.voice.speak).toHaveBeenCalledWith(expect.any(String), 2)
+    f.voice.speak.mockRejectedValueOnce(new Error('未检测到可用的中文语音，请安装后重试。'))
+    expect(await f.service.preview('praise')).toMatchObject({ ok: false, message: expect.stringContaining('中文语音') })
+    expect(f.service.state.status).toBe('error')
+    expect(await f.service.preview('praise')).toMatchObject({ ok: true })
+    f.service.dispose()
+  })
+  it('does not report a successful preview when voice is disabled or muted', async () => {
+    const f = harness()
+    f.service.configure({ enabled: false })
+    expect(await f.service.preview('praise')).toMatchObject({ ok: false })
+    f.service.configure({ enabled: true, volume: 0 })
+    expect(await f.service.preview('praise')).toMatchObject({ ok: false })
+    expect(f.voice.speak).not.toHaveBeenCalled()
+    f.service.dispose()
   })
   it.each(['grumpy', 'teen', 'sweet'] as const)('uses the %s taunt persona for previews and gives custom lines priority', async (style) => {
     const f = harness(); f.service.configure({ tauntStyle: style })

@@ -27,6 +27,13 @@ describe('mode and locked champion detection', () => {
     session.timer.phase = 'BAN_PICK'
     expect(readSelection(session, { map: { id: 11, gameMode: 'CLASSIC' } }).championLocked).toBe(false)
   })
+  it.each(['FINALIZATION', 'GAME_STARTING'])('recognizes a finalized co-op pick without completed action history in %s', (phase) => {
+    const flow = { gameData: { queue: { id: 880, gameMode: 'CLASSIC', mapId: 11 } } }
+    const session = { localPlayerCellId: 0, timer: { phase }, myTeam: [{ cellId: 0, championId: 103, assignedPosition: '' }] }
+    expect(readSelection(session, flow)).toMatchObject({ mode: 'ranked', position: null, championId: 103, championLocked: true })
+    expect(readSelection({ ...session, timer: { phase: 'BAN_PICK' } }, flow).championLocked).toBe(false)
+    expect(readSelection({ ...session, myTeam: [{ cellId: 0, championPickIntent: 103 }] }, flow).championLocked).toBe(false)
+  })
   it('does not apply classic loadouts to TFT, Arena or unknown rotation modes', () => {
     expect(detectMode({ gameData: { queue: { gameMode: 'TFT', id: 1100 } } }).mode).toBe('tft')
     expect(detectMode({ gameData: { queue: { gameMode: 'CHERRY' } } }).mode).toBe('arena')
@@ -44,6 +51,12 @@ describe('mode and locked champion detection', () => {
     for (const queue of [{ id: 430, gameMode: 'CLASSIC', mapId: 11 }, { id: 0, gameMode: 'CLASSIC', mapId: 11 }, { id: 420 }, { gameMode: 'CLASSIC' }]) {
       expect(detectMode({ gameData: { queue } }).mode).toBe('ranked')
       expect(detectMode({ gameData: { queue } }).modeLabel).toContain('经典模式')
+    }
+  })
+  it('recognizes legacy and current co-op queues before map metadata arrives', () => {
+    for (const id of [830, 840, 850, 870, 880, 890]) {
+      expect(detectMode({ gameData: { queue: { id } } }).mode).toBe('ranked')
+      expect(detectMode({ gameData: { queue: { id, gameMode: 'UNKNOWN_ROTATION' } } }).mode).toBe('other')
     }
   })
   it('tracks assigned Mayhem heroes after rerolls or trades without a pick action', () => {
