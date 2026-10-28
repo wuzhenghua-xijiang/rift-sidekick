@@ -35,7 +35,7 @@
     { "champion": "Ahri", "mode": "ranked", "count": 10, "distinct": 10 },
     { "champion": "Malphite", "mode": "aram", "count": 10, "distinct": 10 }
   ],
-  "tests": { "passed": 328, "windowsOnlySkipped": 6, "total": 334, "typecheck": true, "productionBuild": true },
+  "tests": { "passed": 328, "windowsOnlySkipped": 6, "total": 334, "typecheck": true, "productionBuild": true, "windowsPassed": 334, "windowsInstallerBuilt": true, "windowsCi": "https://github.com/wuzhenghua-xijiang/rift-sidekick/actions/runs/40642527812" },
   "checks": [
     "ten real deduplicated combinations",
     "tank core with Grasp, defensive boots and follow-up items",
