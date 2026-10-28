@@ -1,0 +1,1267 @@
+{
+  "source": "https://lol-api-champion.op.gg/api/global/champions/aram/105/none?hl=zh_CN&tier=all",
+  "fetchedAt": "2026-10-28T06:08:36.964Z",
+  "patch": "16.21.1",
+  "plans": [
+    {
+      "id": "Fizz:mid:aram:3041c01ea443d49a",
+      "title": "坦克 · 心之钢",
+      "subtitle": "坦克路线 · 心之钢 / 无终恨意 / 璀璨回响",
+      "source": "OP.GG 全球对局统计",
+      "position": "mid",
+      "mode": "aram",
+      "patch": "16.21.1",
+      "statsPatch": "16.21",
+      "fetchedAt": 1793167716957,
+      "sourceUrl": "https://op.gg/lol/champions/fizz/aram",
+      "sampleLabel": "全球全段位样本 · 统计 16.21",
+      "winRate": 0.5763546798029556,
+      "winRateLabel": "核心装备胜率",
+      "games": 406,
+      "runes": {
+        "primaryStyleId": 8400,
+        "primaryStyleName": "坚决",
+        "primaryStyleIcon": "perk-images/Styles/7204_Resolve.png",
+        "primaryKeystoneIcon": "perk-images/Styles/Resolve/GraspOfTheUndying/GraspOfTheUndying.png",
+        "primaryRuneIds": [
+          8437,
+          8463,
+          8429,
+          8451
+        ],
+        "primaryRuneNames": [
+          "不灭之握",
+          "生命源泉",
+          "调节",
+          "过度生长"
+        ],
+        "secondaryStyleId": 8000,
+        "secondaryStyleName": "精密",
+        "secondaryStyleIcon": "perk-images/Styles/7201_Precision.png",
+        "secondaryRuneIds": [
+          8009,
+          9105
+        ],
+        "secondaryRuneNames": [
+          "气定神闲",
+          "传说：急速"
+        ],
+        "secondaryRuneIcons": [
+          "perk-images/Styles/Precision/PresenceOfMind/PresenceOfMind.png",
+          "perk-images/Styles/Precision/LegendHaste/LegendHaste.png"
+        ],
+        "statModIds": [
+          5005,
+          5008,
+          5001
+        ],
+        "statModNames": []
+      },
+      "itemGroups": [
+        {
+          "label": "核心成装",
+          "ids": [
+            3084,
+            2502,
+            6664
+          ],
+          "names": [
+            "心之钢",
+            "无终恨意",
+            "璀璨回响"
+          ]
+        },
+        {
+          "label": "鞋子",
+          "ids": [
+            3111
+          ],
+          "names": [
+            "水银之靴"
+          ]
+        },
+        {
+          "label": "后续成装",
+          "ids": [
+            3083,
+            3075
+          ],
+          "names": [
+            "狂徒铠甲",
+            "荆棘之甲"
+          ]
+        }
+      ],
+      "summonerSpellIds": [
+        4,
+        32
+      ],
+      "summonerSpells": [
+        {
+          "id": 4,
+          "name": "闪现",
+          "icon": "SummonerFlash.png"
+        },
+        {
+          "id": 32,
+          "name": "标记",
+          "icon": "SummonerSnowball.png"
+        }
+      ],
+      "skillOrder": [
+        "Q",
+        "W",
+        "E",
+        "E",
+        "E",
+        "R",
+        "E",
+        "W",
+        "E",
+        "W",
+        "R",
+        "W",
+        "W",
+        "Q",
+        "Q"
+      ],
+      "matchups": [],
+      "combos": [],
+      "isPreferred": false
+    },
+    {
+      "id": "Fizz:mid:aram:eceffbd30da41246",
+      "title": "坦克 · 心之钢",
+      "subtitle": "坦克路线 · 心之钢 / 无终恨意 / 璀璨回响",
+      "source": "OP.GG 全球对局统计",
+      "position": "mid",
+      "mode": "aram",
+      "patch": "16.21.1",
+      "statsPatch": "16.21",
+      "fetchedAt": 1793167716958,
+      "sourceUrl": "https://op.gg/lol/champions/fizz/aram",
+      "sampleLabel": "全球全段位样本 · 统计 16.21",
+      "winRate": 0.5763546798029556,
+      "winRateLabel": "核心装备胜率",
+      "games": 406,
+      "runes": {
+        "primaryStyleId": 8400,
+        "primaryStyleName": "坚决",
+        "primaryStyleIcon": "perk-images/Styles/7204_Resolve.png",
+        "primaryKeystoneIcon": "perk-images/Styles/Resolve/GraspOfTheUndying/GraspOfTheUndying.png",
+        "primaryRuneIds": [
+          8437,
+          8463,
+          8429,
+          8451
+        ],
+        "primaryRuneNames": [
+          "不灭之握",
+          "生命源泉",
+          "调节",
+          "过度生长"
+        ],
+        "secondaryStyleId": 8000,
+        "secondaryStyleName": "精密",
+        "secondaryStyleIcon": "perk-images/Styles/7201_Precision.png",
+        "secondaryRuneIds": [
+          8009,
+          9105
+        ],
+        "secondaryRuneNames": [
+          "气定神闲",
+          "传说：急速"
+        ],
+        "secondaryRuneIcons": [
+          "perk-images/Styles/Precision/PresenceOfMind/PresenceOfMind.png",
+          "perk-images/Styles/Precision/LegendHaste/LegendHaste.png"
+        ],
+        "statModIds": [
+          5005,
+          5008,
+          5001
+        ],
+        "statModNames": []
+      },
+      "itemGroups": [
+        {
+          "label": "核心成装",
+          "ids": [
+            3084,
+            2502,
+            6664
+          ],
+          "names": [
+            "心之钢",
+            "无终恨意",
+            "璀璨回响"
+          ]
+        },
+        {
+          "label": "鞋子",
+          "ids": [
+            3047
+          ],
+          "names": [
+            "铁板靴"
+          ]
+        },
+        {
+          "label": "后续成装",
+          "ids": [
+            3083,
+            3075
+          ],
+          "names": [
+            "狂徒铠甲",
+            "荆棘之甲"
+          ]
+        }
+      ],
+      "summonerSpellIds": [
+        4,
+        32
+      ],
+      "summonerSpells": [
+        {
+          "id": 4,
+          "name": "闪现",
+          "icon": "SummonerFlash.png"
+        },
+        {
+          "id": 32,
+          "name": "标记",
+          "icon": "SummonerSnowball.png"
+        }
+      ],
+      "skillOrder": [
+        "Q",
+        "W",
+        "E",
+        "E",
+        "E",
+        "R",
+        "E",
+        "W",
+        "E",
+        "W",
+        "R",
+        "W",
+        "W",
+        "Q",
+        "Q"
+      ],
+      "matchups": [],
+      "combos": [],
+      "isPreferred": false
+    },
+    {
+      "id": "Fizz:mid:aram:7da4eb875c305841",
+      "title": "符文 · 黑暗收割 / 精密",
+      "subtitle": "独立符文样本，搭配同流派装备",
+      "source": "OP.GG 全球对局统计",
+      "position": "mid",
+      "mode": "aram",
+      "patch": "16.21.1",
+      "statsPatch": "16.21",
+      "fetchedAt": 1793167716957,
+      "sourceUrl": "https://op.gg/lol/champions/fizz/aram",
+      "sampleLabel": "全球全段位样本 · 统计 16.21",
+      "winRate": 0.5283018867924528,
+      "winRateLabel": "符文样本胜率",
+      "games": 106,
+      "runes": {
+        "primaryStyleId": 8100,
+        "primaryStyleName": "主宰",
+        "primaryStyleIcon": "perk-images/Styles/7200_Domination.png",
+        "primaryKeystoneIcon": "perk-images/Styles/Domination/DarkHarvest/DarkHarvest.png",
+        "primaryRuneIds": [
+          8128,
+          8143,
+          8140,
+          8106
+        ],
+        "primaryRuneNames": [
+          "黑暗收割",
+          "猛然冲击",
+          "可怖纪念品",
+          "终极猎人"
+        ],
+        "secondaryStyleId": 8000,
+        "secondaryStyleName": "精密",
+        "secondaryStyleIcon": "perk-images/Styles/7201_Precision.png",
+        "secondaryRuneIds": [
+          8014,
+          9111
+        ],
+        "secondaryRuneNames": [
+          "致命一击",
+          "凯旋"
+        ],
+        "secondaryRuneIcons": [
+          "perk-images/Styles/Precision/CoupDeGrace/CoupDeGrace.png",
+          "perk-images/Styles/Precision/Triumph.png"
+        ],
+        "statModIds": [
+          5008,
+          5008,
+          5001
+        ],
+        "statModNames": []
+      },
+      "itemGroups": [
+        {
+          "label": "核心成装",
+          "ids": [
+            6655,
+            3100,
+            3157
+          ],
+          "names": [
+            "卢登的回声",
+            "巫妖之祸",
+            "中娅沙漏"
+          ]
+        },
+        {
+          "label": "鞋子",
+          "ids": [
+            3020
+          ],
+          "names": [
+            "法师之靴"
+          ]
+        },
+        {
+          "label": "后续成装",
+          "ids": [
+            4645,
+            4646
+          ],
+          "names": [
+            "影焰",
+            "风暴狂涌"
+          ]
+        }
+      ],
+      "summonerSpellIds": [
+        4,
+        32
+      ],
+      "summonerSpells": [
+        {
+          "id": 4,
+          "name": "闪现",
+          "icon": "SummonerFlash.png"
+        },
+        {
+          "id": 32,
+          "name": "标记",
+          "icon": "SummonerSnowball.png"
+        }
+      ],
+      "skillOrder": [
+        "Q",
+        "W",
+        "E",
+        "E",
+        "E",
+        "R",
+        "E",
+        "W",
+        "E",
+        "W",
+        "R",
+        "W",
+        "W",
+        "Q",
+        "Q"
+      ],
+      "matchups": [],
+      "combos": [],
+      "isPreferred": false
+    },
+    {
+      "id": "Fizz:mid:aram:a801dbee52f3b1d5",
+      "title": "换装 · 影焰 / 灭世者的死亡之帽",
+      "subtitle": "巫妖之祸 / 影焰 / 灭世者的死亡之帽",
+      "source": "OP.GG 全球对局统计",
+      "position": "mid",
+      "mode": "aram",
+      "patch": "16.21.1",
+      "statsPatch": "16.21",
+      "fetchedAt": 1793167716957,
+      "sourceUrl": "https://op.gg/lol/champions/fizz/aram",
+      "sampleLabel": "全球全段位样本 · 统计 16.21",
+      "winRate": 0.5222222222222223,
+      "winRateLabel": "核心装备胜率",
+      "games": 450,
+      "runes": {
+        "primaryStyleId": 8100,
+        "primaryStyleName": "主宰",
+        "primaryStyleIcon": "perk-images/Styles/7200_Domination.png",
+        "primaryKeystoneIcon": "perk-images/Styles/Domination/DarkHarvest/DarkHarvest.png",
+        "primaryRuneIds": [
+          8128,
+          8143,
+          8140,
+          8106
+        ],
+        "primaryRuneNames": [
+          "黑暗收割",
+          "猛然冲击",
+          "可怖纪念品",
+          "终极猎人"
+        ],
+        "secondaryStyleId": 8000,
+        "secondaryStyleName": "精密",
+        "secondaryStyleIcon": "perk-images/Styles/7201_Precision.png",
+        "secondaryRuneIds": [
+          8009,
+          8014
+        ],
+        "secondaryRuneNames": [
+          "气定神闲",
+          "致命一击"
+        ],
+        "secondaryRuneIcons": [
+          "perk-images/Styles/Precision/PresenceOfMind/PresenceOfMind.png",
+          "perk-images/Styles/Precision/CoupDeGrace/CoupDeGrace.png"
+        ],
+        "statModIds": [
+          5008,
+          5008,
+          5001
+        ],
+        "statModNames": []
+      },
+      "itemGroups": [
+        {
+          "label": "核心成装",
+          "ids": [
+            3100,
+            4645,
+            3089
+          ],
+          "names": [
+            "巫妖之祸",
+            "影焰",
+            "灭世者的死亡之帽"
+          ]
+        },
+        {
+          "label": "鞋子",
+          "ids": [
+            3020
+          ],
+          "names": [
+            "法师之靴"
+          ]
+        },
+        {
+          "label": "后续成装",
+          "ids": [
+            6655,
+            3157
+          ],
+          "names": [
+            "卢登的回声",
+            "中娅沙漏"
+          ]
+        }
+      ],
+      "summonerSpellIds": [
+        4,
+        32
+      ],
+      "summonerSpells": [
+        {
+          "id": 4,
+          "name": "闪现",
+          "icon": "SummonerFlash.png"
+        },
+        {
+          "id": 32,
+          "name": "标记",
+          "icon": "SummonerSnowball.png"
+        }
+      ],
+      "skillOrder": [
+        "Q",
+        "W",
+        "E",
+        "E",
+        "E",
+        "R",
+        "E",
+        "W",
+        "E",
+        "W",
+        "R",
+        "W",
+        "W",
+        "Q",
+        "Q"
+      ],
+      "matchups": [],
+      "combos": [],
+      "isPreferred": false
+    },
+    {
+      "id": "Fizz:mid:aram:348413ebc90b7330",
+      "title": "热门首选",
+      "subtitle": "卢登的回声 / 巫妖之祸 / 中娅沙漏",
+      "source": "OP.GG 全球对局统计",
+      "position": "mid",
+      "mode": "aram",
+      "patch": "16.21.1",
+      "statsPatch": "16.21",
+      "fetchedAt": 1793167716957,
+      "sourceUrl": "https://op.gg/lol/champions/fizz/aram",
+      "sampleLabel": "全球全段位样本 · 统计 16.21",
+      "winRate": 0.5035427491733585,
+      "winRateLabel": "核心装备胜率",
+      "games": 2117,
+      "runes": {
+        "primaryStyleId": 8100,
+        "primaryStyleName": "主宰",
+        "primaryStyleIcon": "perk-images/Styles/7200_Domination.png",
+        "primaryKeystoneIcon": "perk-images/Styles/Domination/DarkHarvest/DarkHarvest.png",
+        "primaryRuneIds": [
+          8128,
+          8143,
+          8140,
+          8106
+        ],
+        "primaryRuneNames": [
+          "黑暗收割",
+          "猛然冲击",
+          "可怖纪念品",
+          "终极猎人"
+        ],
+        "secondaryStyleId": 8000,
+        "secondaryStyleName": "精密",
+        "secondaryStyleIcon": "perk-images/Styles/7201_Precision.png",
+        "secondaryRuneIds": [
+          8009,
+          8014
+        ],
+        "secondaryRuneNames": [
+          "气定神闲",
+          "致命一击"
+        ],
+        "secondaryRuneIcons": [
+          "perk-images/Styles/Precision/PresenceOfMind/PresenceOfMind.png",
+          "perk-images/Styles/Precision/CoupDeGrace/CoupDeGrace.png"
+        ],
+        "statModIds": [
+          5008,
+          5008,
+          5001
+        ],
+        "statModNames": []
+      },
+      "itemGroups": [
+        {
+          "label": "核心成装",
+          "ids": [
+            6655,
+            3100,
+            3157
+          ],
+          "names": [
+            "卢登的回声",
+            "巫妖之祸",
+            "中娅沙漏"
+          ]
+        },
+        {
+          "label": "鞋子",
+          "ids": [
+            3020
+          ],
+          "names": [
+            "法师之靴"
+          ]
+        },
+        {
+          "label": "后续成装",
+          "ids": [
+            4645,
+            4646
+          ],
+          "names": [
+            "影焰",
+            "风暴狂涌"
+          ]
+        }
+      ],
+      "summonerSpellIds": [
+        4,
+        32
+      ],
+      "summonerSpells": [
+        {
+          "id": 4,
+          "name": "闪现",
+          "icon": "SummonerFlash.png"
+        },
+        {
+          "id": 32,
+          "name": "标记",
+          "icon": "SummonerSnowball.png"
+        }
+      ],
+      "skillOrder": [
+        "Q",
+        "W",
+        "E",
+        "E",
+        "E",
+        "R",
+        "E",
+        "W",
+        "E",
+        "W",
+        "R",
+        "W",
+        "W",
+        "Q",
+        "Q"
+      ],
+      "matchups": [],
+      "combos": [],
+      "isPreferred": false
+    },
+    {
+      "id": "Fizz:mid:aram:d0858402d5cefac2",
+      "title": "换装 · 卢登的回声 / 巫妖之祸 / 中娅沙漏",
+      "subtitle": "卢登的回声 / 巫妖之祸 / 中娅沙漏",
+      "source": "OP.GG 全球对局统计",
+      "position": "mid",
+      "mode": "aram",
+      "patch": "16.21.1",
+      "statsPatch": "16.21",
+      "fetchedAt": 1793167716957,
+      "sourceUrl": "https://op.gg/lol/champions/fizz/aram",
+      "sampleLabel": "全球全段位样本 · 统计 16.21",
+      "winRate": 0.5035427491733585,
+      "winRateLabel": "核心装备胜率",
+      "games": 2117,
+      "runes": {
+        "primaryStyleId": 8100,
+        "primaryStyleName": "主宰",
+        "primaryStyleIcon": "perk-images/Styles/7200_Domination.png",
+        "primaryKeystoneIcon": "perk-images/Styles/Domination/DarkHarvest/DarkHarvest.png",
+        "primaryRuneIds": [
+          8128,
+          8143,
+          8140,
+          8106
+        ],
+        "primaryRuneNames": [
+          "黑暗收割",
+          "猛然冲击",
+          "可怖纪念品",
+          "终极猎人"
+        ],
+        "secondaryStyleId": 8000,
+        "secondaryStyleName": "精密",
+        "secondaryStyleIcon": "perk-images/Styles/7201_Precision.png",
+        "secondaryRuneIds": [
+          8009,
+          8014
+        ],
+        "secondaryRuneNames": [
+          "气定神闲",
+          "致命一击"
+        ],
+        "secondaryRuneIcons": [
+          "perk-images/Styles/Precision/PresenceOfMind/PresenceOfMind.png",
+          "perk-images/Styles/Precision/CoupDeGrace/CoupDeGrace.png"
+        ],
+        "statModIds": [
+          5008,
+          5008,
+          5001
+        ],
+        "statModNames": []
+      },
+      "itemGroups": [
+        {
+          "label": "核心成装",
+          "ids": [
+            6655,
+            3100,
+            3157
+          ],
+          "names": [
+            "卢登的回声",
+            "巫妖之祸",
+            "中娅沙漏"
+          ]
+        },
+        {
+          "label": "鞋子",
+          "ids": [
+            3111
+          ],
+          "names": [
+            "水银之靴"
+          ]
+        },
+        {
+          "label": "后续成装",
+          "ids": [
+            4645,
+            4646
+          ],
+          "names": [
+            "影焰",
+            "风暴狂涌"
+          ]
+        }
+      ],
+      "summonerSpellIds": [
+        4,
+        32
+      ],
+      "summonerSpells": [
+        {
+          "id": 4,
+          "name": "闪现",
+          "icon": "SummonerFlash.png"
+        },
+        {
+          "id": 32,
+          "name": "标记",
+          "icon": "SummonerSnowball.png"
+        }
+      ],
+      "skillOrder": [
+        "Q",
+        "W",
+        "E",
+        "E",
+        "E",
+        "R",
+        "E",
+        "W",
+        "E",
+        "W",
+        "R",
+        "W",
+        "W",
+        "Q",
+        "Q"
+      ],
+      "matchups": [],
+      "combos": [],
+      "isPreferred": false
+    },
+    {
+      "id": "Fizz:mid:aram:57cb9488cc4bc9ba",
+      "title": "换装 · 卢登的回声 / 巫妖之祸 / 中娅沙漏",
+      "subtitle": "卢登的回声 / 巫妖之祸 / 中娅沙漏",
+      "source": "OP.GG 全球对局统计",
+      "position": "mid",
+      "mode": "aram",
+      "patch": "16.21.1",
+      "statsPatch": "16.21",
+      "fetchedAt": 1793167716957,
+      "sourceUrl": "https://op.gg/lol/champions/fizz/aram",
+      "sampleLabel": "全球全段位样本 · 统计 16.21",
+      "winRate": 0.5035427491733585,
+      "winRateLabel": "核心装备胜率",
+      "games": 2117,
+      "runes": {
+        "primaryStyleId": 8100,
+        "primaryStyleName": "主宰",
+        "primaryStyleIcon": "perk-images/Styles/7200_Domination.png",
+        "primaryKeystoneIcon": "perk-images/Styles/Domination/DarkHarvest/DarkHarvest.png",
+        "primaryRuneIds": [
+          8128,
+          8143,
+          8140,
+          8106
+        ],
+        "primaryRuneNames": [
+          "黑暗收割",
+          "猛然冲击",
+          "可怖纪念品",
+          "终极猎人"
+        ],
+        "secondaryStyleId": 8000,
+        "secondaryStyleName": "精密",
+        "secondaryStyleIcon": "perk-images/Styles/7201_Precision.png",
+        "secondaryRuneIds": [
+          8009,
+          8014
+        ],
+        "secondaryRuneNames": [
+          "气定神闲",
+          "致命一击"
+        ],
+        "secondaryRuneIcons": [
+          "perk-images/Styles/Precision/PresenceOfMind/PresenceOfMind.png",
+          "perk-images/Styles/Precision/CoupDeGrace/CoupDeGrace.png"
+        ],
+        "statModIds": [
+          5008,
+          5008,
+          5001
+        ],
+        "statModNames": []
+      },
+      "itemGroups": [
+        {
+          "label": "核心成装",
+          "ids": [
+            6655,
+            3100,
+            3157
+          ],
+          "names": [
+            "卢登的回声",
+            "巫妖之祸",
+            "中娅沙漏"
+          ]
+        },
+        {
+          "label": "鞋子",
+          "ids": [
+            3158
+          ],
+          "names": [
+            "明朗之靴"
+          ]
+        },
+        {
+          "label": "后续成装",
+          "ids": [
+            4645,
+            4646
+          ],
+          "names": [
+            "影焰",
+            "风暴狂涌"
+          ]
+        }
+      ],
+      "summonerSpellIds": [
+        4,
+        32
+      ],
+      "summonerSpells": [
+        {
+          "id": 4,
+          "name": "闪现",
+          "icon": "SummonerFlash.png"
+        },
+        {
+          "id": 32,
+          "name": "标记",
+          "icon": "SummonerSnowball.png"
+        }
+      ],
+      "skillOrder": [
+        "Q",
+        "W",
+        "E",
+        "E",
+        "E",
+        "R",
+        "E",
+        "W",
+        "E",
+        "W",
+        "R",
+        "W",
+        "W",
+        "Q",
+        "Q"
+      ],
+      "matchups": [],
+      "combos": [],
+      "isPreferred": false
+    },
+    {
+      "id": "Fizz:mid:aram:a421dc379f168065",
+      "title": "符文 · 电刑 / 精密",
+      "subtitle": "独立符文样本，搭配同流派装备",
+      "source": "OP.GG 全球对局统计",
+      "position": "mid",
+      "mode": "aram",
+      "patch": "16.21.1",
+      "statsPatch": "16.21",
+      "fetchedAt": 1793167716957,
+      "sourceUrl": "https://op.gg/lol/champions/fizz/aram",
+      "sampleLabel": "全球全段位样本 · 统计 16.21",
+      "winRate": 0.4875966656623481,
+      "winRateLabel": "符文样本胜率",
+      "games": 9957,
+      "runes": {
+        "primaryStyleId": 8100,
+        "primaryStyleName": "主宰",
+        "primaryStyleIcon": "perk-images/Styles/7200_Domination.png",
+        "primaryKeystoneIcon": "perk-images/Styles/Domination/Electrocute/Electrocute.png",
+        "primaryRuneIds": [
+          8112,
+          8143,
+          8140,
+          8135
+        ],
+        "primaryRuneNames": [
+          "电刑",
+          "猛然冲击",
+          "可怖纪念品",
+          "寻宝猎人"
+        ],
+        "secondaryStyleId": 8000,
+        "secondaryStyleName": "精密",
+        "secondaryStyleIcon": "perk-images/Styles/7201_Precision.png",
+        "secondaryRuneIds": [
+          8009,
+          8014
+        ],
+        "secondaryRuneNames": [
+          "气定神闲",
+          "致命一击"
+        ],
+        "secondaryRuneIcons": [
+          "perk-images/Styles/Precision/PresenceOfMind/PresenceOfMind.png",
+          "perk-images/Styles/Precision/CoupDeGrace/CoupDeGrace.png"
+        ],
+        "statModIds": [
+          5008,
+          5008,
+          5001
+        ],
+        "statModNames": []
+      },
+      "itemGroups": [
+        {
+          "label": "核心成装",
+          "ids": [
+            6655,
+            3100,
+            3157
+          ],
+          "names": [
+            "卢登的回声",
+            "巫妖之祸",
+            "中娅沙漏"
+          ]
+        },
+        {
+          "label": "鞋子",
+          "ids": [
+            3020
+          ],
+          "names": [
+            "法师之靴"
+          ]
+        },
+        {
+          "label": "后续成装",
+          "ids": [
+            4645,
+            4646
+          ],
+          "names": [
+            "影焰",
+            "风暴狂涌"
+          ]
+        }
+      ],
+      "summonerSpellIds": [
+        4,
+        32
+      ],
+      "summonerSpells": [
+        {
+          "id": 4,
+          "name": "闪现",
+          "icon": "SummonerFlash.png"
+        },
+        {
+          "id": 32,
+          "name": "标记",
+          "icon": "SummonerSnowball.png"
+        }
+      ],
+      "skillOrder": [
+        "Q",
+        "W",
+        "E",
+        "E",
+        "E",
+        "R",
+        "E",
+        "W",
+        "E",
+        "W",
+        "R",
+        "W",
+        "W",
+        "Q",
+        "Q"
+      ],
+      "matchups": [],
+      "combos": [],
+      "isPreferred": false
+    },
+    {
+      "id": "Fizz:mid:aram:716b674e92250bd8",
+      "title": "符文 · 电刑 / 精密",
+      "subtitle": "独立符文样本，搭配同流派装备",
+      "source": "OP.GG 全球对局统计",
+      "position": "mid",
+      "mode": "aram",
+      "patch": "16.21.1",
+      "statsPatch": "16.21",
+      "fetchedAt": 1793167716957,
+      "sourceUrl": "https://op.gg/lol/champions/fizz/aram",
+      "sampleLabel": "全球全段位样本 · 统计 16.21",
+      "winRate": 0.47411444141689374,
+      "winRateLabel": "符文样本胜率",
+      "games": 734,
+      "runes": {
+        "primaryStyleId": 8100,
+        "primaryStyleName": "主宰",
+        "primaryStyleIcon": "perk-images/Styles/7200_Domination.png",
+        "primaryKeystoneIcon": "perk-images/Styles/Domination/Electrocute/Electrocute.png",
+        "primaryRuneIds": [
+          8112,
+          8143,
+          8140,
+          8106
+        ],
+        "primaryRuneNames": [
+          "电刑",
+          "猛然冲击",
+          "可怖纪念品",
+          "终极猎人"
+        ],
+        "secondaryStyleId": 8000,
+        "secondaryStyleName": "精密",
+        "secondaryStyleIcon": "perk-images/Styles/7201_Precision.png",
+        "secondaryRuneIds": [
+          8009,
+          8014
+        ],
+        "secondaryRuneNames": [
+          "气定神闲",
+          "致命一击"
+        ],
+        "secondaryRuneIcons": [
+          "perk-images/Styles/Precision/PresenceOfMind/PresenceOfMind.png",
+          "perk-images/Styles/Precision/CoupDeGrace/CoupDeGrace.png"
+        ],
+        "statModIds": [
+          5008,
+          5008,
+          5001
+        ],
+        "statModNames": []
+      },
+      "itemGroups": [
+        {
+          "label": "核心成装",
+          "ids": [
+            6655,
+            3100,
+            3157
+          ],
+          "names": [
+            "卢登的回声",
+            "巫妖之祸",
+            "中娅沙漏"
+          ]
+        },
+        {
+          "label": "鞋子",
+          "ids": [
+            3020
+          ],
+          "names": [
+            "法师之靴"
+          ]
+        },
+        {
+          "label": "后续成装",
+          "ids": [
+            4645,
+            4646
+          ],
+          "names": [
+            "影焰",
+            "风暴狂涌"
+          ]
+        }
+      ],
+      "summonerSpellIds": [
+        4,
+        32
+      ],
+      "summonerSpells": [
+        {
+          "id": 4,
+          "name": "闪现",
+          "icon": "SummonerFlash.png"
+        },
+        {
+          "id": 32,
+          "name": "标记",
+          "icon": "SummonerSnowball.png"
+        }
+      ],
+      "skillOrder": [
+        "Q",
+        "W",
+        "E",
+        "E",
+        "E",
+        "R",
+        "E",
+        "W",
+        "E",
+        "W",
+        "R",
+        "W",
+        "W",
+        "Q",
+        "Q"
+      ],
+      "matchups": [],
+      "combos": [],
+      "isPreferred": false
+    },
+    {
+      "id": "Fizz:mid:aram:397b55d77da33882",
+      "title": "符文 · 电刑 / 精密",
+      "subtitle": "独立符文样本，搭配同流派装备",
+      "source": "OP.GG 全球对局统计",
+      "position": "mid",
+      "mode": "aram",
+      "patch": "16.21.1",
+      "statsPatch": "16.21",
+      "fetchedAt": 1793167716957,
+      "sourceUrl": "https://op.gg/lol/champions/fizz/aram",
+      "sampleLabel": "全球全段位样本 · 统计 16.21",
+      "winRate": 0.4256410256410256,
+      "winRateLabel": "符文样本胜率",
+      "games": 195,
+      "runes": {
+        "primaryStyleId": 8100,
+        "primaryStyleName": "主宰",
+        "primaryStyleIcon": "perk-images/Styles/7200_Domination.png",
+        "primaryKeystoneIcon": "perk-images/Styles/Domination/Electrocute/Electrocute.png",
+        "primaryRuneIds": [
+          8112,
+          8143,
+          8140,
+          8135
+        ],
+        "primaryRuneNames": [
+          "电刑",
+          "猛然冲击",
+          "可怖纪念品",
+          "寻宝猎人"
+        ],
+        "secondaryStyleId": 8000,
+        "secondaryStyleName": "精密",
+        "secondaryStyleIcon": "perk-images/Styles/7201_Precision.png",
+        "secondaryRuneIds": [
+          8014,
+          9111
+        ],
+        "secondaryRuneNames": [
+          "致命一击",
+          "凯旋"
+        ],
+        "secondaryRuneIcons": [
+          "perk-images/Styles/Precision/CoupDeGrace/CoupDeGrace.png",
+          "perk-images/Styles/Precision/Triumph.png"
+        ],
+        "statModIds": [
+          5008,
+          5008,
+          5001
+        ],
+        "statModNames": []
+      },
+      "itemGroups": [
+        {
+          "label": "核心成装",
+          "ids": [
+            6655,
+            3100,
+            3157
+          ],
+          "names": [
+            "卢登的回声",
+            "巫妖之祸",
+            "中娅沙漏"
+          ]
+        },
+        {
+          "label": "鞋子",
+          "ids": [
+            3020
+          ],
+          "names": [
+            "法师之靴"
+          ]
+        },
+        {
+          "label": "后续成装",
+          "ids": [
+            4645,
+            4646
+          ],
+          "names": [
+            "影焰",
+            "风暴狂涌"
+          ]
+        }
+      ],
+      "summonerSpellIds": [
+        4,
+        32
+      ],
+      "summonerSpells": [
+        {
+          "id": 4,
+          "name": "闪现",
+          "icon": "SummonerFlash.png"
+        },
+        {
+          "id": 32,
+          "name": "标记",
+          "icon": "SummonerSnowball.png"
+        }
+      ],
+      "skillOrder": [
+        "Q",
+        "W",
+        "E",
+        "E",
+        "E",
+        "R",
+        "E",
+        "W",
+        "E",
+        "W",
+        "R",
+        "W",
+        "W",
+        "Q",
+        "Q"
+      ],
+      "matchups": [],
+      "combos": [],
+      "isPreferred": false
+    }
+  ]
+}

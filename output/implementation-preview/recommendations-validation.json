@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-28",
+  "patch": "16.21.1",
+  "source": "https://lol-api-champion.op.gg/api/global/champions/aram/105/none?hl=zh_CN&tier=all",
+  "previewOnly": true,
+  "muted": true,
+  "results": [
+    {
+      "width": 430,
+      "height": 720,
+      "count": 10,
+      "overflow": false,
+      "footerHeight": 54,
+      "footerBottom": 720,
+      "brokenImages": [],
+      "topEquipment": ["心之钢", "无终恨意", "璀璨回响", "水银之靴", "狂徒铠甲", "荆棘之甲"],
+      "tenthPlanApplied": "Fizz:mid:aram:397b55d77da33882"
+    },
+    {
+      "width": 390,
+      "height": 560,
+      "count": 10,
+      "overflow": false,
+      "footerHeight": 54,
+      "footerBottom": 560,
+      "brokenImages": [],
+      "topEquipment": ["心之钢", "无终恨意", "璀璨回响", "水银之靴", "狂徒铠甲", "荆棘之甲"],
+      "tenthPlanApplied": "Fizz:mid:aram:397b55d77da33882"
+    }
+  ],
+  "errors": [],
+  "providerChecks": [
+    { "champion": "Fizz", "mode": "aram", "count": 10, "distinct": 10 },
+    { "champion": "Fizz", "mode": "aram-mayhem", "count": 10, "distinct": 10, "ordinaryAramReference": true },
+    { "champion": "Ahri", "mode": "ranked", "count": 10, "distinct": 10 },
+    { "champion": "Malphite", "mode": "aram", "count": 10, "distinct": 10 }
+  ],
+  "tests": { "passed": 328, "windowsOnlySkipped": 6, "total": 334, "typecheck": true, "productionBuild": true },
+  "checks": [
+    "ten real deduplicated combinations",
+    "tank core with Grasp, defensive boots and follow-up items",
+    "existing design across both window sizes",
+    "tenth card scrolls, selects and applies exactly once",
+    "native desktop browser visual check passed",
+    "preview bridge only; actual Windows LCU and shop behavior remain unverified"
+  ]
+}

@@ -1,0 +1,2796 @@
+{
+  "source": "https://lol-api-champion.op.gg/api/global/champions/aram/105/none?hl=zh_CN&tier=all",
+  "resources": "https://ddragon.leagueoflegends.com/cdn/16.21.1/data/zh_CN/",
+  "retrievedAt": "2026-10-28T05:47:42.872Z",
+  "patch": "16.21.1",
+  "provider": {
+    "meta": {
+      "version": "16.21",
+      "cached_at": "2026-10-28 14:35:48"
+    },
+    "data": {
+      "core_items": [
+        {
+          "ids": [
+            6655,
+            3100,
+            3157
+          ],
+          "play": 2117,
+          "win": 1066,
+          "pick_rate": 0.0826
+        },
+        {
+          "ids": [
+            6655,
+            3100,
+            4645
+          ],
+          "play": 1920,
+          "win": 939,
+          "pick_rate": 0.0749
+        },
+        {
+          "ids": [
+            6655,
+            4646,
+            4645
+          ],
+          "play": 1589,
+          "win": 742,
+          "pick_rate": 0.062
+        },
+        {
+          "ids": [
+            6655,
+            3100,
+            4646
+          ],
+          "play": 1085,
+          "win": 517,
+          "pick_rate": 0.0423
+        },
+        {
+          "ids": [
+            6655,
+            4646,
+            3157
+          ],
+          "play": 1048,
+          "win": 532,
+          "pick_rate": 0.0409
+        },
+        {
+          "ids": [
+            6655,
+            4646,
+            3100
+          ],
+          "play": 710,
+          "win": 363,
+          "pick_rate": 0.0277
+        },
+        {
+          "ids": [
+            3100,
+            4645,
+            3157
+          ],
+          "play": 704,
+          "win": 345,
+          "pick_rate": 0.0275
+        },
+        {
+          "ids": [
+            3100,
+            4646,
+            3157
+          ],
+          "play": 689,
+          "win": 344,
+          "pick_rate": 0.0269
+        },
+        {
+          "ids": [
+            3100,
+            4646,
+            4645
+          ],
+          "play": 684,
+          "win": 348,
+          "pick_rate": 0.0267
+        },
+        {
+          "ids": [
+            6655,
+            4645,
+            3157
+          ],
+          "play": 585,
+          "win": 267,
+          "pick_rate": 0.0228
+        },
+        {
+          "ids": [
+            3100,
+            3157,
+            4645
+          ],
+          "play": 523,
+          "win": 277,
+          "pick_rate": 0.0204
+        },
+        {
+          "ids": [
+            6655,
+            4645,
+            4646
+          ],
+          "play": 497,
+          "win": 230,
+          "pick_rate": 0.0194
+        },
+        {
+          "ids": [
+            3100,
+            4645,
+            3089
+          ],
+          "play": 450,
+          "win": 235,
+          "pick_rate": 0.0175
+        },
+        {
+          "ids": [
+            3084,
+            2502,
+            6664
+          ],
+          "play": 406,
+          "win": 234,
+          "pick_rate": 0.0158
+        },
+        {
+          "ids": [
+            3100,
+            4645,
+            4646
+          ],
+          "play": 346,
+          "win": 167,
+          "pick_rate": 0.0135
+        }
+      ],
+      "boots": [
+        {
+          "ids": [
+            3020
+          ],
+          "play": 20077,
+          "win": 9719,
+          "pick_rate": 0.7251
+        },
+        {
+          "ids": [
+            3111
+          ],
+          "play": 3862,
+          "win": 2061,
+          "pick_rate": 0.1395
+        },
+        {
+          "ids": [
+            3158
+          ],
+          "play": 2567,
+          "win": 1301,
+          "pick_rate": 0.0927
+        },
+        {
+          "ids": [
+            3047
+          ],
+          "play": 933,
+          "win": 482,
+          "pick_rate": 0.0337
+        },
+        {
+          "ids": [
+            3009
+          ],
+          "play": 112,
+          "win": 52,
+          "pick_rate": 0.004
+        }
+      ],
+      "last_items": [
+        {
+          "ids": [
+            3100
+          ],
+          "play": 19790,
+          "win": 9799,
+          "pick_rate": 0.5973
+        },
+        {
+          "ids": [
+            6655
+          ],
+          "play": 17514,
+          "win": 8358,
+          "pick_rate": 0.5286
+        },
+        {
+          "ids": [
+            4645
+          ],
+          "play": 14847,
+          "win": 7296,
+          "pick_rate": 0.4481
+        },
+        {
+          "ids": [
+            3157
+          ],
+          "play": 13517,
+          "win": 6729,
+          "pick_rate": 0.4079
+        },
+        {
+          "ids": [
+            4646
+          ],
+          "play": 12515,
+          "win": 6099,
+          "pick_rate": 0.3777
+        },
+        {
+          "ids": [
+            3089
+          ],
+          "play": 7654,
+          "win": 3992,
+          "pick_rate": 0.231
+        },
+        {
+          "ids": [
+            3084
+          ],
+          "play": 6265,
+          "win": 3331,
+          "pick_rate": 0.1891
+        },
+        {
+          "ids": [
+            3135
+          ],
+          "play": 3436,
+          "win": 1702,
+          "pick_rate": 0.1037
+        },
+        {
+          "ids": [
+            2502
+          ],
+          "play": 2498,
+          "win": 1378,
+          "pick_rate": 0.0754
+        },
+        {
+          "ids": [
+            6664
+          ],
+          "play": 1925,
+          "win": 1077,
+          "pick_rate": 0.0581
+        },
+        {
+          "ids": [
+            3118
+          ],
+          "play": 1876,
+          "win": 898,
+          "pick_rate": 0.0566
+        },
+        {
+          "ids": [
+            3083
+          ],
+          "play": 1565,
+          "win": 879,
+          "pick_rate": 0.0472
+        },
+        {
+          "ids": [
+            2420
+          ],
+          "play": 1213,
+          "win": 536,
+          "pick_rate": 0.0366
+        },
+        {
+          "ids": [
+            3075
+          ],
+          "play": 873,
+          "win": 474,
+          "pick_rate": 0.0263
+        },
+        {
+          "ids": [
+            3152
+          ],
+          "play": 871,
+          "win": 432,
+          "pick_rate": 0.0263
+        },
+        {
+          "ids": [
+            6662
+          ],
+          "play": 861,
+          "win": 470,
+          "pick_rate": 0.026
+        },
+        {
+          "ids": [
+            2510
+          ],
+          "play": 672,
+          "win": 354,
+          "pick_rate": 0.0203
+        },
+        {
+          "ids": [
+            6653
+          ],
+          "play": 648,
+          "win": 327,
+          "pick_rate": 0.0196
+        },
+        {
+          "ids": [
+            3070
+          ],
+          "play": 536,
+          "win": 251,
+          "pick_rate": 0.0162
+        },
+        {
+          "ids": [
+            2504
+          ],
+          "play": 527,
+          "win": 321,
+          "pick_rate": 0.0159
+        },
+        {
+          "ids": [
+            3165
+          ],
+          "play": 500,
+          "win": 212,
+          "pick_rate": 0.0151
+        },
+        {
+          "ids": [
+            3102
+          ],
+          "play": 464,
+          "win": 257,
+          "pick_rate": 0.014
+        },
+        {
+          "ids": [
+            2503
+          ],
+          "play": 452,
+          "win": 219,
+          "pick_rate": 0.0136
+        },
+        {
+          "ids": [
+            3916
+          ],
+          "play": 416,
+          "win": 163,
+          "pick_rate": 0.0126
+        },
+        {
+          "ids": [
+            3076
+          ],
+          "play": 389,
+          "win": 199,
+          "pick_rate": 0.0117
+        },
+        {
+          "ids": [
+            4633
+          ],
+          "play": 386,
+          "win": 215,
+          "pick_rate": 0.0116
+        },
+        {
+          "ids": [
+            3137
+          ],
+          "play": 343,
+          "win": 189,
+          "pick_rate": 0.0104
+        },
+        {
+          "ids": [
+            6665
+          ],
+          "play": 311,
+          "win": 161,
+          "pick_rate": 0.0094
+        },
+        {
+          "ids": [
+            4629
+          ],
+          "play": 267,
+          "win": 151,
+          "pick_rate": 0.0081
+        },
+        {
+          "ids": [
+            3143
+          ],
+          "play": 264,
+          "win": 132,
+          "pick_rate": 0.008
+        }
+      ],
+      "runes": [
+        {
+          "id": 8128,
+          "primary_page_id": 8100,
+          "primary_rune_ids": [
+            8128,
+            8143,
+            8140,
+            8106
+          ],
+          "secondary_page_id": 8000,
+          "secondary_rune_ids": [
+            8009,
+            8014
+          ],
+          "stat_mod_ids": [
+            5008,
+            5008,
+            5001
+          ],
+          "play": 10049,
+          "win": 4788,
+          "pick_rate": 0.3035
+        },
+        {
+          "id": 8112,
+          "primary_page_id": 8100,
+          "primary_rune_ids": [
+            8112,
+            8143,
+            8140,
+            8135
+          ],
+          "secondary_page_id": 8000,
+          "secondary_rune_ids": [
+            8009,
+            8014
+          ],
+          "stat_mod_ids": [
+            5008,
+            5008,
+            5001
+          ],
+          "play": 9957,
+          "win": 4855,
+          "pick_rate": 0.3007
+        },
+        {
+          "id": 8437,
+          "primary_page_id": 8400,
+          "primary_rune_ids": [
+            8437,
+            8463,
+            8429,
+            8451
+          ],
+          "secondary_page_id": 8000,
+          "secondary_rune_ids": [
+            8009,
+            9105
+          ],
+          "stat_mod_ids": [
+            5005,
+            5008,
+            5001
+          ],
+          "play": 5300,
+          "win": 2730,
+          "pick_rate": 0.1601
+        },
+        {
+          "id": 8112,
+          "primary_page_id": 8100,
+          "primary_rune_ids": [
+            8112,
+            8143,
+            8140,
+            8106
+          ],
+          "secondary_page_id": 8000,
+          "secondary_rune_ids": [
+            8009,
+            8014
+          ],
+          "stat_mod_ids": [
+            5008,
+            5008,
+            5001
+          ],
+          "play": 734,
+          "win": 348,
+          "pick_rate": 0.0222
+        },
+        {
+          "id": 8112,
+          "primary_page_id": 8100,
+          "primary_rune_ids": [
+            8112,
+            8143,
+            8140,
+            8135
+          ],
+          "secondary_page_id": 8000,
+          "secondary_rune_ids": [
+            8014,
+            9111
+          ],
+          "stat_mod_ids": [
+            5008,
+            5008,
+            5001
+          ],
+          "play": 195,
+          "win": 83,
+          "pick_rate": 0.0059
+        }
+      ],
+      "rune_pages": [
+        {
+          "id": 8112,
+          "primary_page_id": 8100,
+          "secondary_page_id": 8000,
+          "play": 11961,
+          "win": 5862,
+          "pick_rate": 0.3612,
+          "builds": [
+            {
+              "id": 8112,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8112,
+                8143,
+                8140,
+                8135
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                8009,
+                8014
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 9957,
+              "win": 4855,
+              "pick_rate": 0.8325
+            },
+            {
+              "id": 8112,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8112,
+                8143,
+                8140,
+                8106
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                8009,
+                8014
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 734,
+              "win": 348,
+              "pick_rate": 0.0614
+            },
+            {
+              "id": 8112,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8112,
+                8143,
+                8140,
+                8135
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                8014,
+                9111
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 195,
+              "win": 83,
+              "pick_rate": 0.0163
+            },
+            {
+              "id": 8112,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8112,
+                8143,
+                8140,
+                8106
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                8014,
+                9111
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 67,
+              "win": 37,
+              "pick_rate": 0.0056
+            },
+            {
+              "id": 8112,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8112,
+                8143,
+                8140,
+                8135
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                8009,
+                8014
+              ],
+              "stat_mod_ids": [
+                5007,
+                5008,
+                5001
+              ],
+              "play": 53,
+              "win": 20,
+              "pick_rate": 0.0044
+            }
+          ]
+        },
+        {
+          "id": 8128,
+          "primary_page_id": 8100,
+          "secondary_page_id": 8000,
+          "play": 11270,
+          "win": 5387,
+          "pick_rate": 0.3403,
+          "builds": [
+            {
+              "id": 8128,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8128,
+                8143,
+                8140,
+                8106
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                8009,
+                8014
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 10049,
+              "win": 4788,
+              "pick_rate": 0.8917
+            },
+            {
+              "id": 8128,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8128,
+                8143,
+                8140,
+                8106
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                8014,
+                9111
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 106,
+              "win": 56,
+              "pick_rate": 0.0094
+            },
+            {
+              "id": 8128,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8128,
+                8143,
+                8140,
+                8135
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                8014,
+                9105
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 82,
+              "win": 37,
+              "pick_rate": 0.0073
+            },
+            {
+              "id": 8128,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8128,
+                8143,
+                8140,
+                8106
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                8009,
+                8014
+              ],
+              "stat_mod_ids": [
+                5007,
+                5008,
+                5001
+              ],
+              "play": 71,
+              "win": 43,
+              "pick_rate": 0.0063
+            },
+            {
+              "id": 8128,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8128,
+                8143,
+                8140,
+                8135
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                8009,
+                8014
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 61,
+              "win": 24,
+              "pick_rate": 0.0054
+            }
+          ]
+        },
+        {
+          "id": 8437,
+          "primary_page_id": 8400,
+          "secondary_page_id": 8000,
+          "play": 6112,
+          "win": 3188,
+          "pick_rate": 0.1846,
+          "builds": [
+            {
+              "id": 8437,
+              "primary_page_id": 8400,
+              "primary_rune_ids": [
+                8437,
+                8463,
+                8429,
+                8451
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                8009,
+                9105
+              ],
+              "stat_mod_ids": [
+                5005,
+                5008,
+                5001
+              ],
+              "play": 5300,
+              "win": 2730,
+              "pick_rate": 0.8671
+            },
+            {
+              "id": 8437,
+              "primary_page_id": 8400,
+              "primary_rune_ids": [
+                8437,
+                8446,
+                8444,
+                8451
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                9105,
+                9111
+              ],
+              "stat_mod_ids": [
+                5005,
+                5008,
+                5001
+              ],
+              "play": 33,
+              "win": 21,
+              "pick_rate": 0.0054
+            },
+            {
+              "id": 8437,
+              "primary_page_id": 8400,
+              "primary_rune_ids": [
+                8437,
+                8463,
+                8429,
+                8451
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                9105,
+                9111
+              ],
+              "stat_mod_ids": [
+                5005,
+                5008,
+                5001
+              ],
+              "play": 32,
+              "win": 18,
+              "pick_rate": 0.0052
+            },
+            {
+              "id": 8437,
+              "primary_page_id": 8400,
+              "primary_rune_ids": [
+                8437,
+                8463,
+                8429,
+                8451
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                8009,
+                9105
+              ],
+              "stat_mod_ids": [
+                5007,
+                5008,
+                5001
+              ],
+              "play": 32,
+              "win": 18,
+              "pick_rate": 0.0052
+            },
+            {
+              "id": 8437,
+              "primary_page_id": 8400,
+              "primary_rune_ids": [
+                8437,
+                8446,
+                8429,
+                8451
+              ],
+              "secondary_page_id": 8000,
+              "secondary_rune_ids": [
+                8009,
+                9105
+              ],
+              "stat_mod_ids": [
+                5005,
+                5008,
+                5001
+              ],
+              "play": 25,
+              "win": 13,
+              "pick_rate": 0.0041
+            }
+          ]
+        },
+        {
+          "id": 8112,
+          "primary_page_id": 8100,
+          "secondary_page_id": 8200,
+          "play": 961,
+          "win": 509,
+          "pick_rate": 0.029,
+          "builds": [
+            {
+              "id": 8112,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8112,
+                8143,
+                8140,
+                8135
+              ],
+              "secondary_page_id": 8200,
+              "secondary_rune_ids": [
+                8210,
+                8237
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 79,
+              "win": 44,
+              "pick_rate": 0.0822
+            },
+            {
+              "id": 8112,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8112,
+                8143,
+                8140,
+                8135
+              ],
+              "secondary_page_id": 8200,
+              "secondary_rune_ids": [
+                8210,
+                8226
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 45,
+              "win": 25,
+              "pick_rate": 0.0468
+            },
+            {
+              "id": 8112,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8112,
+                8143,
+                8140,
+                8106
+              ],
+              "secondary_page_id": 8200,
+              "secondary_rune_ids": [
+                8210,
+                8236
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 42,
+              "win": 25,
+              "pick_rate": 0.0437
+            },
+            {
+              "id": 8112,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8112,
+                8143,
+                8140,
+                8106
+              ],
+              "secondary_page_id": 8200,
+              "secondary_rune_ids": [
+                8210,
+                8224
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 41,
+              "win": 24,
+              "pick_rate": 0.0427
+            },
+            {
+              "id": 8112,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8112,
+                8143,
+                8140,
+                8106
+              ],
+              "secondary_page_id": 8200,
+              "secondary_rune_ids": [
+                8210,
+                8226
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 36,
+              "win": 17,
+              "pick_rate": 0.0375
+            }
+          ]
+        },
+        {
+          "id": 8128,
+          "primary_page_id": 8100,
+          "secondary_page_id": 8200,
+          "play": 829,
+          "win": 412,
+          "pick_rate": 0.025,
+          "builds": [
+            {
+              "id": 8128,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8128,
+                8143,
+                8140,
+                8106
+              ],
+              "secondary_page_id": 8200,
+              "secondary_rune_ids": [
+                8210,
+                8236
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 68,
+              "win": 39,
+              "pick_rate": 0.082
+            },
+            {
+              "id": 8128,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8128,
+                8143,
+                8140,
+                8106
+              ],
+              "secondary_page_id": 8200,
+              "secondary_rune_ids": [
+                8210,
+                8224
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 56,
+              "win": 26,
+              "pick_rate": 0.0676
+            },
+            {
+              "id": 8128,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8128,
+                8143,
+                8140,
+                8106
+              ],
+              "secondary_page_id": 8200,
+              "secondary_rune_ids": [
+                8210,
+                8237
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 33,
+              "win": 15,
+              "pick_rate": 0.0398
+            },
+            {
+              "id": 8128,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8128,
+                8143,
+                8140,
+                8106
+              ],
+              "secondary_page_id": 8200,
+              "secondary_rune_ids": [
+                8210,
+                8226
+              ],
+              "stat_mod_ids": [
+                5008,
+                5008,
+                5001
+              ],
+              "play": 27,
+              "win": 16,
+              "pick_rate": 0.0326
+            },
+            {
+              "id": 8128,
+              "primary_page_id": 8100,
+              "primary_rune_ids": [
+                8128,
+                8143,
+                8140,
+                8106
+              ],
+              "secondary_page_id": 8200,
+              "secondary_rune_ids": [
+                8210,
+                8224
+              ],
+              "stat_mod_ids": [
+                5007,
+                5008,
+                5001
+              ],
+              "play": 26,
+              "win": 15,
+              "pick_rate": 0.0314
+            }
+          ]
+        }
+      ],
+      "summoner_spells": [
+        {
+          "ids": [
+            4,
+            32
+          ],
+          "win": 12667,
+          "play": 25473,
+          "pick_rate": 0.8301
+        },
+        {
+          "ids": [
+            4,
+            14
+          ],
+          "win": 1094,
+          "play": 2235,
+          "pick_rate": 0.0728
+        },
+        {
+          "ids": [
+            4,
+            7
+          ],
+          "win": 365,
+          "play": 839,
+          "pick_rate": 0.0273
+        },
+        {
+          "ids": [
+            4,
+            6
+          ],
+          "win": 307,
+          "play": 679,
+          "pick_rate": 0.0221
+        },
+        {
+          "ids": [
+            4,
+            21
+          ],
+          "win": 158,
+          "play": 312,
+          "pick_rate": 0.0102
+        }
+      ],
+      "skills": [
+        {
+          "order": [
+            "Q",
+            "W",
+            "E",
+            "E",
+            "E",
+            "R",
+            "E",
+            "W",
+            "E",
+            "W",
+            "R",
+            "W",
+            "W",
+            "Q",
+            "Q"
+          ],
+          "play": 7917,
+          "win": 4142,
+          "pick_rate": 0.3211
+        },
+        {
+          "order": [
+            "Q",
+            "W",
+            "E",
+            "E",
+            "E",
+            "R",
+            "E",
+            "Q",
+            "E",
+            "Q",
+            "R",
+            "Q",
+            "Q",
+            "W",
+            "W"
+          ],
+          "play": 1820,
+          "win": 958,
+          "pick_rate": 0.0738
+        },
+        {
+          "order": [
+            "Q",
+            "W",
+            "E",
+            "W",
+            "W",
+            "R",
+            "W",
+            "E",
+            "W",
+            "E",
+            "R",
+            "E",
+            "E",
+            "Q",
+            "Q"
+          ],
+          "play": 583,
+          "win": 330,
+          "pick_rate": 0.0236
+        },
+        {
+          "order": [
+            "E",
+            "W",
+            "Q",
+            "E",
+            "E",
+            "R",
+            "E",
+            "W",
+            "E",
+            "W",
+            "R",
+            "W",
+            "W",
+            "Q",
+            "Q"
+          ],
+          "play": 420,
+          "win": 234,
+          "pick_rate": 0.017
+        },
+        {
+          "order": [
+            "Q",
+            "W",
+            "E",
+            "Q",
+            "Q",
+            "R",
+            "Q",
+            "E",
+            "Q",
+            "E",
+            "R",
+            "E",
+            "E",
+            "W",
+            "W"
+          ],
+          "play": 409,
+          "win": 216,
+          "pick_rate": 0.0166
+        }
+      ]
+    }
+  },
+  "catalog": {
+    "items": {
+      "2420": {
+        "name": "探索者的护臂",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1052",
+          "1029",
+          "1052"
+        ],
+        "into": [
+          "3157"
+        ],
+        "tags": [
+          "Armor",
+          "SpellDamage",
+          "Active"
+        ],
+        "gold": {
+          "total": 1600
+        }
+      },
+      "2502": {
+        "name": "无终恨意",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1031",
+          "3067",
+          "1028"
+        ],
+        "tags": [
+          "Health",
+          "Armor",
+          "CooldownReduction",
+          "AbilityHaste"
+        ],
+        "gold": {
+          "total": 2800
+        }
+      },
+      "2503": {
+        "name": "黯炎火炬",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3802",
+          "2508"
+        ],
+        "tags": [
+          "SpellDamage",
+          "Mana",
+          "CooldownReduction",
+          "AbilityHaste"
+        ],
+        "gold": {
+          "total": 2800
+        }
+      },
+      "2504": {
+        "name": "败魔",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3211",
+          "1057"
+        ],
+        "tags": [
+          "Health",
+          "SpellBlock",
+          "HealthRegen"
+        ],
+        "gold": {
+          "total": 2900
+        }
+      },
+      "2510": {
+        "name": "黄昏与黎明",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3057",
+          "1026",
+          "3067",
+          "1042"
+        ],
+        "tags": [
+          "Health",
+          "AttackSpeed",
+          "SpellDamage",
+          "OnHit",
+          "AbilityHaste"
+        ],
+        "gold": {
+          "total": 3100
+        }
+      },
+      "3009": {
+        "name": "轻灵之靴",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1001"
+        ],
+        "into": [
+          "3170"
+        ],
+        "tags": [
+          "Boots"
+        ],
+        "gold": {
+          "total": 1000
+        }
+      },
+      "3020": {
+        "name": "法师之靴",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1001"
+        ],
+        "into": [
+          "3175"
+        ],
+        "tags": [
+          "Boots",
+          "MagicPenetration"
+        ],
+        "gold": {
+          "total": 1100
+        }
+      },
+      "3047": {
+        "name": "铁板靴",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1001",
+          "1029"
+        ],
+        "into": [
+          "3174"
+        ],
+        "tags": [
+          "Armor",
+          "Boots"
+        ],
+        "gold": {
+          "total": 1200
+        }
+      },
+      "3070": {
+        "name": "女神之泪",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "into": [
+          "3003",
+          "3004",
+          "2526",
+          "3119"
+        ],
+        "tags": [
+          "Mana",
+          "ManaRegen"
+        ],
+        "gold": {
+          "total": 400
+        }
+      },
+      "3075": {
+        "name": "荆棘之甲",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3076",
+          "1031",
+          "1028"
+        ],
+        "tags": [
+          "Health",
+          "Armor"
+        ],
+        "gold": {
+          "total": 2450
+        }
+      },
+      "3076": {
+        "name": "棘刺背心",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1029",
+          "1029"
+        ],
+        "into": [
+          "323075",
+          "3075"
+        ],
+        "tags": [
+          "Armor"
+        ],
+        "gold": {
+          "total": 800
+        }
+      },
+      "3083": {
+        "name": "狂徒铠甲",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1011",
+          "1011",
+          "3801"
+        ],
+        "tags": [
+          "Health",
+          "HealthRegen"
+        ],
+        "gold": {
+          "total": 3100
+        }
+      },
+      "3084": {
+        "name": "心之钢",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1011",
+          "3801",
+          "1011"
+        ],
+        "tags": [
+          "Health",
+          "HealthRegen"
+        ],
+        "gold": {
+          "total": 3000
+        }
+      },
+      "3089": {
+        "name": "灭世者的死亡之帽",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1058",
+          "1058"
+        ],
+        "tags": [
+          "SpellDamage"
+        ],
+        "gold": {
+          "total": 3500
+        }
+      },
+      "3100": {
+        "name": "巫妖之祸",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3057",
+          "3113",
+          "1026"
+        ],
+        "tags": [
+          "SpellDamage",
+          "OnHit",
+          "NonbootsMovement",
+          "AbilityHaste"
+        ],
+        "gold": {
+          "total": 2900
+        }
+      },
+      "3102": {
+        "name": "女妖面纱",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1058",
+          "4632"
+        ],
+        "tags": [
+          "SpellBlock",
+          "SpellDamage"
+        ],
+        "gold": {
+          "total": 3000
+        }
+      },
+      "3111": {
+        "name": "水银之靴",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1001",
+          "1033"
+        ],
+        "into": [
+          "3173"
+        ],
+        "tags": [
+          "Boots",
+          "SpellBlock",
+          "Tenacity"
+        ],
+        "gold": {
+          "total": 1250
+        }
+      },
+      "3118": {
+        "name": "残疫",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3802",
+          "1026"
+        ],
+        "tags": [
+          "SpellDamage",
+          "Mana",
+          "AbilityHaste"
+        ],
+        "gold": {
+          "total": 2700
+        }
+      },
+      "3135": {
+        "name": "虚空之杖",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "4630",
+          "1026"
+        ],
+        "tags": [
+          "MagicPenetration",
+          "SpellDamage"
+        ],
+        "gold": {
+          "total": 3000
+        }
+      },
+      "3137": {
+        "name": "蜕生",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "4630",
+          "3108",
+          "3108"
+        ],
+        "tags": [
+          "SpellDamage",
+          "MagicPenetration",
+          "AbilityHaste"
+        ],
+        "gold": {
+          "total": 3000
+        }
+      },
+      "3143": {
+        "name": "兰顿之兆",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3082",
+          "1011"
+        ],
+        "tags": [
+          "Health",
+          "Armor",
+          "Active",
+          "Slow"
+        ],
+        "gold": {
+          "total": 2700
+        }
+      },
+      "3152": {
+        "name": "海克斯科技火箭腰带",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3145",
+          "3067",
+          "1028"
+        ],
+        "tags": [
+          "Health",
+          "SpellDamage",
+          "Active",
+          "CooldownReduction",
+          "NonbootsMovement",
+          "AbilityHaste"
+        ],
+        "gold": {
+          "total": 2650
+        }
+      },
+      "3157": {
+        "name": "中娅沙漏",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1058",
+          "2420"
+        ],
+        "tags": [
+          "Armor",
+          "SpellDamage",
+          "Active"
+        ],
+        "gold": {
+          "total": 3250
+        }
+      },
+      "3158": {
+        "name": "明朗之靴",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1001",
+          "2022"
+        ],
+        "into": [
+          "3171"
+        ],
+        "tags": [
+          "Boots",
+          "CooldownReduction"
+        ],
+        "gold": {
+          "total": 900
+        }
+      },
+      "3165": {
+        "name": "莫雷洛秘典",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3916",
+          "1026",
+          "3067"
+        ],
+        "tags": [
+          "Health",
+          "SpellDamage",
+          "CooldownReduction",
+          "AbilityHaste"
+        ],
+        "gold": {
+          "total": 2850
+        }
+      },
+      "3916": {
+        "name": "湮灭宝珠",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1052"
+        ],
+        "into": [
+          "223011",
+          "3165",
+          "3011"
+        ],
+        "tags": [
+          "SpellDamage"
+        ],
+        "gold": {
+          "total": 800
+        }
+      },
+      "4629": {
+        "name": "星界驱驰",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3067",
+          "3113",
+          "3108"
+        ],
+        "tags": [
+          "Health",
+          "SpellDamage",
+          "NonbootsMovement",
+          "AbilityHaste"
+        ],
+        "gold": {
+          "total": 3000
+        }
+      },
+      "4633": {
+        "name": "裂隙制造者",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3147",
+          "3108"
+        ],
+        "tags": [
+          "Health",
+          "SpellDamage",
+          "CooldownReduction",
+          "SpellVamp"
+        ],
+        "gold": {
+          "total": 3100
+        }
+      },
+      "4645": {
+        "name": "影焰",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3145",
+          "1058"
+        ],
+        "tags": [
+          "SpellDamage",
+          "MagicPenetration"
+        ],
+        "gold": {
+          "total": 3200
+        }
+      },
+      "4646": {
+        "name": "风暴狂涌",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3145",
+          "3113"
+        ],
+        "tags": [
+          "SpellDamage",
+          "GoldPer",
+          "NonbootsMovement",
+          "MagicPenetration"
+        ],
+        "gold": {
+          "total": 2800
+        }
+      },
+      "6653": {
+        "name": "兰德里的折磨",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3147",
+          "2508"
+        ],
+        "tags": [
+          "Health",
+          "SpellDamage"
+        ],
+        "gold": {
+          "total": 3000
+        }
+      },
+      "6655": {
+        "name": "卢登的回声",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3802",
+          "3145"
+        ],
+        "tags": [
+          "SpellDamage",
+          "Mana",
+          "CooldownReduction",
+          "AbilityHaste"
+        ],
+        "gold": {
+          "total": 2750
+        }
+      },
+      "6662": {
+        "name": "冰脉护手",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "3057",
+          "1028",
+          "1031"
+        ],
+        "tags": [
+          "Health",
+          "Armor",
+          "CooldownReduction",
+          "Slow",
+          "OnHit",
+          "AbilityHaste"
+        ],
+        "gold": {
+          "total": 2900
+        }
+      },
+      "6664": {
+        "name": "璀璨回响",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "6660",
+          "3211"
+        ],
+        "tags": [
+          "Health",
+          "SpellBlock",
+          "HealthRegen",
+          "Aura",
+          "MagicResist",
+          "AbilityHaste"
+        ],
+        "gold": {
+          "total": 2800
+        }
+      },
+      "6665": {
+        "name": "千变者贾修",
+        "maps": {
+          "11": true,
+          "12": true,
+          "22": false,
+          "30": false,
+          "453": true
+        },
+        "from": [
+          "1011",
+          "1031",
+          "1057"
+        ],
+        "tags": [
+          "Health",
+          "SpellBlock",
+          "Armor",
+          "MagicResist"
+        ],
+        "gold": {
+          "total": 3200
+        }
+      }
+    },
+    "styles": [
+      {
+        "id": 8100,
+        "name": "主宰",
+        "icon": "perk-images/Styles/7200_Domination.png",
+        "slots": [
+          {
+            "runes": [
+              {
+                "id": 8112,
+                "name": "电刑",
+                "icon": "perk-images/Styles/Domination/Electrocute/Electrocute.png"
+              },
+              {
+                "id": 8128,
+                "name": "黑暗收割",
+                "icon": "perk-images/Styles/Domination/DarkHarvest/DarkHarvest.png"
+              },
+              {
+                "id": 9923,
+                "name": "丛刃",
+                "icon": "perk-images/Styles/Domination/HailOfBlades/HailOfBlades.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 8126,
+                "name": "恶意中伤",
+                "icon": "perk-images/Styles/Domination/CheapShot/CheapShot.png"
+              },
+              {
+                "id": 8139,
+                "name": "血之滋味",
+                "icon": "perk-images/Styles/Domination/TasteOfBlood/GreenTerror_TasteOfBlood.png"
+              },
+              {
+                "id": 8143,
+                "name": "猛然冲击",
+                "icon": "perk-images/Styles/Domination/SuddenImpact/SuddenImpact.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 8137,
+                "name": "第六感",
+                "icon": "perk-images/Styles/Domination/SixthSense/SixthSense.png"
+              },
+              {
+                "id": 8140,
+                "name": "可怖纪念品",
+                "icon": "perk-images/Styles/Domination/GrislyMementos/GrislyMementos.png"
+              },
+              {
+                "id": 8141,
+                "name": "深入守卫",
+                "icon": "perk-images/Styles/Domination/DeepWard/DeepWard.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 8135,
+                "name": "寻宝猎人",
+                "icon": "perk-images/Styles/Domination/TreasureHunter/TreasureHunter.png"
+              },
+              {
+                "id": 8105,
+                "name": "无情猎手",
+                "icon": "perk-images/Styles/Domination/RelentlessHunter/RelentlessHunter.png"
+              },
+              {
+                "id": 8106,
+                "name": "终极猎人",
+                "icon": "perk-images/Styles/Domination/UltimateHunter/UltimateHunter.png"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 8300,
+        "name": "启迪",
+        "icon": "perk-images/Styles/7203_Whimsy.png",
+        "slots": [
+          {
+            "runes": [
+              {
+                "id": 8351,
+                "name": "冰川增幅",
+                "icon": "perk-images/Styles/Inspiration/GlacialAugment/GlacialAugment.png"
+              },
+              {
+                "id": 8360,
+                "name": "启封的秘籍",
+                "icon": "perk-images/Styles/Inspiration/UnsealedSpellbook/UnsealedSpellbook.png"
+              },
+              {
+                "id": 8369,
+                "name": "先攻",
+                "icon": "perk-images/Styles/Inspiration/FirstStrike/FirstStrike.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 8306,
+                "name": "海克斯科技闪现罗网",
+                "icon": "perk-images/Styles/Inspiration/HextechFlashtraption/HextechFlashtraption.png"
+              },
+              {
+                "id": 8304,
+                "name": "神奇之鞋",
+                "icon": "perk-images/Styles/Inspiration/MagicalFootwear/MagicalFootwear.png"
+              },
+              {
+                "id": 8321,
+                "name": "返现",
+                "icon": "perk-images/Styles/Inspiration/CashBack/CashBack2.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 8313,
+                "name": "三重补药",
+                "icon": "perk-images/Styles/Inspiration/PerfectTiming/AlchemistCabinet.png"
+              },
+              {
+                "id": 8352,
+                "name": "时间扭曲补药",
+                "icon": "perk-images/Styles/Inspiration/TimeWarpTonic/TimeWarpTonic.png"
+              },
+              {
+                "id": 8345,
+                "name": "饼干配送",
+                "icon": "perk-images/Styles/Inspiration/BiscuitDelivery/BiscuitDelivery.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 8347,
+                "name": "星界洞悉",
+                "icon": "perk-images/Styles/Inspiration/CosmicInsight/CosmicInsight.png"
+              },
+              {
+                "id": 8410,
+                "name": "行近速率",
+                "icon": "perk-images/Styles/Resolve/ApproachVelocity/ApproachVelocity.png"
+              },
+              {
+                "id": 8316,
+                "name": "多面手",
+                "icon": "perk-images/Styles/Inspiration/JackOfAllTrades/JackofAllTrades2.png"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 8000,
+        "name": "精密",
+        "icon": "perk-images/Styles/7201_Precision.png",
+        "slots": [
+          {
+            "runes": [
+              {
+                "id": 8005,
+                "name": "强攻",
+                "icon": "perk-images/Styles/Precision/PressTheAttack/PressTheAttack.png"
+              },
+              {
+                "id": 8008,
+                "name": "致命节奏",
+                "icon": "perk-images/Styles/Precision/LethalTempo/LethalTempoTemp.png"
+              },
+              {
+                "id": 8021,
+                "name": "迅捷步法",
+                "icon": "perk-images/Styles/Precision/FleetFootwork/FleetFootwork.png"
+              },
+              {
+                "id": 8010,
+                "name": "征服者",
+                "icon": "perk-images/Styles/Precision/Conqueror/Conqueror.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 9101,
+                "name": "吸收生命力",
+                "icon": "perk-images/Styles/Precision/AbsorbLife/AbsorbLife.png"
+              },
+              {
+                "id": 9111,
+                "name": "凯旋",
+                "icon": "perk-images/Styles/Precision/Triumph.png"
+              },
+              {
+                "id": 8009,
+                "name": "气定神闲",
+                "icon": "perk-images/Styles/Precision/PresenceOfMind/PresenceOfMind.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 9104,
+                "name": "传说：欢欣",
+                "icon": "perk-images/Styles/Precision/LegendAlacrity/LegendAlacrity.png"
+              },
+              {
+                "id": 9105,
+                "name": "传说：急速",
+                "icon": "perk-images/Styles/Precision/LegendHaste/LegendHaste.png"
+              },
+              {
+                "id": 9103,
+                "name": "传说：血统",
+                "icon": "perk-images/Styles/Precision/LegendBloodline/LegendBloodline.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 8014,
+                "name": "致命一击",
+                "icon": "perk-images/Styles/Precision/CoupDeGrace/CoupDeGrace.png"
+              },
+              {
+                "id": 8017,
+                "name": "砍倒",
+                "icon": "perk-images/Styles/Precision/CutDown/CutDown.png"
+              },
+              {
+                "id": 8299,
+                "name": "坚毅不倒",
+                "icon": "perk-images/Styles/Sorcery/LastStand/LastStand.png"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 8400,
+        "name": "坚决",
+        "icon": "perk-images/Styles/7204_Resolve.png",
+        "slots": [
+          {
+            "runes": [
+              {
+                "id": 8437,
+                "name": "不灭之握",
+                "icon": "perk-images/Styles/Resolve/GraspOfTheUndying/GraspOfTheUndying.png"
+              },
+              {
+                "id": 8439,
+                "name": "余震",
+                "icon": "perk-images/Styles/Resolve/VeteranAftershock/VeteranAftershock.png"
+              },
+              {
+                "id": 8465,
+                "name": "守护者",
+                "icon": "perk-images/Styles/Resolve/Guardian/Guardian.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 8446,
+                "name": "爆破",
+                "icon": "perk-images/Styles/Resolve/Demolish/Demolish.png"
+              },
+              {
+                "id": 8463,
+                "name": "生命源泉",
+                "icon": "perk-images/Styles/Resolve/FontOfLife/FontOfLife.png"
+              },
+              {
+                "id": 8401,
+                "name": "护盾猛击",
+                "icon": "perk-images/Styles/Resolve/MirrorShell/MirrorShell.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 8429,
+                "name": "调节",
+                "icon": "perk-images/Styles/Resolve/Conditioning/Conditioning.png"
+              },
+              {
+                "id": 8444,
+                "name": "复苏之风",
+                "icon": "perk-images/Styles/Resolve/SecondWind/SecondWind.png"
+              },
+              {
+                "id": 8473,
+                "name": "骸骨镀层",
+                "icon": "perk-images/Styles/Resolve/BonePlating/BonePlating.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 8451,
+                "name": "过度生长",
+                "icon": "perk-images/Styles/Resolve/Overgrowth/Overgrowth.png"
+              },
+              {
+                "id": 8453,
+                "name": "复苏",
+                "icon": "perk-images/Styles/Resolve/Revitalize/Revitalize.png"
+              },
+              {
+                "id": 8242,
+                "name": "坚定",
+                "icon": "perk-images/Styles/Sorcery/Unflinching/Unflinching.png"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 8200,
+        "name": "巫术",
+        "icon": "perk-images/Styles/7202_Sorcery.png",
+        "slots": [
+          {
+            "runes": [
+              {
+                "id": 8214,
+                "name": "召唤：艾黎",
+                "icon": "perk-images/Styles/Sorcery/SummonAery/SummonAery.png"
+              },
+              {
+                "id": 8229,
+                "name": "奥术彗星",
+                "icon": "perk-images/Styles/Sorcery/ArcaneComet/ArcaneComet.png"
+              },
+              {
+                "id": 8230,
+                "name": "风暴掠袭者的狂涌",
+                "icon": "perk-images/Styles/Sorcery/PhaseRush/StormraidersSurgeRuneIcon2.png"
+              },
+              {
+                "id": 8992,
+                "name": "冥火之触",
+                "icon": "perk-images/Styles/Sorcery/DeathfireTouch/DEATHFIRE_TOUCH_KEYSTONE.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 8224,
+                "name": "公理秘术",
+                "icon": "perk-images/Styles/Sorcery/NullifyingOrb/Axiom_Arcanist.png"
+              },
+              {
+                "id": 8226,
+                "name": "法力流系带",
+                "icon": "perk-images/Styles/Sorcery/ManaflowBand/ManaflowBand.png"
+              },
+              {
+                "id": 8275,
+                "name": "灵光披风",
+                "icon": "perk-images/Styles/Sorcery/NimbusCloak/6361.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 8210,
+                "name": "超然",
+                "icon": "perk-images/Styles/Sorcery/Transcendence/Transcendence.png"
+              },
+              {
+                "id": 8234,
+                "name": "迅捷",
+                "icon": "perk-images/Styles/Sorcery/Celerity/CelerityTemp.png"
+              },
+              {
+                "id": 8233,
+                "name": "绝对专注",
+                "icon": "perk-images/Styles/Sorcery/AbsoluteFocus/AbsoluteFocus.png"
+              }
+            ]
+          },
+          {
+            "runes": [
+              {
+                "id": 8237,
+                "name": "焦灼",
+                "icon": "perk-images/Styles/Sorcery/Scorch/Scorch.png"
+              },
+              {
+                "id": 8232,
+                "name": "水上行走",
+                "icon": "perk-images/Styles/Sorcery/Waterwalking/Waterwalking.png"
+              },
+              {
+                "id": 8236,
+                "name": "风暴聚集",
+                "icon": "perk-images/Styles/Sorcery/GatheringStorm/GatheringStorm.png"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "spells": {
+      "SummonerBarrier": {
+        "key": "21",
+        "name": "屏障",
+        "image": {
+          "full": "SummonerBarrier.png",
+          "sprite": "spell0.png",
+          "group": "spell",
+          "x": 0,
+          "y": 0,
+          "w": 48,
+          "h": 48
+        },
+        "modes": [
+          "ARAM",
+          "TUTORIAL",
+          "KIWI",
+          "ULTBOOK",
+          "FIRSTBLOOD",
+          "SWIFTPLAY",
+          "CLASSIC",
+          "PRACTICETOOL",
+          "RUBY",
+          "RUBY_TRIAL_1",
+          "BRAWL",
+          "URF",
+          "KIWI_JADE",
+          "RUBY_TRIAL_3",
+          "ONEFORALL",
+          "ASSASSINATE",
+          "ARSR",
+          "NEXUSBLITZ",
+          "DOOMBOTSTEEMO",
+          "RUBY_TRIAL_2"
+        ]
+      },
+      "SummonerDot": {
+        "key": "14",
+        "name": "引燃",
+        "image": {
+          "full": "SummonerDot.png",
+          "sprite": "spell0.png",
+          "group": "spell",
+          "x": 384,
+          "y": 0,
+          "w": 48,
+          "h": 48
+        },
+        "modes": [
+          "ARAM",
+          "TUTORIAL",
+          "KIWI",
+          "ULTBOOK",
+          "FIRSTBLOOD",
+          "SWIFTPLAY",
+          "CLASSIC",
+          "PRACTICETOOL",
+          "RUBY",
+          "RUBY_TRIAL_1",
+          "BRAWL",
+          "URF",
+          "KIWI_JADE",
+          "RUBY_TRIAL_3",
+          "ONEFORALL",
+          "ASSASSINATE",
+          "ARSR",
+          "NEXUSBLITZ",
+          "DOOMBOTSTEEMO",
+          "RUBY_TRIAL_2"
+        ]
+      },
+      "SummonerFlash": {
+        "key": "4",
+        "name": "闪现",
+        "image": {
+          "full": "SummonerFlash.png",
+          "sprite": "spell0.png",
+          "group": "spell",
+          "x": 96,
+          "y": 48,
+          "w": 48,
+          "h": 48
+        },
+        "modes": [
+          "ARAM",
+          "TUTORIAL",
+          "KIWI",
+          "ULTBOOK",
+          "FIRSTBLOOD",
+          "SWIFTPLAY",
+          "CLASSIC",
+          "PRACTICETOOL",
+          "RUBY",
+          "RUBY_TRIAL_1",
+          "BRAWL",
+          "WIPMODEWIP4",
+          "URF",
+          "SNOWURF",
+          "KIWI_JADE",
+          "RUBY_TRIAL_3",
+          "ONEFORALL",
+          "ARSR",
+          "NEXUSBLITZ",
+          "DOOMBOTSTEEMO",
+          "RUBY_TRIAL_2"
+        ]
+      },
+      "SummonerHaste": {
+        "key": "6",
+        "name": "幽灵疾步",
+        "image": {
+          "full": "SummonerHaste.png",
+          "sprite": "spell0.png",
+          "group": "spell",
+          "x": 240,
+          "y": 48,
+          "w": 48,
+          "h": 48
+        },
+        "modes": [
+          "ARAM",
+          "TUTORIAL_MODULE_1",
+          "TUTORIAL",
+          "KIWI",
+          "ULTBOOK",
+          "FIRSTBLOOD",
+          "SWIFTPLAY",
+          "CLASSIC",
+          "PRACTICETOOL",
+          "RUBY",
+          "RUBY_TRIAL_1",
+          "BRAWL",
+          "URF",
+          "KIWI_JADE",
+          "RUBY_TRIAL_3",
+          "TUTORIAL_MODULE_2",
+          "ONEFORALL",
+          "ASSASSINATE",
+          "ARSR",
+          "NEXUSBLITZ",
+          "DOOMBOTSTEEMO",
+          "RUBY_TRIAL_2"
+        ]
+      },
+      "SummonerHeal": {
+        "key": "7",
+        "name": "治疗术",
+        "image": {
+          "full": "SummonerHeal.png",
+          "sprite": "spell0.png",
+          "group": "spell",
+          "x": 336,
+          "y": 48,
+          "w": 48,
+          "h": 48
+        },
+        "modes": [
+          "ARAM",
+          "TUTORIAL_MODULE_1",
+          "TUTORIAL",
+          "KIWI",
+          "ULTBOOK",
+          "SWIFTPLAY",
+          "CLASSIC",
+          "PRACTICETOOL",
+          "RUBY",
+          "RUBY_TRIAL_1",
+          "BRAWL",
+          "URF",
+          "KIWI_JADE",
+          "RUBY_TRIAL_3",
+          "TUTORIAL_MODULE_2",
+          "ONEFORALL",
+          "ASSASSINATE",
+          "ARSR",
+          "NEXUSBLITZ",
+          "DOOMBOTSTEEMO",
+          "RUBY_TRIAL_2"
+        ]
+      },
+      "SummonerSnowball": {
+        "key": "32",
+        "name": "标记",
+        "image": {
+          "full": "SummonerSnowball.png",
+          "sprite": "spell0.png",
+          "group": "spell",
+          "x": 384,
+          "y": 96,
+          "w": 48,
+          "h": 48
+        },
+        "modes": [
+          "KIWI",
+          "KIWI_JADE",
+          "ARAM",
+          "FIRSTBLOOD"
+        ]
+      }
+    }
+  }
+}

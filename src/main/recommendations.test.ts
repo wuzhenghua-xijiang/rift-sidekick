@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import type { Champion, QueueMode } from '@shared/types'
 import type { GameCatalog, RuneStyle } from './catalog'
 import { buildRecommendations, isFinishedItem } from './recommendations'
+import { buildPlanKey, rankBuildPlans } from '@shared/build-plans'
+import fizzFixture from './fixtures/fizz-aram-16.21.json'
 
 const champion: Champion = { id: 'Ahri', key: 103, name: '阿狸', title: '', tags: [], icon: '', splash: '' }
 const style = (id: number, name: string, slots: number[][]): RuneStyle => ({ id, name, icon: `perk-images/Styles/${id}.png`, slots: slots.map((entries) => ({ runes: entries.map((id) => ({ id, name: String(id), icon: `perk-images/Runes/${id}.png` })) })) })
@@ -36,21 +38,22 @@ function sample() {
 const build = (input: unknown, mode: QueueMode = 'ranked') => buildRecommendations(input, champion, 'mid', mode, '16.21.1', catalog)
 
 describe('multiple real recommendation samples', () => {
-  it('creates five distinct cards using core builds and different rune style pairs', () => {
+  it('merges identical completed loadouts while retaining genuinely different rune builds', () => {
     const plans = build(sample())
-    expect(plans).toHaveLength(5)
-    expect(new Set(plans.map((plan) => plan.id)).size).toBe(5)
-    expect(new Set(plans.map((plan) => plan.itemGroups[0].ids.join(','))).size).toBe(4)
+    expect(plans).toHaveLength(3)
+    expect(new Set(plans.map(buildPlanKey)).size).toBe(3)
+    expect(new Set(plans.map((plan) => plan.itemGroups.flatMap((group) => group.ids).sort().join(','))).size).toBe(2)
     expect(new Set(plans.map((plan) => plan.runes?.primaryStyleId)).size).toBe(2)
     expect(plans[0].runes?.primaryStyleIcon).toBe(catalog.styles[0].icon)
     expect(plans[0].runes?.primaryKeystoneIcon).toBe('perk-images/Runes/8112.png')
     expect(plans[0].runes?.secondaryRuneIcons).toEqual(['perk-images/Runes/8226.png', 'perk-images/Runes/8210.png'])
-    expect(plans[3].runes?.primaryKeystoneIcon).toBe('perk-images/Runes/8229.png')
-    expect(plans[3].runes?.secondaryRuneIcons).toEqual(['perk-images/Runes/8139.png', 'perk-images/Runes/8106.png'])
+    const alternate = plans.find((plan) => plan.runes?.primaryStyleId === 8200)!
+    expect(alternate.runes?.primaryKeystoneIcon).toBe('perk-images/Runes/8229.png')
+    expect(alternate.runes?.secondaryRuneIcons).toEqual(['perk-images/Runes/8139.png', 'perk-images/Runes/8106.png'])
     expect(plans[0].summonerSpells).toEqual([{ id: 4, name: '闪现', icon: 'SummonerFlash.png' }, { id: 14, name: '引燃', icon: 'SummonerDot.png' }])
     expect(plans[0].summonerSpells?.map((spell) => spell.id)).toEqual(plans[0].summonerSpellIds)
-    expect(plans[3]).toMatchObject({ winRate: 0.53, winRateLabel: '符文样本胜率', games: 500 })
-    expect(plans[1]).toMatchObject({ winRate: 0.5, winRateLabel: '核心装备胜率', games: 900 })
+    expect(alternate).toMatchObject({ winRate: 0.53, winRateLabel: '符文样本胜率', games: 500 })
+    expect(plans[0]).toMatchObject({ winRate: 0.5, winRateLabel: '核心装备胜率', games: 1000 })
   })
   it('includes only finished equipment, keeps upgraded boots, and fills six unique slots', () => {
     for (const plan of build(sample())) {
@@ -66,6 +69,29 @@ describe('multiple real recommendation samples', () => {
     const input = sample()
     input.data.core_items = [input.data.core_items[0], { ...input.data.core_items[0], ids: [...input.data.core_items[0].ids].reverse() }]
     input.data.runes = [input.data.runes[0]]
+    expect(build(input)).toHaveLength(1)
+  })
+  it('deduplicates the complete equipment across different core groups and purchase orders', () => {
+    const input = sample()
+    input.data.core_items = input.data.core_items.slice(0, 2)
+    input.data.runes = [input.data.runes[0]]
+    const plans = build(input)
+    expect(plans).toHaveLength(1)
+    expect(plans[0].games).toBe(1000)
+  })
+  it('treats different keystones in the same style pair as distinct rune choices', () => {
+    const input = sample(), expandedCatalog = structuredClone(catalog)
+    expandedCatalog.styles[0].slots[0].runes.push({ id: 8128, name: '黑暗收割', icon: 'dark-harvest.png' })
+    input.data.core_items = [input.data.core_items[0]]
+    input.data.runes = [input.data.runes[0], { ...input.data.runes[0], primary_rune_ids: [8128, 8139, 8140, 8106], play: 500, win: 250 }]
+    const plans = buildRecommendations(input, champion, 'mid', 'ranked', '16.21.1', expandedCatalog)
+    expect(plans).toHaveLength(2)
+    expect(new Set(plans.map((plan) => plan.runes?.primaryRuneIds[0])).size).toBe(2)
+  })
+  it('merges the same secondary runes when their provider order differs', () => {
+    const input = sample()
+    input.data.core_items = [input.data.core_items[0]]
+    input.data.runes = [input.data.runes[0], { ...input.data.runes[0], secondary_rune_ids: [...input.data.runes[0].secondary_rune_ids].reverse() }]
     expect(build(input)).toHaveLength(1)
   })
   it('retains preference IDs when sample counts and core display order change', () => {
@@ -100,7 +126,7 @@ describe('multiple real recommendation samples', () => {
   })
   it('uses independent ARAM recommendations with ordinary runes', () => {
     const plans = build(sample(), 'aram')
-    expect(plans).toHaveLength(5)
+    expect(plans).toHaveLength(3)
     expect(plans.every((plan) => plan.mode === 'aram' && plan.runes && plan.sourceUrl.endsWith('/aram'))).toBe(true)
   })
   it('labels Mayhem equipment fallback without claiming its win rate or providing runes', () => {
@@ -108,7 +134,7 @@ describe('multiple real recommendation samples', () => {
     input.data.runes = []
     input.data.summoner_spells = []
     const plans = build(input, 'aram-mayhem')
-    expect(plans).toHaveLength(5)
+    expect(plans).toHaveLength(2)
     for (const plan of plans) {
       expect(plan.runes).toBeUndefined()
       expect(plan.summonerSpellIds).toEqual([])
@@ -117,5 +143,46 @@ describe('multiple real recommendation samples', () => {
       expect(plan.source).toContain('普通大乱斗装备参考')
       expect(plan.notice).toContain('海克斯强化')
     }
+  })
+})
+
+describe('patch 16.21 Fizz ARAM provider regression', () => {
+  const fizz: Champion = { ...champion, id: 'Fizz', key: 105, name: '菲兹' }
+  const actual = (mode: QueueMode) => buildRecommendations(fizzFixture.provider, fizz, 'mid', mode, fizzFixture.patch, fizzFixture.catalog)
+
+  it('returns ten unique real combinations and includes the tank core beyond the old shortlist', () => {
+    const plans = actual('aram')
+    expect(plans).toHaveLength(10)
+    expect(new Set(plans.map(buildPlanKey)).size).toBe(10)
+    expect(new Set(plans.map((plan) => plan.id)).size).toBe(10)
+    const tank = plans.find((plan) => plan.itemGroups[0].ids.includes(3084))!
+    expect(tank).toBeDefined()
+    expect(tank.title).toContain('坦克')
+    expect(tank.itemGroups[0].ids).toEqual([3084, 2502, 6664])
+    expect(tank.runes?.primaryRuneIds[0]).toBe(8437)
+    expect(tank.itemGroups.find((group) => group.label === '鞋子')?.ids).toEqual([3111])
+    expect(tank.itemGroups.flatMap((group) => group.ids)).toEqual([3084, 2502, 6664, 3111, 3083, 3075])
+    expect(tank).toMatchObject({ games: 406, winRate: 234 / 406, winRateLabel: '核心装备胜率' })
+    expect(plans.every((plan) => plan.sampleLabel.includes('全球全段位'))).toBe(true)
+    expect(plans.some((plan) => plan.runes?.primaryRuneIds[0] === 8128)).toBe(true)
+    expect(plans.some((plan) => plan.runes?.primaryRuneIds[0] === 8112)).toBe(true)
+    expect(rankBuildPlans(plans)[0].itemGroups[0].ids).toContain(3084)
+    expect(plans.filter((plan) => plan.winRateLabel === '符文样本胜率').every((plan) => (plan.games || 0) >= 100)).toBe(true)
+    expect(plans.some((plan) => plan.itemGroups[0].ids.includes(3084) && plan.itemGroups.some((group) => group.ids.includes(3047)))).toBe(true)
+  })
+  it('uses nested real rune samples without duplicating the top-level samples', () => {
+    const input = structuredClone(fizzFixture.provider)
+    input.data.runes = []
+    const plans = buildRecommendations(input, fizz, 'mid', 'aram', fizzFixture.patch, fizzFixture.catalog)
+    expect(plans).toHaveLength(10)
+    expect(new Set(plans.map(buildPlanKey)).size).toBe(10)
+    expect(plans.find((plan) => plan.title.startsWith('坦克'))?.runes?.primaryRuneIds[0]).toBe(8437)
+  })
+  it('keeps tank equipment in Mayhem references without ordinary runes or invented Mayhem rates', () => {
+    const plans = actual('aram-mayhem')
+    expect(plans).toHaveLength(10)
+    expect(new Set(plans.map(buildPlanKey)).size).toBe(10)
+    expect(plans.some((plan) => plan.itemGroups[0].ids.includes(3084))).toBe(true)
+    expect(plans.every((plan) => !plan.runes && plan.winRate === undefined && plan.summonerSpellIds.length === 0)).toBe(true)
   })
 })

@@ -9,6 +9,7 @@ const OUTPUT_FIELDS = [
   'data.last_items[].{ids[]}', 'data.fourth_items[].{ids[]}', 'data.fifth_items[].{ids[]}', 'data.sixth_items[].{ids[]}',
   'data.summoner_spells.{ids[]}',
   'data.runes.{id,play,win,primary_page_id,primary_rune_ids[],secondary_page_id,secondary_rune_ids[],stat_mod_ids[]}',
+  'data.rune_pages',
   'data.skills.{order[]}', 'data.strong_counters', 'data.weak_counters', 'data.skill_combos',
 ]
 const cache = new Map<string, { expires: number; plans: BuildPlan[] }>()
@@ -37,19 +38,25 @@ async function loadBuilds(champion: Champion, position: Position, mode: QueueMod
   // is an explicitly labelled reference; it never supplies Mayhem runes or Mayhem win rates.
   const sourceMode = mode === 'ranked' ? 'ranked' : 'aram'
   const path = sourceMode === 'ranked' ? `ranked/${champion.key}/${position}` : `aram/${champion.key}/none`
-  try {
-    const raw = await enqueueProvider(async () => {
-      const response = await fetch(`https://lol-api-champion.op.gg/api/global/champions/${path}?hl=zh_CN&tier=all`, {
-        headers: { Accept: 'application/json', 'User-Agent': USER_AGENT, Origin: 'https://op.gg', Referer: 'https://op.gg/' },
-        signal: AbortSignal.timeout(18_000),
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const raw = await enqueueProvider(async () => {
+        const response = await fetch(`https://lol-api-champion.op.gg/api/global/champions/${path}?hl=zh_CN&tier=all`, {
+          headers: { Accept: 'application/json', 'User-Agent': USER_AGENT, Origin: 'https://op.gg', Referer: 'https://op.gg/' },
+          signal: AbortSignal.timeout(18_000),
+        })
+        checkResponse(response)
+        return response.json()
       })
-      checkResponse(response)
-      return response.json()
-    })
-    const plans = buildRecommendations(raw, champion, position, mode, patch, catalog)
-    if (plans.length) return plans
-  } catch (error) {
-    if (Date.now() < cooldownUntil) throw error
+      const plans = buildRecommendations(raw, champion, position, mode, patch, catalog)
+      if (plans.length) return plans
+      break
+    } catch (error) {
+      if (Date.now() < cooldownUntil) throw error
+      // A brief connection failure should not immediately downgrade a full
+      // statistical response to the MCP summary. Retry transport failures once.
+      if (!(error instanceof TypeError || error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name))) break
+    }
   }
   const fallback = await requestProvider('lol_get_champion_analysis', {
     game_mode: sourceMode, champion: champion.id.toUpperCase(), position, lang: 'zh_CN', desired_output_fields: OUTPUT_FIELDS,
