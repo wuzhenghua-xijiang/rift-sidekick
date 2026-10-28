@@ -5,3 +5,4 @@ b683795dbe40eed0d32503960bd1d3abe43caf14dd13e62cc5f7e96b537428ca  Rift-Sidekick-
 38a9c9dbda367e7f8cf7adbac04900e38ab0c567a013d8eec8a926d2edc1cb9b  Rift-Sidekick-Setup-0.2.1-x64.exe
 1be4a8919cc28e881b767549317f8da08e082cfb51d2e4784db14c67ef095f8a  Rift-Sidekick-Setup-0.2.2-x64.exe
 e54be78797941adbc98f1cd05f201dc27a44ff07296b1ca85dbbd066a0d620c4  Rift-Sidekick-Setup-0.2.3-x64.exe
+4a12cea1c973901df61a6df60940340cb0cb6ef7c8fd294308e21bd12b585424  Rift-Sidekick-Setup-0.2.4-x64.exe
