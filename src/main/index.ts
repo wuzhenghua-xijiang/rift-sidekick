@@ -25,7 +25,7 @@ import { WindowsPerformanceRuntime } from './windows-performance'
 import { CombatService } from './combat'
 import { WindowsCombatVoice } from './combat-voice'
 import { readLiveGame } from './live-client'
-import { DEFAULT_COMBAT_BASE_URL, DEFAULT_COMBAT_MODEL, DEFAULT_COMBAT_PROMPT, DEFAULT_COMBAT_PREFERENCES, combatPreferences, type CombatPreferences } from '@shared/combat'
+import { COMBAT_VOLUME_DEFAULT_VERSION, DEFAULT_COMBAT_BASE_URL, DEFAULT_COMBAT_MODEL, DEFAULT_COMBAT_PROMPT, DEFAULT_COMBAT_PREFERENCES, combatPreferences, restoreCombatPreferences, type CombatPreferences } from '@shared/combat'
 import { combatBaseUrl, OpenAICombatJudge } from './combat-openai'
 import { coachDraft, coachDraftKey, type CoachRequest, type CoachSettingsInput } from '@shared/coach'
 import { CoachSettingsStore } from './coach-settings'
@@ -39,6 +39,7 @@ interface Preferences {
   dock: boolean
   nativeJungleEnabled: boolean
   combat: CombatPreferences
+  combatVolumeDefaultVersion?: number
   combatAI?: { baseUrl: string; model: string; prompt: string; encryptedApiKey?: string }
   selectedPlans: Record<string, string>
   positions: Record<string, Position>
@@ -80,7 +81,7 @@ let previousPhase = ''
 let operation = 0
 let quitting = false
 let preferencesWrites: Promise<void> = Promise.resolve()
-let preferences: Preferences = { optimizeBeforeLaunch: true, dock: true, nativeJungleEnabled: true, combat: { ...DEFAULT_COMBAT_PREFERENCES }, selectedPlans: {}, positions: {} }
+let preferences: Preferences = { optimizeBeforeLaunch: true, dock: true, nativeJungleEnabled: true, combat: { ...DEFAULT_COMBAT_PREFERENCES }, combatVolumeDefaultVersion: COMBAT_VOLUME_DEFAULT_VERSION, selectedPlans: {}, positions: {} }
 let state: AppState = {
   client: { connected: false, phase: 'ClientOffline', championId: null, championLocked: false, position: null, mode: 'ranked', message: '等待英雄联盟客户端…' },
   dock: true, canRestore: false, recoveryNeeded: false,
@@ -119,7 +120,7 @@ async function loadPreferences() {
     for (const key of ['dock', 'nativeJungleEnabled'] as const) if (typeof value[key] === 'boolean') preferences[key] = value[key]
     if (typeof value.optimizeBeforeLaunch === 'boolean') preferences.optimizeBeforeLaunch = value.optimizeBeforeLaunch
     if (typeof value.launcherPath === 'string') preferences.launcherPath = value.launcherPath
-    preferences.combat = combatPreferences(value.combat)
+    preferences.combat = restoreCombatPreferences(value.combat, value.combatVolumeDefaultVersion)
     if (value.combatAI && typeof value.combatAI === 'object') {
       const ai = value.combatAI
       preferences.combatAI = { baseUrl: DEFAULT_COMBAT_BASE_URL, model: typeof ai.model === 'string' && /^[a-zA-Z0-9._:-]{1,100}$/.test(ai.model) ? ai.model : DEFAULT_COMBAT_MODEL,

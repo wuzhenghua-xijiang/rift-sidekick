@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ClientState } from '@shared/types'
-import { COMBAT_TAUNT_LINES, DEFAULT_COMBAT_PROMPT, type CombatEvidence } from '@shared/combat'
+import { COMBAT_TAUNT_LINES, COMBAT_VOLUME_DEFAULT_VERSION, DEFAULT_COMBAT_PROMPT, restoreCombatPreferences, type CombatEvidence } from '@shared/combat'
 import { CombatService } from './combat'
 import type { CombatJudge } from './combat-openai'
 
@@ -22,6 +22,20 @@ function harness(ai?: CombatJudge, coOp = false) {
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(1_000_000) })
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers() })
 describe('background combat reactions', () => {
+  it('raises the legacy default volume while retaining mute, custom values and later saved choices', async () => {
+    const upgraded = restoreCombatPreferences({ volume: 35, tauntStyle: 'sweet', taunt: false })
+    expect(upgraded).toMatchObject({ volume: 65, tauntStyle: 'sweet', taunt: false })
+    expect(restoreCombatPreferences(undefined).volume).toBe(65)
+    for (const volume of [0, 2, 50, 100]) expect(restoreCombatPreferences({ volume }).volume).toBe(volume)
+    expect(restoreCombatPreferences({ volume: 35 }, COMBAT_VOLUME_DEFAULT_VERSION).volume).toBe(35)
+    const f = harness(); f.service.configure(upgraded)
+    await f.service.preview('praise')
+    expect(f.voice.speak).toHaveBeenCalledWith(expect.any(String), 65)
+    f.service.configure({ volume: 35 })
+    const saved = JSON.parse(JSON.stringify({ combat: f.service.state.preferences, combatVolumeDefaultVersion: COMBAT_VOLUME_DEFAULT_VERSION }))
+    expect(restoreCombatPreferences(saved.combat, saved.combatVolumeDefaultVersion).volume).toBe(35)
+    f.service.dispose()
+  })
   it('works from the main process during a match, combines events and respects cooldowns', async () => {
     const f = harness(); f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
     f.kill(); await f.step(3)
@@ -71,13 +85,13 @@ describe('background combat reactions', () => {
     f.kill(); await f.step(1)
     f.service.updateClient({ ...playing, connected: false }); f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
     await f.step(3); expect(f.voice.speak).not.toHaveBeenCalled()
-    f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledWith('这是我的专属夸夸。', 35); f.service.dispose()
+    f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledWith('这是我的专属夸夸。', 65); f.service.dispose()
   })
   it('uses AI conclusions when valid and falls back to rules when AI fails', async () => {
     const ai: CombatJudge = { state: { configured: true, baseUrl: 'https://example.test/v1', model: 'test', prompt: DEFAULT_COMBAT_PROMPT }, judge: vi.fn(async (_e: CombatEvidence) => ({ kind: 'clutch' as const, text: 'AI 专属夸夸。' })) }
     const f = harness(ai); f.service.configure({ mode: 'openai' }); f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
     f.kill(); await f.step(3)
-    expect(f.voice.speak).toHaveBeenCalledWith('AI 专属夸夸。', 35); expect(f.service.state.lastReaction?.source).toBe('openai')
+    expect(f.voice.speak).toHaveBeenCalledWith('AI 专属夸夸。', 65); expect(f.service.state.lastReaction?.source).toBe('openai')
     vi.mocked(ai.judge).mockResolvedValueOnce(undefined)
     await f.step(20); f.kill(); await f.step(3)
     expect(f.voice.speak).toHaveBeenCalledTimes(2); expect(f.service.state.lastReaction?.source).toBe('rules'); f.service.dispose()
@@ -111,10 +125,10 @@ describe('background combat reactions', () => {
   it.each(['grumpy', 'teen', 'sweet'] as const)('uses the %s taunt persona for previews and gives custom lines priority', async (style) => {
     const f = harness(); f.service.configure({ tauntStyle: style })
     await f.service.preview('taunt')
-    expect(f.voice.speak).toHaveBeenLastCalledWith(COMBAT_TAUNT_LINES[style][0], 35, style)
+    expect(f.voice.speak).toHaveBeenLastCalledWith(COMBAT_TAUNT_LINES[style][0], 65, style)
     f.service.configure({ customLines: { rough: ['这是专属调侃。'] } })
     await f.service.preview('taunt')
-    expect(f.voice.speak).toHaveBeenLastCalledWith('这是专属调侃。', 35, style)
+    expect(f.voice.speak).toHaveBeenLastCalledWith('这是专属调侃。', 65, style)
     f.service.dispose()
   })
   it('drops a late AI response after death, mode changes or disabling', async () => {

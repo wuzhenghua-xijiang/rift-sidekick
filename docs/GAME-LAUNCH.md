@@ -39,6 +39,8 @@
 
 本次没有找到可验证、适用于当前国服原生客户端的通用账号密码参数或公开本地登录接口。这不等于断言腾讯内部不存在集成协议；按用户要求，本项目停止自动填写路线，只负责打开官方客户端。
 
+2026-10-28 的[自动登录补充研究](AUTO-LOGIN-RESEARCH.md) 找到 TPF 渲染面板的 OCR 自动输入实现，以及社区导出的腾讯 SDK 登录端点。前者仍有旧 TCLS 启动依赖且测试未证明真实新版登录；后者依赖启动器已有凭据，不能直接传入 QQ 账号密码。窗口辅助登录值得进行 Windows 实机原型验证，当前产品继续使用官方登录流程。
+
 - [LeagueAkari 的安装发现](https://github.com/LeagueAkari/LeagueAkari/blob/56cdfde00e56148f4641d1a8cf86acb66e903124/src/main/shards/client-installation/installation-detector.ts#L94-L98) 将 `Launcher\Client.exe` 作为国服原生入口，与 WeGameLauncher 单独处理。
 - [rank-analysis 的启动实现](https://github.com/wnzzer/rank-analysis/blob/3878348ed516252083d1fc3fde606affe0e2ce6c/rank-analysis-app/src-tauri/src/command/launcher.rs) 使用 ShellExecute 遵循官方权限清单；[维护者说明](https://github.com/wnzzer/rank-analysis/issues/32#issuecomment-4884814846) 明确此功能免开 WeGame，但仍需在腾讯窗口登录。其源码与本项目采用相同的 Windows 启动方式，不采用其清理自启动注册表功能。
 - [LOL-GameAssistant 的国服实现](https://github.com/shecong/LOL-GameAssistant/blob/f823b2c1a757ee9abbd106698235cb39eff7f04b/LOL-GameAssistant/Infrastructure/LeagueClient/TclsLoginAutomation.cs) 使用 UI Automation；[lol_login](https://github.com/Skyonelu/lol_login/blob/41a74167d8d514f557898fd30b192e85ff9cd28f/lol_login.py) 通过图像定位及模拟输入操作窗口，均不能作为账号密码参数透传的证据。
