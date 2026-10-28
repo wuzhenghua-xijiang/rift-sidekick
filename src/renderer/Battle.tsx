@@ -27,6 +27,7 @@ import type {
 import { searchChampions } from '@shared/champion-search'
 import { LANE_TIPS, resolveLaneOpponent } from '@shared/matchup'
 import { canRetainPostGame, isPostGame } from '@shared/gameflow'
+import { gameModeName } from '@shared/game-mode'
 import { DockFooter } from './DockFooter'
 
 const LANES: Record<Position, string> = {
@@ -831,7 +832,7 @@ export function PostGamePanel({
   }
   if (!post && (!retain || !data)) return null
   return (
-    <section className="postgame-panel od-postgame">
+    <section className="postgame-panel od-postgame champions-edition">
       {!report && (
         <div className="postgame-heading">
           <b>本局战报</b>
@@ -847,38 +848,30 @@ export function PostGamePanel({
       )}
       {report ? (
         <>
-          <span className="od-victory">
-            {report.win ? 'VICTORY /' : 'NEXT ROUND /'}
-          </span>
-          <h1>
-            {report.win ? (
-              <>
-                这一场，
-                <br />
-                打得漂亮。
-              </>
-            ) : (
-              <>
-                下一局，
-                <br />
-                打回来。
-              </>
-            )}
-          </h1>
-          <div className="od-postgame-player">
-            {hero && <img src={hero.icon} alt="" />}
-            <span>
-              {hero?.name || '本局英雄'}
-              <b>
-                {report.local.kills} / {report.local.deaths} /{' '}
-                {report.local.assists}
-              </b>
-              <small>
-                {report.position ? LANES[report.position] : '本局'} ·{' '}
-                {Math.floor(report.duration / 60)}:
-                {String(report.duration % 60).padStart(2, '0')}
-              </small>
-            </span>
+          <header className="champions-masthead">
+            <div><span>THE MATCHDAY EDITION</span><h1>冠军画报<span> /</span></h1></div>
+            <span className="champions-issue">RIFT SIDEKICK<br />#{report.gameId}</span>
+          </header>
+          <figure className={`champions-cover ${report.win ? 'is-victory' : 'is-defeat'}`}>
+            {hero?.splash && <img className="champions-art" src={hero.splash} alt={`${hero.name}英雄原画`} onError={(event) => { event.currentTarget.hidden = true }} />}
+            <div className="champions-cover-top">
+              <span>{report.modeLabel || gameModeName(report.mode, report.gameId === Number(client.sessionId) ? client.queueId : undefined)}</span>
+              <span className="champions-position">{report.position ? LANES[report.position] : '本局'} / {Math.floor(report.duration / 60)}:{String(report.duration % 60).padStart(2, '0')}</span>
+            </div>
+            <div className="champions-cover-title">
+              <span className="od-victory">{report.win ? 'VICTORY' : 'DEFEAT'} <span>/ {report.win ? '胜利' : '失利'}</span></span>
+              <small>{hero?.title || '本局英雄'}</small>
+              <h2>{hero?.name || '英雄时刻'}</h2>
+              <strong className={hero && hero.id.length > 12 ? 'long-name' : ''}>{hero?.id.toUpperCase() || 'GG'}.</strong>
+            </div>
+            <figcaption className="champions-cover-caption">
+              <span>{report.win ? '这一场，打得漂亮。' : '下一局，打回来。'}</span>
+              <span>MATCH COMPLETE <Trophy size={12} /></span>
+            </figcaption>
+          </figure>
+          <div className="champions-scoreline">
+            <div><span>本局表现 / K · D · A</span><b>{report.local.kills} <i>/</i> {report.local.deaths} <i>/</i> {report.local.assists}</b></div>
+            <span className="champions-score-caption">{report.win ? '把高光，留在这一页。' : '把经验，带去下一场。'}</span>
           </div>
           <div className="od-postgame-stats">
             <div>

@@ -6,7 +6,7 @@ describe('mode and locked champion detection', () => {
   it('distinguishes preselection from completed pick actions', () => {
     const session = { localPlayerCellId: 0, myTeam: [{ cellId: 0, championId: 103, assignedPosition: 'middle' }], actions: [[{ actorCellId: 0, championId: 103, type: 'pick', completed: false }]] }
     const flow = { gameData: { queue: { gameMode: 'CLASSIC', mapId: 11, id: 420 } } }
-    expect(readSelection(session, flow)).toMatchObject({ championId: 103, championLocked: false, position: 'mid', modeLabel: '经典模式 · 单双排位' })
+    expect(readSelection(session, flow)).toMatchObject({ championId: 103, championLocked: false, position: 'mid', modeLabel: '经典召唤师峡谷' })
     session.actions[0][0].completed = true
     expect(readSelection(session, flow).championLocked).toBe(true)
     session.myTeam[0].championId = 157
@@ -50,8 +50,15 @@ describe('mode and locked champion detection', () => {
   it('recognizes classic matchmaking, custom and partially populated queue metadata', () => {
     for (const queue of [{ id: 430, gameMode: 'CLASSIC', mapId: 11 }, { id: 0, gameMode: 'CLASSIC', mapId: 11 }, { id: 420 }, { gameMode: 'CLASSIC' }]) {
       expect(detectMode({ gameData: { queue } }).mode).toBe('ranked')
-      expect(detectMode({ gameData: { queue } }).modeLabel).toContain('经典模式')
+      expect(detectMode({ gameData: { queue } }).modeLabel).toBe('经典召唤师峡谷')
     }
+  })
+  it('recognizes modern Rift queues and keeps explicit rotations unsupported', () => {
+    for (const id of [480, 490]) {
+      expect(detectMode({ gameData: { queue: { id } } })).toEqual({ mode: 'ranked', modeLabel: '召唤师峡谷' })
+      expect(detectMode({ gameData: { queue: { id, gameMode: 'UNKNOWN_ROTATION' } } }).mode).toBe('other')
+    }
+    expect(detectMode({ gameData: { queue: { gameMode: 'CLASSIC', name: '召唤师峡谷 · 自选模式' } } }).modeLabel).toBe('召唤师峡谷')
   })
   it('recognizes legacy and current co-op queues before map metadata arrives', () => {
     for (const id of [830, 840, 850, 870, 880, 890]) {

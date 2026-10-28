@@ -1,4 +1,5 @@
 import type { ClientState, GameMode, Position } from '@shared/types'
+import { gameModeName } from '@shared/game-mode'
 
 export interface ChampSelectMember {
   cellId?: number
@@ -36,8 +37,8 @@ export function detectMode(flow: GameflowSession): { mode: GameMode; modeLabel: 
   if (name === 'CHERRY' || mapId === 30 || queueId === 1700 || queueId === 1710) return { mode: 'arena', modeLabel: '斗魂竞技场' }
   if (queueId === 2400 || name === 'KIWI') return { mode: 'aram-mayhem', modeLabel: '海克斯大乱斗' }
   if (name === 'ARAM' || (!name && (mapId === 12 || queueId === 450))) return { mode: 'aram', modeLabel: '极地大乱斗' }
-  if ((name === 'CLASSIC' && (!mapId || mapId === 11)) || (!name && (mapId === 11 || [400, 420, 430, 440, 490, 700, 830, 840, 850, 870, 880, 890].includes(queueId)))) {
-    const modeLabel = queueId === 420 ? '经典模式 · 单双排位' : queueId === 440 ? '经典模式 · 灵活排位' : queueId === 0 ? '经典模式 · 自定义' : '经典模式 · 召唤师峡谷'
+  if ((name === 'CLASSIC' && (!mapId || mapId === 11)) || (!name && (mapId === 11 || [400, 420, 430, 440, 480, 490, 700, 830, 840, 850, 870, 880, 890].includes(queueId)))) {
+    const modeLabel = gameModeName('CLASSIC', queue?.id, queue?.name)
     return { mode: 'ranked', modeLabel }
   }
   return { mode: 'other', modeLabel: queue?.name || '特殊模式' }

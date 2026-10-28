@@ -1,12 +1,16 @@
 // Acceptance-only bridge. This entry is outside the production build inputs.
 import { DEFAULT_COMBAT_PREFERENCES, DEFAULT_COMBAT_PROMPT } from '../../src/shared/combat.ts'
 import { coachDraft } from '../../src/shared/coach.ts'
+import { gameModeName } from '../../src/shared/game-mode.ts'
 const params = new URLSearchParams(location.search)
 const assets = '/output/design-arena/assets/'
 const entries = [['Jinx',222,'金克丝','暴走萝莉',['Marksman']],['Ahri',103,'阿狸','九尾妖狐',['Mage','Assassin']],['Yasuo',157,'亚索','疾风剑豪',['Fighter','Assassin']],['Jhin',202,'烬','戏命师',['Marksman']],['Lux',99,'拉克丝','光辉女郎',['Mage','Support']],['LeeSin',64,'李青','盲僧',['Fighter','Assassin']],['Irelia',39,'艾瑞莉娅','刀锋舞者',['Fighter','Assassin']],['Thresh',412,'锤石','魂锁典狱长',['Support']],['Ashe',22,'艾希','寒冰射手',['Marksman','Support']],['Vayne',67,'薇恩','暗夜猎手',['Marksman','Assassin']],['Zed',238,'劫','影流之主',['Assassin']],['Sylas',517,'塞拉斯','解脱者',['Mage','Assassin']],['Aatrox',266,'亚托克斯','暗裔剑魔',['Fighter']],['Camille',164,'卡蜜尔','青钢影',['Fighter','Tank']],['Ekko',245,'艾克','时间刺客',['Assassin','Mage']]]
 const champions = entries.map(([id,key,name,title,tags]) => ({ id,key,name,title,tags,icon:assets+id+'.png',splash:['Jinx','Yasuo','Irelia','Zed','Camille'].includes(id)?assets+id+'-splash.jpg':assets+id+'.png' }))
 const connected = params.get('surface') === 'dock'
-const client = { connected, phase:connected?(params.get('phase')==='lobby'?'Lobby':params.get('phase')==='postgame'?'EndOfGame':'ChampSelect'):'ClientOffline',championId:connected?222:null,championLocked:true,position:'adc',mode:'ranked',modeLabel:'经典 · 单双排位',patch:'16.21.1',sessionId:'20261027001',allies:[{championId:222,position:'adc',locked:true},{championId:103,position:'mid',locked:true}],enemies:[{championId:202,position:'adc',locked:true}],enemyChampionIds:[202],bannedChampionIds:[157] }
+const queueId=Number(params.get('queue')||420)
+const gameMode=queueId===450?'ARAM':'CLASSIC'
+const postHero=champions.find(hero=>hero.id===params.get('hero'))||champions[0]
+const client = { connected, phase:connected?(params.get('phase')==='lobby'?'Lobby':params.get('phase')==='postgame'?'EndOfGame':'ChampSelect'):'ClientOffline',championId:connected?222:null,championLocked:true,position:'adc',mode:queueId===450?'aram':'ranked',queueId,modeLabel:gameModeName(gameMode,queueId),patch:'16.21.1',sessionId:'20261027001',allies:[{championId:222,position:'adc',locked:true},{championId:103,position:'mid',locked:true}],enemies:[{championId:202,position:'adc',locked:true}],enemyChampionIds:[202],bannedChampionIds:[157] }
 const gamePath = 'D:\\WeGameApps\\英雄联盟（含经典模式）\\Launcher\\Client.exe'
 let state = { client, dock:true,canRestore:false,recoveryNeeded:false,backgroundAvailable:true,coach:{baseUrl:'https://api.openai.com/v1',model:'gpt-5.4-mini',hasApiKey:true,autoAnalyze:false},combat:{preferences:{...DEFAULT_COMBAT_PREFERENCES,volume:0},status:'waiting',message:'等待你的对局，当前验收静音。',ai:{baseUrl:'https://api.openai.com/v1',model:'gpt-5.4-mini',prompt:DEFAULT_COMBAT_PROMPT,configured:true}},launcher:{status:'ready',selectedPath:gamePath,installations:[{path:gamePath,name:'英雄联盟 · 国服官方客户端',kind:'tencent'}],message:'已找到英雄联盟客户端'},performance:{supported:true,enabled:true,status:'idle',active:false,canRestore:false,message:'启动前检查资源与电源计划',checks:[]},nativeJungle:{enabled:true,status:'configured',message:'游戏原生高级计时已开启'},update:{status:'up-to-date',currentVersion:'0.2.0',message:'当前已是最新版本'} }
 const listeners = new Set()
@@ -32,9 +36,9 @@ window.rift = {
  getPostGame:async()=>{
    if(params.get('error')==='postgame')throw new Error('示例：结算数据暂不可用，请稍后重试。')
    const missing=params.get('metrics')==='missing'
-   const local={puuid:'sample-self',name:'峡谷来客',championId:222,teamId:100,local:true,kills:12,deaths:3,assists:8,cs:230,damage:29000,gold:16000,vision:missing?null:23,position:'adc'}
+   const local={puuid:'sample-self',name:'峡谷来客',championId:postHero.key,teamId:100,local:true,kills:12,deaths:3,assists:8,cs:230,damage:29000,gold:16000,vision:missing?null:23,position:'adc'}
    const ally={...local,puuid:'sample-ally',name:'队友示例',championId:103,local:false,kills:9,deaths:4,assists:10,damage:22000,position:'mid'}
-   return {report:{gameId:Number(client.sessionId),win:params.get('result')!=='loss',duration:1714,mode:'CLASSIC',position:'adc',players:[local,ally],local,killParticipation:missing?null:.68,damageShare:missing?null:.28,goldShare:missing?null:.25,csPerMinute:missing?null:7.8,notes:['跟住前排，保留闪现打残局。'],fetchedAt:Date.now()},honor:{gameId:Number(client.sessionId),votes:1,players:[{puuid:'sample-ally',name:'队友示例',championId:103,opponent:false,honored:false}]}}
+   return {report:{gameId:Number(client.sessionId),win:params.get('result')!=='loss',duration:1714,mode:gameMode,modeLabel:gameModeName(gameMode,queueId),position:'adc',players:[local,ally],local,killParticipation:missing?null:.68,damageShare:missing?null:.28,goldShare:missing?null:.25,csPerMinute:missing?null:7.8,notes:['跟住前排，保留闪现打残局。'],fetchedAt:Date.now()},honor:{gameId:Number(client.sessionId),votes:1,players:[{puuid:'sample-ally',name:'队友示例',championId:103,opponent:false,honored:false}]}}
  },honorPlayers:async input=>{record('honorPlayers',input);return {...ok('示例投票'),retryable:false}},
  fetchTft:async()=>({at:'2026-10-27',fetchedAt:Date.now(),decks:[{id:'preview-deck',code:'example-only',tier:'S',name:'前排护航 · 远程主核',average:4.12,top4:.58,games:18240,units:[{name:'前排',core:false,items:['坦克装备'],x:2,y:1},{name:'前排',core:false,items:[],x:4,y:1},{name:'控制',core:false,items:[],x:5,y:2},{name:'主核',core:true,items:['输出装备','攻速装备'],x:6,y:4},{name:'保护',core:false,items:[],x:5,y:4}]}]}),copyTftCode:async id=>record('copyTftCode',id),
  launchGameClient:async()=>{

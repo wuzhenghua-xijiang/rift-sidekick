@@ -2,7 +2,8 @@ import type { HonorResult, HonorBallot, HonorPlayer, PostGameData, PostGamePlaye
 import { isPostGame } from '@shared/gameflow'
 import type { LcuRequest } from './configuration'
 import { messageOf } from './configuration'
-import { normalizePosition } from './selection'
+import { detectMode, normalizePosition, type GameflowSession } from './selection'
+import { gameModeName } from '@shared/game-mode'
 
 interface Identity { puuid?: string; summonerId?: number }
 interface EogPlayer extends Identity {
@@ -94,15 +95,19 @@ export class PostGameService {
   private async ensureCurrent(gameId: number) {
     const phase = await this.request<string>('GET', '/lol-gameflow/v1/gameflow-phase')
     if (!isPostGame(phase)) throw new Error('点赞仅在本局结算阶段可用。')
-    const flow = await this.request<{ gameData?: { gameId?: number } }>('GET', '/lol-gameflow/v1/session')
+    const flow = await this.request<GameflowSession>('GET', '/lol-gameflow/v1/session')
     if (flow.gameData?.gameId && flow.gameData.gameId !== gameId) throw new Error('对局已切换，请刷新本局数据。')
+    return flow
   }
 
   async get(gameId: number): Promise<PostGameData> {
-    await this.ensureCurrent(gameId)
+    const flow = await this.ensureCurrent(gameId)
     const local = await this.request<Identity>('GET', '/lol-summoner/v1/current-summoner')
     const raw = await this.request('GET', '/lol-end-of-game/v1/eog-stats-block')
     const report = analyzePostGame(raw, local, gameId)
+    const detected = detectMode(flow)
+    // Keep the actual game's label when this report is retained in the lobby.
+    report.modeLabel = detected.mode === 'other' ? gameModeName(report.mode) : detected.modeLabel
     if (this.reports.size > 5) this.reports.clear()
     this.reports.set(gameId, report)
     let honor: HonorBallot

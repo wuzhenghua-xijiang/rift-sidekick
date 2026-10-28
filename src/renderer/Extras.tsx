@@ -16,6 +16,7 @@ import {
   Trophy,
 } from 'lucide-react'
 import { DockFooter } from './DockFooter'
+import { gameModeName } from '@shared/game-mode'
 import type {
   ApplyResult,
   BuildPlan,
@@ -703,19 +704,5 @@ export function TftPage({
 }
 
 function modeName(mode: string, queueId: number) {
-  return queueId === 2400 || mode === 'KIWI'
-    ? '海克斯大乱斗'
-    : queueId === 420
-      ? '经典 · 单双排位'
-      : queueId === 440
-        ? '经典 · 灵活排位'
-        : mode === 'ARAM'
-          ? '极地大乱斗'
-          : mode === 'CLASSIC'
-            ? '经典 · 召唤师峡谷'
-            : mode === 'CHERRY'
-              ? '斗魂竞技场'
-              : mode.startsWith('TFT')
-                ? '云顶之弈'
-                : mode
+  return gameModeName(mode, queueId)
 }

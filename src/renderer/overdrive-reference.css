@@ -2929,3 +2929,132 @@
     bottom: 20px;
   }
 }
+
+/* Champions matchday edition: editorial composition in the Overdrive palette. */
+.od-postgame.champions-edition {
+  --edition-accent: #f95a2c;
+  --edition-paper: #efede6;
+  --edition-ink: #1b1b1c;
+  color: var(--edition-ink);
+  background: var(--edition-paper);
+}
+.champions-masthead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 0 11px;
+  border-bottom: 2px solid var(--edition-ink);
+  margin-bottom: 12px;
+}
+.champions-masthead > div > span, .champions-issue {
+  font: 8px/1.6 'DM Mono', monospace;
+  letter-spacing: .04em;
+}
+.champions-masthead .champions-issue { text-align: right; color: #766e62; overflow-wrap: anywhere; }
+.od-postgame.champions-edition .champions-masthead h1 {
+  margin: 3px 0 0;
+  font-size: 23px;
+  line-height: 1.15;
+  letter-spacing: -.04em;
+}
+.champions-masthead h1 span { color: var(--edition-accent); }
+.champions-cover {
+  position: relative;
+  isolation: isolate;
+  height: 334px;
+  margin: 0;
+  overflow: hidden;
+  background: var(--edition-ink);
+  color: var(--edition-paper);
+}
+.champions-cover::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(180deg, #1b1b1c88 0%, #1b1b1c00 28%, #1b1b1c55 48%, #1b1b1cf2 88%);
+}
+.champions-art {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 64% 35%;
+  filter: grayscale(1) contrast(1.04);
+}
+.champions-cover-top {
+  position: absolute;
+  top: 15px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font: 9px/1.4 'DM Mono', monospace;
+  color: #e1dcd1;
+}
+.champions-position { white-space: nowrap; }
+.champions-cover-title { position: absolute; left: 16px; right: 16px; bottom: 57px; }
+.od-postgame.champions-edition .od-victory {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 13px;
+  padding: 3px 8px 4px;
+  background: var(--edition-accent);
+  color: var(--edition-ink);
+  font: 800 20px/1 'Barlow Condensed', sans-serif;
+  letter-spacing: .015em;
+  transform: none;
+}
+.od-victory > span { font: 600 9px/1 sans-serif; }
+.champions-cover-title > small { display: block; font-size: 9px; letter-spacing: .15em; color: #d4d0c5; }
+.od-postgame.champions-edition .champions-cover-title h2 {
+  margin: 4px 0 2px;
+  color: var(--edition-paper);
+  font-size: 20px;
+  letter-spacing: .025em;
+  line-height: 1.3;
+}
+.champions-cover-title > strong {
+  display: block;
+  font: 800 clamp(47px, 17vw, 76px)/.88 'Barlow Condensed', sans-serif;
+  letter-spacing: -.035em;
+  color: var(--edition-paper);
+  overflow-wrap: anywhere;
+}
+.champions-cover-title > strong.long-name { font-size: 42px; }
+.champions-cover-caption {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 15px;
+  padding-top: 10px;
+  border-top: 1px solid #efede650;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 9px;
+  color: #e0dace;
+}
+.champions-cover-caption > span:last-child { display: flex; align-items: center; gap: 5px; color: #f98a69; font: 8px 'DM Mono', monospace; }
+.champions-scoreline { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 15px; }
+.champions-scoreline > div > span { display: block; font-size: 8px; letter-spacing: .08em; color: #766e62; }
+.champions-scoreline b { display: block; margin-top: 3px; font: 800 39px/1 'Barlow Condensed', sans-serif; letter-spacing: -.01em; }
+.champions-scoreline b i { color: var(--edition-accent); font-style: normal; font-weight: 700; }
+.champions-score-caption { font-size: 10px; color: #766e62; text-align: right; }
+.od-postgame.champions-edition .od-postgame-stats { margin: 15px 0 0; padding: 14px 0; border-top: 1px solid #1b1b1c; }
+.od-postgame.champions-edition .od-postgame-stats b { font-size: 29px; }
+.od-postgame.champions-edition > h2 { margin: 19px 0 6px; font-size: 14px; }
+.od-postgame.champions-edition > p { margin-top: 0; }
+@container (max-width:400px) {
+  .champions-cover { height: 294px; }
+  .champions-cover-title > strong { font-size: 62px; }
+  .champions-cover-title > strong.long-name { font-size: 36px; }
+  .champions-masthead .champions-issue { font-size: 7px; }
+  .champions-score-caption { max-width: 92px; font-size: 9px; }
+}

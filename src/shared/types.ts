@@ -154,7 +154,7 @@ export interface PostGamePlayer {
   position: Position | null
 }
 export interface PostGameReport {
-  gameId: number; win: boolean; duration: number; mode: string; position: Position | null
+  gameId: number; win: boolean; duration: number; mode: string; modeLabel?: string; position: Position | null
   players: PostGamePlayer[]; local: PostGamePlayer
   killParticipation: number | null; damageShare: number | null; goldShare: number | null
   csPerMinute: number | null; notes: string[]; fetchedAt: number

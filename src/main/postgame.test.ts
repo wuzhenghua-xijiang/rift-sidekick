@@ -10,11 +10,11 @@ const eog = () => ({ gameId: 9001, gameLength: 1200, gameMode: 'CLASSIC', teams:
 ] })
 const ballot = () => ({ gameId: 9001, votePool: { votes: 2 }, eligibleAllies: [{ ...identity, championId: 103 }, { puuid: 'ally', championId: 86, summonerName: '队友' }, { puuid: 'bot', botPlayer: true }], eligibleOpponents: [{ puuid: 'enemy', championId: 157, summonerName: '对手' }], honoredPlayers: [] as Array<{ recipientPuuid: string }> })
 function mockLcu() {
-  const state = { phase: 'EndOfGame', flowId: 9001, identity, game: eog(), ballot: ballot(), write: async (_path: string) => undefined }
+  const state = { phase: 'EndOfGame', flowId: 9001, queue: { id: 420, gameMode: 'CLASSIC', mapId: 11, name: '' }, identity, game: eog(), ballot: ballot(), write: async (_path: string) => undefined }
   const request = vi.fn(async (method: string, path: string) => {
     if (method === 'POST') return state.write(path)
     if (path === '/lol-gameflow/v1/gameflow-phase') return state.phase
-    if (path === '/lol-gameflow/v1/session') return { gameData: { gameId: state.flowId } }
+    if (path === '/lol-gameflow/v1/session') return { gameData: { gameId: state.flowId, queue: state.queue } }
     if (path === '/lol-summoner/v1/current-summoner') return state.identity
     if (path === '/lol-end-of-game/v1/eog-stats-block') return state.game
     if (path === '/lol-honor-v2/v1/ballot') return state.ballot
@@ -63,6 +63,21 @@ describe('current match analysis', () => {
 })
 
 describe('honor eligibility and submission', () => {
+  it.each([
+    { id: 420, gameMode: 'CLASSIC', mapId: 11, name: '', label: '经典召唤师峡谷' },
+    { id: 480, gameMode: 'CLASSIC', mapId: 11, name: '', label: '召唤师峡谷' },
+    { id: 430, gameMode: 'CLASSIC', mapId: 11, name: '召唤师峡谷 自选模式', label: '召唤师峡谷' },
+    { id: 450, gameMode: 'ARAM', mapId: 12, name: '', label: '极地大乱斗' },
+  ])('attaches the current game family to the retained report for queue $id', async ({ label, ...queue }) => {
+    const lcu = mockLcu()
+    lcu.state.queue = queue
+    lcu.state.game.gameMode = queue.gameMode
+    const result = await lcu.service.get(9001)
+    expect(result.report.modeLabel).toBe(label)
+    lcu.state.queue = { id: 490, gameMode: 'CLASSIC', mapId: 11, name: '' }
+    expect(result.report.modeLabel).toBe(label)
+    expect(lcu.writes()).toHaveLength(0)
+  })
   it('uses the actual vote pool, excludes self/bots/duplicates and marks existing honors', () => {
     const raw = ballot()
     raw.eligibleOpponents.push({ puuid: 'ally', championId: 86, summonerName: 'duplicate' })

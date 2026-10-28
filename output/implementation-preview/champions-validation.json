@@ -1,0 +1,55 @@
+{
+  "results": [
+    {
+      "mode": "经典召唤师峡谷",
+      "hero": "IRELIA.",
+      "width": 430,
+      "overflow": false,
+      "accent": "rgb(249, 90, 44)"
+    },
+    {
+      "mode": "召唤师峡谷",
+      "hero": "IRELIA.",
+      "width": 430,
+      "overflow": false,
+      "accent": "rgb(249, 90, 44)"
+    },
+    {
+      "mode": "极地大乱斗",
+      "hero": "IRELIA.",
+      "width": 430,
+      "overflow": false,
+      "accent": "rgb(249, 90, 44)"
+    },
+    {
+      "mode": "经典召唤师峡谷",
+      "hero": "IRELIA.",
+      "width": 390,
+      "overflow": false,
+      "accent": "rgb(249, 90, 44)"
+    },
+    {
+      "mode": "召唤师峡谷",
+      "hero": "IRELIA.",
+      "width": 390,
+      "overflow": false,
+      "accent": "rgb(249, 90, 44)"
+    },
+    {
+      "mode": "极地大乱斗",
+      "hero": "IRELIA.",
+      "width": 390,
+      "overflow": false,
+      "accent": "rgb(249, 90, 44)"
+    }
+  ],
+  "errors": [],
+  "checks": [
+    "official labels across both window sizes",
+    "real selected champion artwork and name",
+    "existing orange theme",
+    "retained report keeps its original mode and disables honors in lobby",
+    "unavailable artwork hides safely",
+    "new draft clears the previous match"
+  ]
+}
