@@ -17,7 +17,9 @@ it.runIf(process.platform === 'win32')('runs the actual Windows Chinese speech s
       child.stdin?.on('error', () => undefined)
       child.stdin?.end(JSON.stringify({ text: '漂亮，这波拿下了。', volume: 0, style: 'classic', cache }))
     })
-    expect(result.stderr).toBe('')
+    // PowerShell may emit a normal first-use module progress record on stderr.
+    // The JSON result and exit status determine whether speech actually succeeded.
+    expect(result.stdout, result.stderr).toContain('"ok"')
     const output = JSON.parse(result.stdout.trim().replace(/^\uFEFF/, '')) as { ok: boolean; voice?: string; message?: string }
     if (!output.ok) {
       expect(result.error).not.toBeNull()
