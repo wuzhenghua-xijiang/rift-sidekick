@@ -49,6 +49,6 @@
 - 两档尺寸分别检查经典召唤师峡谷、召唤师峡谷和极地大乱斗；切换金克丝与艾瑞莉娅，原画与名字跟随实际选择。
 - 保留战报回大厅后仍显示本局模式，离开结算阶段不可提交点赞；图片失败安全隐藏，新局选人清除上一局战报。记录见 [冠军画报验证](../output/implementation-preview/champions-validation.json)，脚本与两档截图保存在同目录及 `output/playwright/`。
 - 已通过桌面浏览器最终目视检查；验收数据明确标为示例，声音静音。
-- `npm run typecheck`、`npm run build` 通过；macOS 单测 313 通过、6 项 Windows 专用测试跳过，共 319 项。Windows 发布检查见 [0.2.3 说明](releases/v0.2.3.md)。
+- `npm run typecheck`、`npm run build` 通过；macOS 单测 313 通过、6 项 Windows 专用测试跳过，共 319 项。Windows 检查与发布构建均通过全部 319 项测试；发布附件摘要、更新清单签名与 EXE 内正式代码已核验，见 [0.2.3 说明](releases/v0.2.3.md)。
 
 国服人机实战、真实 LCU 写入和中文语音仍需在 Windows 游戏环境确认，不能用模拟桥接结果替代。
