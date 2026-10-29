@@ -12,7 +12,7 @@ function harness(ai?: CombatJudge, coOp = false) {
     allPlayers: [{ riotId: 'self#1', team: 'ORDER', isDead: dead, championName: '九尾妖狐', rawChampionName: 'game_character_displayname_Ahri' },
       coOp ? { isBot: true, team: 'CHAOS', isDead: false, championName: '黑暗之女', rawChampionName: 'game_character_displayname_Annie' }
         : { riotId: 'enemy#1', team: 'CHAOS', isDead: false }], events: { Events: events } }))
-  const voice = { speak: vi.fn(async (_text: string, _volume: number) => undefined), stop: vi.fn() }
+  const voice = { speak: vi.fn(async (_text: string, _volume: number): Promise<void> => undefined), stop: vi.fn() }
   const service = new CombatService(read, voice, vi.fn(), { platform: 'win32', now: Date.now, random: () => 0 }, ai, async () => ['self#1'])
   const step = async (seconds = 1) => { for (let n = 0; n < seconds; n++) { time++; await vi.advanceTimersByTimeAsync(1000) } }
   const kill = () => events.push({ EventID: events.length + 1, EventTime: time + 1, EventName: 'ChampionKill', KillerName: coOp ? 'Ahri' : 'self#1', VictimName: coOp ? 'Annie' : 'enemy#1', Assisters: [] })
@@ -36,13 +36,13 @@ describe('background combat reactions', () => {
     expect(restoreCombatPreferences(saved.combat, saved.combatVolumeDefaultVersion).volume).toBe(35)
     f.service.dispose()
   })
-  it('works from the main process during a match, combines events and respects cooldowns', async () => {
+  it('reacts to each fresh fight without a fixed cooldown and stays quiet when no new event occurs', async () => {
     const f = harness(); f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
     f.kill(); await f.step(3)
     expect(f.voice.speak).toHaveBeenCalledTimes(1)
     expect(f.service.state.lastReaction?.kind).toBe('clutch')
-    f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledTimes(1)
-    await f.step(20); f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledTimes(2)
+    f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledTimes(2)
+    await f.step(20); expect(f.voice.speak).toHaveBeenCalledTimes(2)
     f.service.dispose()
   })
   it('speaks for a co-op bot kill and repeated deaths with champion-named events', async () => {
@@ -96,11 +96,35 @@ describe('background combat reactions', () => {
     await f.step(20); f.kill(); await f.step(3)
     expect(f.voice.speak).toHaveBeenCalledTimes(2); expect(f.service.state.lastReaction?.source).toBe('rules'); f.service.dispose()
   })
-  it('preserves the same match cooldown across a short client reconnect', async () => {
+  it('reacts to fresh fights immediately after reconnect without replaying the previous fight', async () => {
     const f = harness(); f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
     f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledTimes(1)
     f.service.updateClient({ ...playing, connected: false }); f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
-    f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledTimes(1); f.service.dispose()
+    await f.step(1); expect(f.voice.speak).toHaveBeenCalledTimes(1)
+    f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledTimes(2); f.service.dispose()
+  })
+  it('does not impose the former 90-second taunt cooldown', async () => {
+    const f = harness(); f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
+    f.death(); await f.step(3)
+    f.death(); await f.step(3)
+    expect(f.voice.speak).toHaveBeenCalledTimes(1)
+    f.death(); await f.step(3)
+    expect(f.voice.speak).toHaveBeenCalledTimes(2)
+    expect(f.service.state.lastReaction?.kind).toBe('rough'); f.service.dispose()
+  })
+  it('discards saved cooldowns and never overlaps or queues stale reactions during speech', async () => {
+    const f = harness(); f.service.configure({ cooldownSeconds: 60 })
+    expect(f.service.state.preferences).not.toHaveProperty('cooldownSeconds')
+    let finish!: () => void
+    f.voice.speak.mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve }))
+    f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
+    f.kill(); await f.step(3)
+    f.kill(); await f.step(3)
+    expect(f.voice.speak).toHaveBeenCalledTimes(1)
+    finish(); await f.step(1)
+    expect(f.voice.speak).toHaveBeenCalledTimes(1)
+    f.kill(); await f.step(3)
+    expect(f.voice.speak).toHaveBeenCalledTimes(2); f.service.dispose()
   })
   it('previews praise without a running client and reports a voice failure before allowing a retry', async () => {
     const f = harness()

@@ -4,11 +4,23 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { CoachSettingsStore } from './coach-settings'
 import { migrateSharedAI, sharedCombatConnection } from './shared-ai'
+import { DEFAULT_COACH_PROMPT } from '@shared/coach'
 
 const secrets = { isEncryptionAvailable: () => true, encryptString: (value: string) => Buffer.from(value.split('').reverse().join('')), decryptString: (value: Buffer) => value.toString().split('').reverse().join('') }
 const connection = { baseUrl: 'http://localhost:1234/v1', model: 'shared-model', apiKey: 'test-shared-key', autoAnalyze: true }
 
 describe('single OpenAI connection', () => {
+  it('prefills the default coach prompt on first launch and restores it after an empty save and restart', async () => {
+    const folder = await mkdtemp(join(tmpdir(), 'rift-coach-default-'))
+    try {
+      const file = join(folder, 'ai.json'), store = new CoachSettingsStore(file, secrets)
+      await store.load()
+      expect(store.publicSettings.coachPrompt).toBe(DEFAULT_COACH_PROMPT)
+      await store.save({ ...connection, coachPrompt: '  ' })
+      const reloaded = new CoachSettingsStore(file, secrets); await reloaded.load()
+      expect(reloaded.current.coachPrompt).toBe(DEFAULT_COACH_PROMPT)
+    } finally { await rm(folder, { recursive: true, force: true }) }
+  })
   it('shares connection edits and key removal with voice while keeping both prompts independent after restart', async () => {
     const folder = await mkdtemp(join(tmpdir(), 'rift-shared-ai-'))
     try {

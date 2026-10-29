@@ -60,6 +60,7 @@ import {
 } from './Battle'
 import { NativeJungleSettings } from './Jungle'
 import { AutoAcceptSetting, InstantPickControl } from './MatchmakingSettings'
+import { ChatMuteControl } from './ChatMute'
 import { Launchpad } from './Launchpad'
 import { CombatSettings } from './Combat'
 import { CoachPanel } from './Coach'
@@ -590,7 +591,10 @@ export default function App() {
               )}
 
               {page === 'recommend' && !playing && (
-                <InstantPickControl state={state.matchmaking} champions={champions} client={client} notify={setToast} />
+                <>
+                  <InstantPickControl state={state.matchmaking} champions={champions} client={client} notify={setToast} />
+                  {!showPostGame && <ChatMuteControl state={state.chatMute} notify={setToast} compact />}
+                </>
               )}
               {page === 'recommend' && showLobby && (
                 <section className="od-lobby">
@@ -1180,6 +1184,7 @@ export default function App() {
                         开局偏好 <Zap size={16} />
                       </h2>
                       <AutoAcceptSetting state={state.matchmaking} notify={setToast} />
+                      <ChatMuteControl state={state.chatMute} notify={setToast} />
                       <SettingsRow
                         icon={<Rocket size={19} />}
                         title="游戏启动与优化"

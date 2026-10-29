@@ -262,7 +262,7 @@ export function CombatSettings({
               <MessageCircle size={15} />
               <span>
                 <b>轻度调侃</b>
-                <small>短时间连续阵亡时偶尔来一句</small>
+                <small>依据近期连续阵亡事件自动触发</small>
               </span>
             </span>
             <Switch
@@ -288,22 +288,6 @@ export function CombatSettings({
               {Object.entries(COMBAT_TAUNT_STYLES).map(([value, style]) => (
                 <option value={value} key={value}>
                   {style.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="combat-frequency" htmlFor="combat-frequency">
-            <span>播报间隔</span>
-            <select
-              id="combat-frequency"
-              value={preferences.cooldownSeconds}
-              onChange={(event) =>
-                void save({ cooldownSeconds: Number(event.target.value) })
-              }
-            >
-              {[15, 20, 30, 45, 60].map((seconds) => (
-                <option value={seconds} key={seconds}>
-                  至少 {seconds} 秒
                 </option>
               ))}
             </select>
@@ -402,8 +386,7 @@ export function CombatSettings({
       <details className="combat-custom">
         <summary>播报规则</summary>
         <p>
-          经典、极地大乱斗与海克斯大乱斗可用。只播报你参与的战斗，同一波合并一句；调侃至少间隔
-          90 秒。AI 不可用时回退基础规则。
+          经典、极地大乱斗与海克斯大乱斗可用。依据你参与的战斗自动播报，同一波合并一句，无固定休眠间隔。AI 不可用时回退基础规则。
         </p>
         <p>
           AI

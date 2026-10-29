@@ -21,9 +21,6 @@ export class CombatService {
   private speaking = false
   private disposed = false
   private voiceError = ''
-  private lastSpokenAt = -Infinity
-  private lastTauntAt = -Infinity
-  private cooldownGame = ''
   private lastLines: Partial<Record<CombatKind, number>> = {}
 
   constructor(private read: ReadGame, private voice: CombatVoice, private publish: (state: CombatState) => void,
@@ -81,9 +78,6 @@ export class CombatService {
     const changed = target !== this.target
     if (changed || force) {
       this.cancel()
-      if (target && target !== this.cooldownGame) {
-        this.cooldownGame = target; this.lastSpokenAt = -Infinity; this.lastTauntAt = -Infinity
-      }
       this.target = target
     }
     if (this.speaking || this.inference) return
@@ -116,10 +110,8 @@ export class CombatService {
       const cue = this.analyzer.ingest(snapshot)
       if (!this.speaking && !this.voiceError && !this.inference) this.set('watching', '正在关注本局战斗；只在你参与的事件后播报。')
       if (cue && !this.speaking && !this.voiceError && !this.inference) {
-        const now = this.runtime.now(), p = this.state.preferences
-        if ((isTaunt(cue.kind) ? p.taunt && now - this.lastTauntAt >= 90_000 : p.praise) && now - this.lastSpokenAt >= p.cooldownSeconds * 1_000) {
-          this.lastSpokenAt = now
-          if (isTaunt(cue.kind)) this.lastTauntAt = now
+        const p = this.state.preferences
+        if (isTaunt(cue.kind) ? p.taunt : p.praise) {
           void this.react(cue, this.analyzer.evidence(snapshot, cue), generation).catch(() => undefined)
         }
       }

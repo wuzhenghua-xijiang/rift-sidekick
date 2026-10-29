@@ -1,6 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import { DEFAULT_COACH_SETTINGS, type CoachSettings, type CoachSettingsInput } from '@shared/coach'
+import { DEFAULT_COACH_PROMPT, DEFAULT_COACH_SETTINGS, type CoachSettings, type CoachSettingsInput } from '@shared/coach'
 
 export interface CoachCredentials { baseUrl: string; model: string; apiKey: string; autoAnalyze: boolean; coachPrompt?: string; combatPrompt?: string }
 export interface CoachSecretStorage {
@@ -46,7 +46,7 @@ export class CoachSettingsStore {
     const prompt = (key: 'coachPrompt' | 'combatPrompt') => {
       const entry = value[key] ?? this.credentials[key] ?? ''
       if (typeof entry !== 'string' || entry.length > 2000) throw new Error('每份提示词最多 2000 字。')
-      return entry.trim()
+      return entry.trim() || (key === 'coachPrompt' ? DEFAULT_COACH_PROMPT : '')
     }
     // Never forward a key retained for one provider to a newly entered endpoint.
     if (baseUrl !== this.credentials.baseUrl && !suppliedKey && !value.clearApiKey && this.credentials.apiKey) throw new Error('更换 Base URL 时请重新填写 API Key。')

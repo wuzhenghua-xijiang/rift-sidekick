@@ -3422,6 +3422,17 @@ a {
 .instant-pick-row > .toggle {
   margin-left: 3px;
 }
+.chat-mute-control {
+  padding: 0 0 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--ink);
+}
+.chat-mute-control .instant-pick-row > span {
+  font-size: 13px;
+}
+.chat-mute-control .instant-pick-row > .toggle {
+  margin-left: auto;
+}
 .instant-pick-control .matchmaking-status {
   display: flex;
   align-items: baseline;

@@ -5,18 +5,17 @@ export interface CombatPreferences {
   praise: boolean
   taunt: boolean
   volume: number
-  cooldownSeconds: number
   customLines: Partial<Record<CombatKind, string[]>>
 }
 
 export const DEFAULT_COMBAT_PREFERENCES: Readonly<CombatPreferences> = {
-  mode: 'rules', tauntStyle: 'classic', enabled: true, praise: true, taunt: true, volume: 65, cooldownSeconds: 20, customLines: {},
+  mode: 'rules', tauntStyle: 'classic', enabled: true, praise: true, taunt: true, volume: 65, customLines: {},
 }
 export const COMBAT_VOLUME_DEFAULT_VERSION = 1
 
 export function combatPreferences(value: unknown, fallback: CombatPreferences = DEFAULT_COMBAT_PREFERENCES): CombatPreferences {
   const input = value && typeof value === 'object' ? value as Record<string, unknown> : {}
-  const number = (key: 'volume' | 'cooldownSeconds', min: number, max: number) =>
+  const number = (key: 'volume', min: number, max: number) =>
     typeof input[key] === 'number' && Number.isFinite(input[key]) ? Math.round(Math.min(max, Math.max(min, input[key]))) : fallback[key]
   const customLines = { ...fallback.customLines }
   if (input.customLines && typeof input.customLines === 'object') {
@@ -31,7 +30,7 @@ export function combatPreferences(value: unknown, fallback: CombatPreferences = 
     enabled: typeof input.enabled === 'boolean' ? input.enabled : fallback.enabled,
     praise: typeof input.praise === 'boolean' ? input.praise : fallback.praise,
     taunt: typeof input.taunt === 'boolean' ? input.taunt : fallback.taunt,
-    volume: number('volume', 0, 100), cooldownSeconds: number('cooldownSeconds', 15, 60), customLines,
+    volume: number('volume', 0, 100), customLines,
   }
 }
 

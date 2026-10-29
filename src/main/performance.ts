@@ -101,7 +101,10 @@ export class PerformanceService {
     return this.serial(async () => {
       if (!this.state.supported || !this.initialized || this.closing) return { ok: false, message: this.state.message }
       if (!this.state.enabled) return { ok: true, message: '启动前性能优化已关闭。' }
-      if (this.hasJournal && !this.state.active) return { ok: false, message: '请先恢复上次性能设置，再启动客户端。' }
+      if (!this.state.active && (this.hasJournal || this.state.canRestore)) {
+        const restored = await this.restoreNow('已自动恢复上次性能设置，继续启动前检查。')
+        if (!restored.ok) return restored
+      }
       this.publish({ status: 'optimizing', checks: [], message: '正在检查资源并完成启动前优化…' })
       const checks: PerformanceCheck[] = []
       try {

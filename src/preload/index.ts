@@ -34,6 +34,7 @@ const bridge: RiftBridge = {
   setDock: (enabled: boolean) => ipcRenderer.invoke('rift:set-dock', enabled),
   setMatchmakingPreferences: (preferences) => ipcRenderer.invoke('rift:matchmaking-preferences', preferences),
   setNativeJungleEnabled: (enabled) => ipcRenderer.invoke('rift:native-jungle-enabled', enabled),
+  setChatMuteEnabled: (enabled) => ipcRenderer.invoke('rift:chat-mute-enabled', enabled),
   setCombatPreferences: (preferences) => ipcRenderer.invoke('rift:combat-preferences', preferences),
   previewCombatVoice: (category) => ipcRenderer.invoke('rift:combat-preview', category),
   stopCombatPreview: () => ipcRenderer.invoke('rift:combat-stop-preview'),

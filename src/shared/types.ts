@@ -3,6 +3,7 @@ import type { LauncherState, PerformanceState } from './desktop-tools'
 import type { CombatAISettings, CombatPreferences, CombatState } from './combat'
 import type { CoachAnalysis, CoachMember, CoachRequest, CoachSettings, CoachSettingsInput } from './coach'
 import type { MatchmakingPreferences, MatchmakingState } from './matchmaking'
+import type { ChatMuteState } from './chat-mute'
 
 export type Position = 'top' | 'jungle' | 'mid' | 'adc' | 'support'
 export type QueueMode = 'ranked' | 'aram' | 'aram-mayhem'
@@ -95,6 +96,7 @@ export interface AppState {
   backgroundAvailable?: boolean
   update?: UpdateState
   nativeJungle?: NativeJungleState
+  chatMute?: ChatMuteState
   client: ClientState
   dock: boolean
   canRestore: boolean
@@ -194,6 +196,7 @@ export interface RiftBridge {
   setDock(enabled: boolean): Promise<void>
   setMatchmakingPreferences(preferences: Partial<MatchmakingPreferences>): Promise<void>
   setNativeJungleEnabled(enabled: boolean): Promise<void>
+  setChatMuteEnabled(enabled: boolean): Promise<void>
   setCombatPreferences(preferences: Partial<CombatPreferences>): Promise<void>
   previewCombatVoice(category: 'praise' | 'taunt'): Promise<ApplyResult>
   stopCombatPreview(): Promise<void>

@@ -11,6 +11,7 @@ import {
   Zap,
 } from 'lucide-react'
 import {
+  DEFAULT_COACH_PROMPT,
   DEFAULT_COACH_SETTINGS,
   type CoachSettings,
   type CoachSettingsInput,
@@ -27,7 +28,7 @@ export function OpenAISettings({
   const [model, setModel] = useState(settings.model)
   const [apiKey, setApiKey] = useState('')
   const [autoAnalyze, setAutoAnalyze] = useState(settings.autoAnalyze)
-  const [coachPrompt, setCoachPrompt] = useState(settings.coachPrompt || '')
+  const [coachPrompt, setCoachPrompt] = useState(settings.coachPrompt?.trim() || DEFAULT_COACH_PROMPT)
   const [combatPrompt, setCombatPrompt] = useState(settings.combatPrompt || '')
   const [promptTab, setPromptTab] = useState<'coach' | 'voice'>('coach')
   const [models, setModels] = useState<string[]>([])
@@ -37,7 +38,7 @@ export function OpenAISettings({
     setBaseUrl(settings.baseUrl)
     setModel(settings.model)
     setAutoAnalyze(settings.autoAnalyze)
-    setCoachPrompt(settings.coachPrompt || '')
+    setCoachPrompt(settings.coachPrompt?.trim() || DEFAULT_COACH_PROMPT)
     setCombatPrompt(settings.combatPrompt || '')
     setApiKey('')
   }, [
@@ -224,13 +225,13 @@ export function OpenAISettings({
                 }
                 placeholder={
                   promptTab === 'coach'
-                    ? '留空使用默认 BP 教练；可补充英雄偏好与表达风格。'
+                    ? DEFAULT_COACH_PROMPT
                     : DEFAULT_COMBAT_PROMPT
                 }
               />
             </label>
           </div>
-          <small>留空使用默认提示词 · 每份最多 2000 字</small>
+          <small>教练已填入默认提示词，可直接修改；清空后保存恢复默认 · 每份最多 2000 字</small>
         </details>
         <label className="connection-auto">
           <span>

@@ -21,6 +21,7 @@ import { LaneRankingService } from './lane-rankings'
 import { PostGameService } from './postgame'
 import { UpdateService } from './update-service'
 import { NativeJungleService } from './native-jungle'
+import { ChatMuteService, FileChatMuteStore } from './chat-mute'
 import { ClientLauncher, WindowsLauncherRuntime } from './client-launcher'
 import { FilePerformanceStore, PerformanceService } from './performance'
 import { WindowsPerformanceRuntime } from './windows-performance'
@@ -41,6 +42,7 @@ interface Preferences {
   launcherPath?: string
   dock: boolean
   nativeJungleEnabled: boolean
+  chatMuteEnabled: boolean
   combat: CombatPreferences
   combatVolumeDefaultVersion?: number
   combatAI?: { baseUrl: string; model: string; prompt: string; encryptedApiKey?: string }
@@ -84,12 +86,13 @@ let previousPhase = ''
 let operation = 0
 let quitting = false
 let preferencesWrites: Promise<void> = Promise.resolve()
-let preferences: Preferences = { matchmaking: { ...DEFAULT_MATCHMAKING_PREFERENCES }, optimizeBeforeLaunch: true, dock: true, nativeJungleEnabled: true, combat: { ...DEFAULT_COMBAT_PREFERENCES }, combatVolumeDefaultVersion: COMBAT_VOLUME_DEFAULT_VERSION, selectedPlans: {}, positions: {} }
+let preferences: Preferences = { matchmaking: { ...DEFAULT_MATCHMAKING_PREFERENCES }, optimizeBeforeLaunch: true, dock: true, nativeJungleEnabled: true, chatMuteEnabled: false, combat: { ...DEFAULT_COMBAT_PREFERENCES }, combatVolumeDefaultVersion: COMBAT_VOLUME_DEFAULT_VERSION, selectedPlans: {}, positions: {} }
 let state: AppState = {
   client: { connected: false, phase: 'ClientOffline', championId: null, championLocked: false, position: null, mode: 'ranked', message: '等待英雄联盟客户端…' },
   dock: true, canRestore: false, recoveryNeeded: false,
 }
 const nativeJungle = new NativeJungleService(lcu.request, (next) => updateState({ nativeJungle: next }))
+let chatMute: ChatMuteService
 const matchmaking = new MatchmakingService(lcu.request, (next) => updateState({ matchmaking: next }))
 const launcher = new ClientLauncher((next) => updateState({ launcher: next }), new WindowsLauncherRuntime())
 const combatAI = new OpenAICombatJudge()
@@ -124,7 +127,7 @@ async function loadPreferences() {
   try {
     const value = JSON.parse(await readFile(join(app.getPath('userData'), 'preferences.json'), 'utf8')) as Partial<Preferences>
     // Retired loadout switches and manual-timer preferences are not loaded or saved.
-    for (const key of ['dock', 'nativeJungleEnabled'] as const) if (typeof value[key] === 'boolean') preferences[key] = value[key]
+    for (const key of ['dock', 'nativeJungleEnabled', 'chatMuteEnabled'] as const) if (typeof value[key] === 'boolean') preferences[key] = value[key]
     try { if (value.matchmaking) preferences.matchmaking = matchmakingPreferences(value.matchmaking) } catch { /* invalid saved automation stays off */ }
     if (typeof value.optimizeBeforeLaunch === 'boolean') preferences.optimizeBeforeLaunch = value.optimizeBeforeLaunch
     if (typeof value.launcherPath === 'string') preferences.launcherPath = value.launcherPath
@@ -281,6 +284,7 @@ async function doRefreshClientState() {
   syncWindowPresentation()
   const windowAction = gameWindow.update(client)
   nativeJungle.updateClient(client)
+  chatMute.updateClient(client)
   combat.updateClient(client)
   if (windowAction === 'restore') backgroundHidden = false
   dock.setSuppressed(gameWindow.suppressed || backgroundHidden)
@@ -545,6 +549,16 @@ ipcMain.handle('rift:native-jungle-check', async () => {
   await refreshClientState()
   return nativeJungle.refresh()
 })
+ipcMain.handle('rift:chat-mute-enabled', async (event, enabled: unknown) => {
+  requireMainWindow(event)
+  if (typeof enabled !== 'boolean') throw new Error('无效的聊天屏蔽偏好。')
+  const previous = preferences.chatMuteEnabled
+  preferences.chatMuteEnabled = enabled
+  try { await persistPreferences() }
+  catch (error) { preferences.chatMuteEnabled = previous; throw error }
+  await chatMute.setEnabled(enabled)
+  chatMute.updateClient(state.client)
+})
 ipcMain.handle('rift:combat-preferences', async (event, value: unknown) => {
   requireMainWindow(event)
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('无效的战斗语音偏好。')
@@ -675,11 +689,14 @@ else {
     catch (error) { updateState({ recoveryNeeded: true, lastConfig: { ok: false, message: messageOf(error), at: Date.now() } }) }
     installSecurityHeaders()
     nativeJungle.configure(preferences.nativeJungleEnabled)
+    chatMute = new ChatMuteService(lcu.request, (next) => updateState({ chatMute: next }), new FileChatMuteStore(join(app.getPath('userData'), 'chat-mute.json')))
+    await chatMute.initialize(preferences.chatMuteEnabled)
     combat.configure(preferences.combat)
     updates = new UpdateService((update) => updateState({ update }), async () => {
       await refreshClientState()
       if (configuration.isBusy || state.lastConfig?.busy || postGame.isBusy) throw new Error('正在写入配置或提交点赞，请完成后再安装更新。')
       if (nativeJungle.isBusy) throw new Error('正在配置小地图计时，请完成后再安装更新。')
+      if (chatMute.isBusy) throw new Error('正在配置聊天屏蔽，请完成后再安装更新。')
       if (launcher.isBusy || performance?.isBusy) throw new Error('正在启动客户端或优化性能，请完成后再安装更新。')
       if (configuration.recoveryNeeded) throw new Error('请先恢复或保留当前配置，再安装更新。')
       if (gameWindow.suppressed) throw new Error('正在加载或进行对局，请返回大厅后再安装。')
@@ -725,6 +742,7 @@ app.on('before-quit', (event) => {
   if (updateCheckTimer) clearTimeout(updateCheckTimer)
   operation++
   nativeJungle.dispose()
+  chatMute?.dispose()
   dock.stop()
   tray?.destroy()
   tray = undefined
