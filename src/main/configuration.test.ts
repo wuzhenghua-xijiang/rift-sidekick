@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ConfigurationManager, createItemSet, type ConfigurationJournal, type ItemSetDocument, type JournalStore, type LcuRequest, type PerkPage } from './configuration'
 import type { BuildPlan, Champion } from '@shared/types'
 
@@ -11,8 +11,9 @@ const plan: BuildPlan = {
 }
 class MemoryStore implements JournalStore {
   journal?: ConfigurationJournal
+  saves: ConfigurationJournal[] = []
   async load() { return structuredClone(this.journal) }
-  async save(journal: ConfigurationJournal) { this.journal = structuredClone(journal) }
+  async save(journal: ConfigurationJournal) { this.journal = structuredClone(journal); this.saves.push(structuredClone(journal)) }
 }
 function harness() {
   const store = new MemoryStore()
@@ -22,9 +23,10 @@ function harness() {
     spell1Id: 4, spell2Id: 12, championId: 103, completed: true, canAdd: true, phase: 'ChampSelect', summonerId: 99, gameId: 1234,
     queue: { id: 420, mapId: 11, gameMode: 'CLASSIC' },
     failPostOnce: false, failItemsAfterWriteOnce: false, failRollbackItems: false, additionalSetOnFailure: false,
-    dropPageWrite: false, dropPageDelete: false, dropItemRegistration: false,
-    dropItemRankOnce: false,
+    dropPageWrite: false, dropPageDelete: false, dropItemRegistration: false, dropItemClear: false,
+    failClearWrites: 0, failRegistrationWrites: 0, failFinalWrites: 0, lostRegistrationResponses: 0,
     writes: [] as string[],
+    itemWrites: [] as Array<{ method: string; body: unknown }>,
     beforeRequest: undefined as undefined | ((method: string, path: string) => Promise<void>),
   }
   const request: LcuRequest = async <T>(method: string, path: string, raw?: unknown): Promise<T> => {
@@ -55,18 +57,24 @@ function harness() {
     }
     else if (path === '/lol-perks/v1/currentpage') db.pages.forEach((page) => { page.current = page.id === Number(raw) })
     else if (path.includes('/lol-item-sets/')) {
+      if (method !== 'GET') db.itemWrites.push({ method, body: structuredClone(raw) })
       if (method === 'GET') value = { ...db.items, itemSets: [...db.items.itemSets].sort((a, b) => b.sortrank - a.sortrank) }
       else if (method === 'POST') {
+        if (db.failRegistrationWrites > 0) { db.failRegistrationWrites--; throw new Error('创建接口离线') }
         if (!db.dropItemRegistration) db.items.itemSets.push(structuredClone(raw) as ItemSetDocument['itemSets'][number])
+        if (db.lostRegistrationResponses > 0) { db.lostRegistrationResponses--; throw new Error('创建响应超时') }
       }
       else {
         const incoming = raw as ItemSetDocument
         if (incoming.itemSets.some((set) => !db.items.itemSets.some((current) => current.uid === set.uid))) throw new Error('装备方案尚未通过 POST 注册')
-        if (db.failRollbackItems && !db.failItemsAfterWriteOnce) throw new Error('恢复接口离线')
+        if (!incoming.itemSets.length && db.failClearWrites > 0) { db.failClearWrites--; throw new Error('清空接口离线') }
+        if (db.failRollbackItems && !db.failItemsAfterWriteOnce && !db.failFinalWrites) throw new Error('恢复接口离线')
+        if (!incoming.itemSets.length && db.dropItemClear) return undefined as T
         db.items = structuredClone(raw) as ItemSetDocument
-        if (db.dropItemRankOnce) {
-          db.dropItemRankOnce = false
-          db.items.itemSets[0].sortrank = 0
+        if (incoming.itemSets.length && db.failFinalWrites > 0) {
+          db.failFinalWrites--
+          if (db.additionalSetOnFailure) db.items.itemSets.push({ ...createItemSet(champion, plan, 'external-new'), title: '同时新建的其他方案' })
+          throw new Error('装备写入超时')
         }
         if (db.failItemsAfterWriteOnce) {
           db.failItemsAfterWriteOnce = false
@@ -77,7 +85,8 @@ function harness() {
     } else throw new Error(`unhandled ${method} ${path}`)
     return structuredClone(value) as T
   }
-  return { db, store, manager: new ConfigurationManager(request, store), request }
+  const retryPause = vi.fn(async (_milliseconds: number) => undefined)
+  return { db, store, manager: new ConfigurationManager(request, store, retryPause), request, retryPause }
 }
 
 describe('LCU configuration transaction', () => {
@@ -103,7 +112,7 @@ describe('LCU configuration transaction', () => {
     db.queue = { id: 2400, mapId: 12, gameMode: 'KIWI' }
     db.canAdd = false
     db.beforeRequest = async (_method, path) => { if (path.includes('/lol-perks/')) throw new Error('Mayhem has no runes') }
-    const originalPages = structuredClone(db.pages), originalItems = structuredClone(db.items)
+    const originalPages = structuredClone(db.pages)
     const mayhem: BuildPlan = { ...plan, mode: 'aram-mayhem', runes: undefined, summonerSpellIds: [] }
     await manager.initialize()
     const result = await manager.apply(champion, mayhem, true)
@@ -113,18 +122,20 @@ describe('LCU configuration transaction', () => {
     expect(db.pages).toEqual(originalPages)
     expect(db.spell2Id).toBe(12)
     expect(db.items.itemSets[0].associatedMaps).toEqual([12])
-    expect(db.writes).toEqual(['POST /lol-item-sets/v1/item-sets/99/sets', 'PUT /lol-item-sets/v1/item-sets/99/sets'])
+    expect(db.writes).toEqual(['PUT /lol-item-sets/v1/item-sets/99/sets', 'POST /lol-item-sets/v1/item-sets/99/sets', 'PUT /lol-item-sets/v1/item-sets/99/sets'])
     await manager.restore()
-    expect(db.items.itemSets).toEqual(originalItems.itemSets)
+    expect(db.items.itemSets).toEqual([])
     expect(db.pages).toEqual(originalPages)
   })
-  it('compensates an equipment-only Mayhem write whose response was lost', async () => {
-    const { db, manager } = harness()
+  it('retries an equipment-only Mayhem clear whose response was lost', async () => {
+    const { db, manager, retryPause } = harness()
     db.queue = { id: 2400, mapId: 12, gameMode: 'KIWI' }
     db.failItemsAfterWriteOnce = true
     await manager.initialize()
-    await expect(manager.apply(champion, { ...plan, mode: 'aram-mayhem', runes: undefined, summonerSpellIds: [] }, true)).rejects.toThrow('已恢复')
-    expect(db.items.itemSets.map((set) => set.uid)).toEqual(['player-owned'])
+    expect((await manager.apply(champion, { ...plan, mode: 'aram-mayhem', runes: undefined, summonerSpellIds: [] }, true)).ok).toBe(true)
+    expect(db.items.itemSets).toHaveLength(1)
+    expect(db.items.itemSets[0].title).toBe('Rift · 阿狸 · 热选')
+    expect(retryPause).toHaveBeenCalledExactlyOnceWith(1000)
     expect(db.writes.every((write) => write.includes('/lol-item-sets/'))).toBe(true)
   })
   it('rejects ordinary runes in Mayhem and missing runes in classic before writing', async () => {
@@ -136,10 +147,9 @@ describe('LCU configuration transaction', () => {
     await expect(manager.apply(champion, plan, false)).rejects.toThrow('模式不一致')
     expect(db.writes).toEqual([])
   })
-  it('writes and verifies an isolated page/set, then restores the original values', async () => {
-    const { db, manager } = harness()
+  it('clears existing sets without backing them up and only restores runes and spells on undo', async () => {
+    const { db, manager, store } = harness()
     const originalPage = structuredClone(db.pages[0])
-    const originalSets = structuredClone(db.items.itemSets)
     await manager.initialize()
     const result = await manager.apply(champion, plan, true)
     expect(result.ok).toBe(true)
@@ -147,12 +157,16 @@ describe('LCU configuration transaction', () => {
     expect(db.pages).toHaveLength(2)
     expect(db.pages[1].name).toBe('Rift · 阿狸 · 热选')
     expect(db.pages[0].name).toBe('我的原符文')
-    expect(db.items.itemSets).toHaveLength(2)
+    expect(db.items.itemSets).toHaveLength(1)
+    expect(db.itemWrites[0]).toMatchObject({ method: 'PUT', body: { itemSets: [] } })
+    expect(db.itemWrites[1].method).toBe('POST')
+    expect(store.journal?.snapshot?.beforeItems.itemSets).toEqual([])
+    expect(JSON.stringify(store.saves)).not.toContain('我自己配的')
     expect(db.spell2Id).toBe(14)
     expect(manager.canRestore).toBe(true)
     expect((await manager.restore()).ok).toBe(true)
     expect(db.pages).toEqual([originalPage])
-    expect(db.items.itemSets).toEqual(originalSets)
+    expect(db.items.itemSets).toEqual([])
     expect(db.spell2Id).toBe(12)
     expect(manager.canRestore).toBe(false)
   })
@@ -160,11 +174,11 @@ describe('LCU configuration transaction', () => {
     const { db, manager } = harness()
     db.dropItemRegistration = true
     await manager.initialize()
-    await expect(manager.apply(champion, plan, false)).rejects.toThrow('已恢复')
-    expect(db.items.itemSets.map((set) => set.uid)).toEqual(['player-owned'])
+    await expect(manager.apply(champion, plan, false)).rejects.toThrow('已清空的旧装备方案不会恢复')
+    expect(db.items.itemSets).toEqual([])
     expect(db.pages).toHaveLength(1)
   })
-  it('puts the applied recommendation above existing shop sets by rank without changing their contents', async () => {
+  it('replaces all old shop sets with the current recommendation', async () => {
     const { db, manager, request, store } = harness()
     db.items.itemSets[0].sortrank = 25
     const original = structuredClone(db.items.itemSets[0])
@@ -172,12 +186,12 @@ describe('LCU configuration transaction', () => {
     const result = await manager.apply(champion, plan, false)
     const sets = (await request<ItemSetDocument>('GET', '/lol-item-sets/v1/item-sets/99/sets')).itemSets
     expect(sets[0].uid).toBe(store.journal?.snapshot?.targetItems.uid)
-    expect(sets[0].sortrank).toBeGreaterThan(original.sortrank)
+    expect(sets).toHaveLength(1)
     expect(sets[0].blocks).toEqual(createItemSet(champion, plan).blocks)
-    expect(sets.find((set) => set.uid === original.uid)).toEqual(original)
-    expect(result.message).toContain('第一套')
+    expect(sets.find((set) => set.uid === original.uid)).toBeUndefined()
+    expect(result.message).toContain('当前仅保留')
     await manager.restore()
-    expect(db.items.itemSets).toEqual([original])
+    expect(db.items.itemSets).toEqual([])
   })
   it('overwrites the current managed shop set in first place when another recommendation is applied', async () => {
     const { db, manager, request, store } = harness()
@@ -189,34 +203,97 @@ describe('LCU configuration transaction', () => {
     await manager.apply(champion, alternative, false)
     const sets = (await request<ItemSetDocument>('GET', '/lol-item-sets/v1/item-sets/99/sets')).itemSets
     expect(sets[0]).toMatchObject({ uid: first.uid, title: 'Rift · 阿狸 · 备选' })
-    expect(sets[0].sortrank).toBeGreaterThan(40)
     expect(sets.filter((set) => set.uid === first.uid)).toHaveLength(1)
-    expect(sets).toHaveLength(3)
+    expect(sets).toHaveLength(1)
     expect(store.journal?.snapshot?.targetItems.sortrank).toBe(sets[0].sortrank)
     await manager.restore()
-    expect(db.items.itemSets.find((set) => set.uid === first.uid)).toEqual(first)
-    expect(db.items.itemSets.find((set) => set.uid === 'external-new')?.sortrank).toBe(40)
+    expect(db.items.itemSets).toEqual([])
   })
-  it('does not report success when the client keeps the items but discards their first-page rank', async () => {
-    const { db, manager } = harness()
+  it('retries twice and never registers a plan if the client did not actually clear its old sets', async () => {
+    const { db, manager, retryPause } = harness()
     db.items.itemSets[0].sortrank = 25
     const original = structuredClone(db.items.itemSets)
-    db.dropItemRankOnce = true
+    db.dropItemClear = true
     await manager.initialize()
-    await expect(manager.apply(champion, plan, false)).rejects.toThrow('没有将当前装备方案排到第一套')
+    await expect(manager.apply(champion, plan, false)).rejects.toThrow('没有清空旧装备方案')
     expect(db.items.itemSets).toEqual(original)
     expect(db.pages).toHaveLength(1)
     expect(manager.canRestore).toBe(false)
+    expect(retryPause.mock.calls).toEqual([[1000], [1000]])
+    expect(db.itemWrites.some((write) => write.method === 'POST')).toBe(false)
   })
-  it('does not overflow an existing maximum int32 shop rank or leave a partial configuration', async () => {
+  it('clears even a maximum int32 shop rank without depending on sort priority', async () => {
     const { db, manager } = harness()
     db.items.itemSets[0].sortrank = 2_147_483_647
+    await manager.initialize()
+    expect((await manager.apply(champion, plan, false)).ok).toBe(true)
+    expect(db.items.itemSets).toHaveLength(1)
+    expect(db.items.itemSets[0].uid).not.toBe('player-owned')
+  })
+  it.each(['failClearWrites', 'failRegistrationWrites', 'failFinalWrites'] as const)('waits one second between two retries and succeeds on the third attempt after %s', async (failure) => {
+    const { db, manager, retryPause } = harness()
+    db[failure] = 2
+    await manager.initialize()
+    expect((await manager.apply(champion, plan, true)).ok).toBe(true)
+    expect(retryPause.mock.calls).toEqual([[1000], [1000]])
+    expect(db[failure]).toBe(0)
+    expect(db.items.itemSets).toHaveLength(1)
+    expect(db.items.itemSets[0].blocks).toEqual(createItemSet(champion, plan).blocks)
+    expect(db.spell2Id).toBe(14)
+  })
+  it.each(['failRegistrationWrites', 'failFinalWrites'] as const)('stops after three failed attempts at %s without restoring old sets', async (failure) => {
+    const { db, manager, retryPause, store } = harness()
+    db[failure] = 3
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, true)).rejects.toThrow('已清空的旧装备方案不会恢复')
+    expect(retryPause.mock.calls).toEqual([[1000], [1000]])
+    expect(db[failure]).toBe(0)
+    expect(db.items.itemSets).toEqual([])
+    expect(db.pages).toHaveLength(1)
+    expect(db.spell2Id).toBe(12)
+    expect(manager.canRestore).toBe(false)
+    expect(JSON.stringify(store.saves)).not.toContain('我自己配的')
+    const failedCalls = db.itemWrites.filter((write) => failure === 'failRegistrationWrites' ? write.method === 'POST' : write.method === 'PUT' && (write.body as ItemSetDocument).itemSets.length)
+    expect(failedCalls).toHaveLength(3)
+  })
+  it('stops after three failed clear requests without issuing a fourth no-op write for cleanup', async () => {
+    const { db, manager, retryPause } = harness()
+    db.failClearWrites = 3
     const original = structuredClone(db.items.itemSets)
     await manager.initialize()
-    await expect(manager.apply(champion, plan, false)).rejects.toThrow('排序值达到上限')
+    await expect(manager.apply(champion, plan, false)).rejects.toThrow('清空接口离线')
+    expect(retryPause.mock.calls).toEqual([[1000], [1000]])
+    expect(db.itemWrites).toHaveLength(3)
     expect(db.items.itemSets).toEqual(original)
     expect(db.pages).toHaveLength(1)
-    expect(db.writes.some((write) => write.includes('/lol-item-sets/'))).toBe(false)
+  })
+  it('clears a registered set again after a lost POST response and never leaves duplicate entries', async () => {
+    const { db, manager, retryPause } = harness()
+    db.lostRegistrationResponses = 2
+    await manager.initialize()
+    expect((await manager.apply(champion, plan, false)).ok).toBe(true)
+    expect(retryPause.mock.calls).toEqual([[1000], [1000]])
+    expect(db.items.itemSets).toHaveLength(1)
+    const registrations = db.itemWrites.filter((write) => write.method === 'POST')
+    expect(registrations).toHaveLength(3)
+    expect(new Set(registrations.map((write) => (write.body as { uid: string }).uid)).size).toBe(1)
+  })
+  it.each(['champion', 'game', 'phase', 'account', 'cancel'] as const)('does not retry writes after %s changes during the one-second delay', async (change) => {
+    const { db, manager, retryPause } = harness()
+    let allowed = true
+    db.failRegistrationWrites = 1
+    retryPause.mockImplementationOnce(async () => {
+      if (change === 'champion') db.championId = 157
+      if (change === 'game') db.gameId++
+      if (change === 'phase') db.phase = 'InProgress'
+      if (change === 'account') db.summonerId++
+      if (change === 'cancel') allowed = false
+    })
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, false, () => allowed)).rejects.toThrow()
+    expect(retryPause.mock.calls).toEqual([[1000]])
+    expect(db.itemWrites.filter((write) => write.method === 'POST')).toHaveLength(1)
+    expect(db.items.itemSets).toEqual([])
   })
   it('cleans up a new page even if POST applied but its response was lost', async () => {
     const { db, manager } = harness()
@@ -226,21 +303,22 @@ describe('LCU configuration transaction', () => {
     expect(db.pages.map((page) => page.id)).toEqual([1])
     expect(db.items.itemSets.map((set) => set.uid)).toEqual(['player-owned'])
   })
-  it('compensates an ambiguous item timeout without erasing unrelated concurrent sets', async () => {
-    const { db, manager } = harness()
+  it('keeps concurrent additions during failure cleanup without restoring deleted old sets', async () => {
+    const { db, manager, retryPause } = harness()
     await manager.initialize()
-    db.failItemsAfterWriteOnce = true
+    db.failFinalWrites = 3
     db.additionalSetOnFailure = true
-    await expect(manager.apply(champion, plan, true)).rejects.toThrow('已恢复')
+    await expect(manager.apply(champion, plan, true)).rejects.toThrow('已撤回本次写入')
     expect(db.pages).toHaveLength(1)
     expect(db.pages[0].current).toBe(true)
-    expect(db.items.itemSets.map((set) => set.uid)).toEqual(['player-owned', 'external-new'])
+    expect(db.items.itemSets.map((set) => set.uid)).toEqual(['external-new'])
     expect(db.spell2Id).toBe(12)
+    expect(retryPause.mock.calls).toEqual([[1000], [1000]])
   })
   it('persists unfinished compensation and retries it after application restart', async () => {
     const { db, manager, request, store } = harness()
     await manager.initialize()
-    db.failItemsAfterWriteOnce = true
+    db.failFinalWrites = 3
     db.failRollbackItems = true
     await expect(manager.apply(champion, plan, false)).rejects.toThrow('快照已保留')
     const restarted = new ConfigurationManager(request, store)
@@ -249,7 +327,7 @@ describe('LCU configuration transaction', () => {
     await expect(restarted.apply(champion, plan, false)).rejects.toThrow('尚未恢复')
     db.failRollbackItems = false
     await restarted.restore()
-    expect(db.items.itemSets.map((set) => set.uid)).toEqual(['player-owned'])
+    expect(db.items.itemSets).toEqual([])
     expect(restarted.recoveryNeeded).toBe(false)
   })
   it('uses an editable page when the rune inventory has no free slot', async () => {

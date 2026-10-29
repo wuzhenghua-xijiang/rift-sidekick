@@ -27,7 +27,7 @@ export function combatPreferences(value: unknown, fallback: CombatPreferences = 
   }
   return {
     mode: input.mode === 'rules' || input.mode === 'openai' ? input.mode : fallback.mode,
-    tauntStyle: ['classic', 'grumpy', 'teen', 'sweet'].includes(String(input.tauntStyle)) ? input.tauntStyle as CombatTauntStyle : fallback.tauntStyle,
+    tauntStyle: ['classic', 'grumpy', 'teen', 'sweet', 'taiwan'].includes(String(input.tauntStyle)) ? input.tauntStyle as CombatTauntStyle : fallback.tauntStyle,
     enabled: typeof input.enabled === 'boolean' ? input.enabled : fallback.enabled,
     praise: typeof input.praise === 'boolean' ? input.praise : fallback.praise,
     taunt: typeof input.taunt === 'boolean' ? input.taunt : fallback.taunt,
@@ -45,12 +45,13 @@ export function restoreCombatPreferences(value: unknown, volumeDefaultVersion?: 
 }
 
 export type CombatKind = 'clutch' | 'multikill' | 'ace' | 'teamwork' | 'kill' | 'rough'
-export type CombatTauntStyle = 'classic' | 'grumpy' | 'teen' | 'sweet'
+export type CombatTauntStyle = 'classic' | 'grumpy' | 'teen' | 'sweet' | 'taiwan'
 export const COMBAT_TAUNT_STYLES: Record<CombatTauntStyle, { label: string; direction: string }> = {
-  classic: { label: '经典搭子', direction: '像熟人开黑时当场接梗，用泉水办卡、黑屏屏保、复活倒计时等游戏梗幽默互损，收尾带出下波再战的劲儿。只打趣这几波阵亡，不攻击人格或队友。' },
-  grumpy: { label: '暴躁老哥', direction: '像拍桌喊麦的开黑老哥，嘴硬、急脾气、短句有冲劲。用泉水买房、黑屏包月等游戏梗大声吐槽，再催一声下波把场子找回来；凶在气势，不辱骂人格或队友。' },
-  teen: { label: '愤青少年', direction: '热血中二、嘴硬不服输，像争着抢回高光的开黑少年。先对黑屏和连续阵亡憋一口不服气，再喊复活再战、把排面打回来；有燃点和游戏梗，不灌泛泛鸡汤，不涉及政治或人身攻击。' },
-  sweet: { label: '软萌甜妹', direction: '软萌里带奶凶，用泉水专座、血条下班、黑屏盖章等游戏梗俏皮吐槽，再元气满满地喊下波凶回去。口语自然，甜而有劲，不堆叠撒娇语气词，不嘲笑人格或队友。' },
+  classic: { label: '经典搭子', direction: '像熟人开黑时当场接梗，夸夸真诚兴奋，突出这波真实高光；调侃用泉水办卡、黑屏屏保、复活倒计时等游戏梗幽默互损，收尾带出下波再战的劲儿。只打趣这几波阵亡，不攻击人格或队友。' },
+  grumpy: { label: '暴躁老哥', direction: '像拍桌喊麦的开黑老哥，嘴硬、急脾气、短句有冲劲。夸夸豪爽直接，像忍不住拍桌叫好的老哥，兴奋地夸兄弟，不对高光发火；调侃用泉水买房、黑屏包月等游戏梗大声吐槽，再催一声下波把场子找回来。凶在气势，不辱骂人格或队友。' },
+  teen: { label: '愤青少年', direction: '热血中二、嘴硬不服输，像争着抢回高光的开黑少年。夸夸惊喜崇拜，为朋友的高光热血欢呼；调侃先对黑屏和连续阵亡憋一口不服气，再喊复活再战、把排面打回来。有燃点和游戏梗，不灌泛泛鸡汤，不涉及政治或人身攻击。' },
+  sweet: { label: '软萌甜妹', direction: '夸夸像看到朋友高光时开心欢呼的元气女生，甜甜地叫好，轻快有笑意；调侃软萌里带奶凶，用泉水专座、血条下班、黑屏盖章等游戏梗俏皮吐槽，再元气满满地喊下波凶回去。口语自然，甜而有劲，不堆叠撒娇语气词，不嘲笑人格或队友。' },
+  taiwan: { label: '台湾软妹', direction: '台湾腔的成年女生开黑搭子，声音轻柔软嗲、亲近自然。夸夸带惊喜和笑意，像朋友撒娇着说你好厉害；调侃温柔碎念、佯装小委屈，再软软鼓励下波回来。可自然用欸、啦、耶、好不好等台湾口语，轻松不堆叠语气词，不用幼儿腔，不改变战斗事实，不攻击人格或队友。' },
 }
 export const COMBAT_LABELS: Record<CombatKind, string> = {
   clutch: '残血险胜', multikill: '连续多杀', ace: '团灭大胜', teamwork: '队友配合', kill: '漂亮击杀', rough: '连续阵亡',
@@ -167,11 +168,89 @@ export const COMBAT_TAUNT_LINES: Record<Exclude<CombatTauntStyle, 'classic'>, re
     '哼，黑屏才留不住咱！复活以后，气势加满糖！',
     '泉水会员不续啦！下波咱要活蹦乱跳地上高光！',
   ],
+  taiwan: [
+    '欸，泉水都要帮你留位子了啦，下波陪我活久一点嘛。',
+    '怎么又黑屏了啦，人家还想看你打回来耶。',
+    '复活倒数看够了嘛，下波先顾好小命，好不好？',
+    '泉水不是度假村啦，补好状态就回来陪我嘛。',
+    '欸，别再续黑屏会员啦，下波我们稳一点嘛。',
+    '小命先留着啦，人家还没看到你的高光耶。',
+    '这几波有点委屈齁，没关系，复活再来嘛。',
+    '你怎么又回泉水报到了啦，下波换个地方待嘛。',
+    '黑屏先休息一下啦，下波活着把场子找回来。',
+    '复活就回来喔，我们下一波再慢慢打回来嘛。',
+  ],
+}
+
+export const COMBAT_PERSONA_PRAISE_LINES: Partial<Record<CombatTauntStyle, Record<Exclude<CombatKind, 'rough'>, readonly string[]>>> = {
+  taiwan: {
+    clutch: [
+      '欸，这点血还拿得到人头，你也太厉害了吧。',
+      '血条都快没了还活着耶，刚刚替你捏把冷汗啦。',
+      '差一点就回泉水了嘛，还好你有撑住耶。',
+      '残血还收下人头耶，这波真的有帅到我。',
+      '你这点血还敢打喔，拿下还活着，太扯了啦。',
+      '血条只剩一点点，还是让你收下了耶。',
+      '刚刚心跳好快喔，人头拿到，小命也留住了。',
+      '欸，人头收下还站着耶，这波我真的要夸你。',
+      '剩一丝血还打得这么漂亮，很会耶你。',
+      '人头有拿到，人也还在，真的好险又好帅喔。',
+    ],
+    multikill: [
+      '欸，连续拿下耶，你这波手感也太好了吧。',
+      '一个接一个收下耶，人家都快跟不上了啦。',
+      '多杀拿到了耶，这波真的要给你拍拍手。',
+      '你怎么一直收人头啦，今天很有状态喔。',
+      '连着拿下耶，这波看得人家好开心喔。',
+      '多杀耶，我就知道你这波可以的啦。',
+      '欸，又收下一个，这波火力真的很够耶。',
+      '这波多杀太漂亮了啦，让我多夸你一下嘛。',
+      '人头接着来耶，今晚高光有你了啦。',
+      '多杀到手啦，你这手感，真的有够烫耶。',
+    ],
+    ace: [
+      '团灭拿下了耶，你和队友真的好棒喔。',
+      '欸，对面都黑屏了，这波也有你的功劳耶。',
+      '对面一起回泉水啦，我们这波配合很可以耶。',
+      '团灭耶，这波大家一起打得好漂亮喔。',
+      '对面整队回泉水了啦，你这波也有出力耶。',
+      '听到团灭了耶，给你和队友一起拍拍手。',
+      '这波团灭真的有帅到耶，人家都开心起来了。',
+      '团灭拿到了嘛，这份功劳一定要算你喔。',
+      '对面全黑屏耶，我们这波一起上高光啦。',
+      '团灭耶，大家都好棒，你也值得被夸一下嘛。',
+    ],
+    teamwork: [
+      '你和队友这波很有默契耶，看得人家好开心。',
+      '一起拿下了耶，这份功劳大家都有喔。',
+      '人头和助攻都好棒啦，这波配合很可以耶。',
+      '欸，这个配合很漂亮，助攻也要给掌声嘛。',
+      '你们一联手就拿下了耶，默契也太好了吧。',
+      '并肩收下耶，这就是一起玩的快乐嘛。',
+      '配合到位，人头到手，你和队友都很棒喔。',
+      '这一波联手好好看喔，队友也值得被夸啦。',
+      '击杀有了，助攻也有，大家一起拍拍手嘛。',
+      '欸，助攻也很重要耶，这波你们都打得漂亮。',
+    ],
+    kill: [
+      '欸，人头拿到了耶，你这波好厉害喔。',
+      '收得好漂亮啦，人家都忍不住想夸你耶。',
+      '拿下一个耶，保持这个手感，好不好？',
+      '击杀到手啦，你今天很有状态耶。',
+      '欸，这个人头收得很漂亮，给你拍拍手嘛。',
+      '人头进账了耶，继续这样打就很好喔。',
+      '这波拿下啦，帮你把高光记下来喔。',
+      '击杀有了耶，看到你打得好，人家也开心嘛。',
+      '人头收下耶，这声漂亮一定要给你啦。',
+      '拿到了耶，你这波真的有帅到，继续加油喔。',
+    ],
+  },
 }
 
 export function combatLines(preferences: CombatPreferences, kind: CombatKind): readonly string[] {
   if (preferences.customLines[kind]?.length) return preferences.customLines[kind]!
-  return kind === 'rough' && preferences.tauntStyle !== 'classic' ? COMBAT_TAUNT_LINES[preferences.tauntStyle] : COMBAT_LINES[kind]
+  if (kind === 'rough') return preferences.tauntStyle !== 'classic' ? COMBAT_TAUNT_LINES[preferences.tauntStyle] : COMBAT_LINES[kind]
+  return COMBAT_PERSONA_PRAISE_LINES[preferences.tauntStyle]?.[kind] || COMBAT_LINES[kind]
 }
 
 export interface CombatCue {
@@ -184,7 +263,7 @@ export interface CombatCue {
 export interface CombatReaction extends CombatCue { text: string; at: number; source?: 'rules' | 'openai' }
 export const DEFAULT_COMBAT_MODEL = 'gpt-5.4-mini'
 export const DEFAULT_COMBAT_BASE_URL = 'https://api.openai.com/v1'
-export const DEFAULT_COMBAT_PROMPT = '你是英雄联盟专属的热血开黑搭子，像朋友当场接梗，也有赛事解说的爆发力。依据真实击杀、助攻、血量和阵亡顺序判断这波表现。短句、有梗、有冲劲：普通击杀利落叫好，队友配合一起抬排面，残血突出心跳感，多杀和团灭直接燃到炸场。调侃按所选人设用泉水、黑屏、复活倒计时等游戏梗互损，带出下波再战的劲儿。夸张情绪和比喻，不夸大战斗事实；尊重辅助与坦克贡献，不以人头多少评价操作。不确定就不播报。'
+export const DEFAULT_COMBAT_PROMPT = '你是英雄联盟专属的热血开黑搭子，像朋友当场接梗，也有赛事解说的爆发力。依据真实击杀、助攻、血量和阵亡顺序判断这波表现。夸夸和调侃都遵循所选播报人设。短句、有梗、有冲劲：普通击杀利落叫好，队友配合一起抬排面，残血突出心跳感，多杀和团灭直接燃到炸场。调侃用泉水、黑屏、复活倒计时等游戏梗互损，带出下波再战的劲儿。夸张情绪和比喻，不夸大战斗事实；尊重辅助与坦克贡献，不以人头多少评价操作。不确定就不播报。'
 export interface CombatAIState { configured: boolean; baseUrl: string; model: string; prompt: string; message?: string }
 export interface CombatAISettings { baseUrl?: string; model?: string; prompt?: string; apiKey?: string; clearApiKey?: boolean }
 export interface CombatEvidence {

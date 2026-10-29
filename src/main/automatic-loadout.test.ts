@@ -17,6 +17,8 @@ const fixture = vi.hoisted(() => ({
   verify: vi.fn(async () => undefined),
   fetch: vi.fn<(...args: unknown[]) => Promise<BuildPlan[]>>(),
   lanes: vi.fn<() => Promise<unknown>>(),
+  preferences: {} as Record<string, unknown>,
+  savedPreferences: '',
   champions: [
     { id: 'Ahri', key: 103, name: '阿狸', title: '', tags: [], icon: '', splash: '' },
     { id: 'Ziggs', key: 115, name: '吉格斯', title: '', tags: [], icon: '', splash: '' },
@@ -40,8 +42,9 @@ vi.mock('electron', () => ({
   clipboard: {}, dialog: {}, Menu: {}, nativeImage: {}, shell: {}, Tray: class {},
 }))
 vi.mock('node:fs/promises', () => ({
-  readFile: async () => JSON.stringify({ autoConfig: false, includeSpells: false }),
-  mkdir: async () => undefined, rename: async () => undefined, writeFile: async () => undefined,
+  readFile: async (path: string) => JSON.stringify(path.endsWith('preferences.json') ? fixture.preferences : { autoConfig: false, includeSpells: false }),
+  mkdir: async () => undefined, rename: async () => undefined,
+  writeFile: async (path: string, body: string) => { if (path.endsWith('preferences.json.tmp')) fixture.savedPreferences = body },
 }))
 vi.mock('./data', () => ({ DataService: class {
   async initialize() {} async refresh() {} getPatch() { return '16.21.1' }
@@ -81,6 +84,7 @@ beforeEach(() => {
   fixture.handlers.clear(); fixture.apply.mockClear(); fixture.verify.mockClear(); fixture.busy = false
   fixture.windowBounds.mockClear(); fixture.dockEnabled.mockClear()
   fixture.launch.mockClear()
+  fixture.preferences = { autoConfig: false, includeSpells: false }; fixture.savedPreferences = ''
   fixture.client = { connected: true, phase: 'ChampSelect', championId: 103, championLocked: true, position: 'mid', mode: 'ranked', sessionId: 'game-1' }
   fixture.fetch.mockReset().mockImplementation(async (...args) => plansFor(args[0] as Champion, args[1] as Position, args[2] as QueueMode))
   fixture.lanes.mockReset().mockResolvedValue({ meta: { version: '16.21' }, data: [
@@ -91,6 +95,30 @@ beforeEach(() => {
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks() })
 
 describe('automatic selection configuration from the main process', () => {
+  it('loads saved automation independently of the retired loadout switches', async () => {
+    fixture.preferences.matchmaking = { autoAccept: true, autoPick: true, championId: 103 }
+    await start()
+    expect(await fixture.handlers.get('rift:get-state')!()).toMatchObject({
+      matchmaking: { preferences: { autoAccept: true, autoPick: true, championId: 103 } },
+    })
+  })
+  it('validates, persists and publishes independent acceptance and instant-pick preferences', async () => {
+    fixture.client.phase = 'Lobby'
+    await start()
+    const save = fixture.handlers.get('rift:matchmaking-preferences')!
+    const event = { sender: fixture.sender }
+    await expect(save({ sender: {} }, { autoAccept: true })).rejects.toThrow('主窗口')
+    await expect(save(event, { autoPick: true })).rejects.toThrow('指定秒选英雄')
+    await expect(save(event, { championId: 999999 })).rejects.toThrow('英雄资料')
+    await save(event, { autoAccept: true })
+    await save(event, { championId: 103, autoPick: true })
+    expect(JSON.parse(fixture.savedPreferences).matchmaking).toEqual({ autoAccept: true, autoPick: true, championId: 103 })
+    expect(await fixture.handlers.get('rift:get-state')!()).toMatchObject({ matchmaking: {
+      preferences: { autoAccept: true, autoPick: true, championId: 103 },
+    } })
+    await save(event, { autoPick: false })
+    expect(JSON.parse(fixture.savedPreferences).matchmaking).toEqual({ autoAccept: true, autoPick: false, championId: 103 })
+  })
   it('launches the official client without account settings or any password IPC handlers', async () => {
     await start()
     const launch = fixture.handlers.get('rift:launch-game-client')!

@@ -2,6 +2,7 @@ import type { NativeJungleState } from './jungle'
 import type { LauncherState, PerformanceState } from './desktop-tools'
 import type { CombatAISettings, CombatPreferences, CombatState } from './combat'
 import type { CoachAnalysis, CoachMember, CoachRequest, CoachSettings, CoachSettingsInput } from './coach'
+import type { MatchmakingPreferences, MatchmakingState } from './matchmaking'
 
 export type Position = 'top' | 'jungle' | 'mid' | 'adc' | 'support'
 export type QueueMode = 'ranked' | 'aram' | 'aram-mayhem'
@@ -86,6 +87,7 @@ export interface ClientState {
 }
 
 export interface AppState {
+  matchmaking?: MatchmakingState
   coach?: CoachSettings
   combat?: CombatState
   launcher?: LauncherState
@@ -190,6 +192,7 @@ export interface RiftBridge {
   selectPlan(input: { championId: string; planId: string }): Promise<void>
   selectPosition(input: { championId: string; position: Position }): Promise<void>
   setDock(enabled: boolean): Promise<void>
+  setMatchmakingPreferences(preferences: Partial<MatchmakingPreferences>): Promise<void>
   setNativeJungleEnabled(enabled: boolean): Promise<void>
   setCombatPreferences(preferences: Partial<CombatPreferences>): Promise<void>
   previewCombatVoice(category: 'praise' | 'taunt'): Promise<ApplyResult>

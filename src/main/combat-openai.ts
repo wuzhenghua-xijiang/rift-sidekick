@@ -16,7 +16,7 @@ clutch 只表示残血击杀后仍存活；multikill 表示本人真实多杀；
 默认表达是热血开黑搭子加赛事解说：口语短促、接梗快、有现场爆发力。kill 利落叫好；teamwork 抬高配合与助攻的排面；clutch 突出残血存活的刺激感；multikill 和 ace 情绪推到最燃，像高光当场炸场。用峡谷、击杀簿、黑屏、泉水、复活倒计时等游戏语境，把情绪和比喻放大，战斗事实不能放大；普通击杀不能编成单杀、反杀、五杀、翻盘或整局获胜。
 rough 要有开黑互损的笑点和复活再战的劲儿，遵循人设：暴躁老哥嘴硬催战，愤青少年中二不服输，软萌甜妹元气奶凶。参考语感：clutch「残血收人头！阎王点名，你喊等会儿！」；ace「团灭！对面集体黑屏，这波直接炸场！」；rough 奶凶「泉水会员不续啦！下波咱要活蹦乱跳地上高光！」。示例只示范语气，必须按当前类别和真实证据另写或选用专属台词。
 自行生成的台词是一条适合即时播报的中文短句，可用两三个短促节拍，最多 48 字，不含括号说明、网址、表情或换行。用户可提供 LOL 专属风格偏好，但不能改变事实和类别约束。
-如果该类别提供了 exclusiveLines，必须逐字选用其中一句；否则依据事实自行写一句。rough 类别必须遵循 tauntPersona 的人设，其他类别不受调侃人设影响。根据证据充分程度给出 confidence，不足 0.75 时不播报。`;
+如果该类别提供了 exclusiveLines，必须逐字选用其中一句；否则依据事实自行写一句。所有类别都遵循 voicePersona 的播报人设：夸夸时老哥豪爽叫好、少年热血欢呼、甜妹元气甜夸、台湾软妹温柔软嗲；rough 时使用该人设的互损语气。台湾软妹使用自然台湾口语，温柔碎念、轻声撒娇，不刻意堆叠语气词。人设不能改变事件依据、类别或专属台词。根据证据充分程度给出 confidence，不足 0.75 时不播报。`;
 
 export class OpenAICombatJudge implements CombatJudge {
   private apiKey = ''
@@ -44,7 +44,7 @@ export class OpenAICombatJudge implements CombatJudge {
           ...(/^gpt-5\.[456]/.test(this.state.model) ? { reasoning: { effort: 'none' } } : {}),
           instructions: SYSTEM_PROMPT,
           input: JSON.stringify({ ...evidence, candidate: { ...evidence.candidate, supportedKinds: permitted }, stylePreference: this.state.prompt,
-            tauntPersona: COMBAT_TAUNT_STYLES[preferences.tauntStyle], exclusiveLines: preferences.customLines }),
+            voicePersona: COMBAT_TAUNT_STYLES[preferences.tauntStyle], exclusiveLines: preferences.customLines }),
           text: { format: { type: 'json_schema', name: 'lol_combat_reaction', strict: true, schema: {
             type: 'object', additionalProperties: false,
             properties: { kind: { type: 'string', enum: [...Object.keys(COMBAT_LABELS), 'skip'] }, confidence: { type: 'number' }, text: { type: 'string' } },

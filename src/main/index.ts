@@ -8,6 +8,8 @@ import { GameWindowPolicy } from '@shared/gameflow'
 import { isLoadoutMode } from '@shared/selection-context'
 import { DataService } from './data'
 import { LcuService } from './lcu'
+import { MatchmakingService } from './matchmaking'
+import { DEFAULT_MATCHMAKING_PREFERENCES, matchmakingPreferences, type MatchmakingPreferences } from '@shared/matchmaking'
 import { ConfigurationManager, messageOf } from './configuration'
 import { FileJournal } from './journal'
 import { fetchRecommendedBuilds } from './opgg'
@@ -34,6 +36,7 @@ import { CoachService } from './coach'
 import { CoachEvidenceService } from './coach-evidence'
 
 interface Preferences {
+  matchmaking: MatchmakingPreferences
   optimizeBeforeLaunch: boolean
   launcherPath?: string
   dock: boolean
@@ -81,16 +84,20 @@ let previousPhase = ''
 let operation = 0
 let quitting = false
 let preferencesWrites: Promise<void> = Promise.resolve()
-let preferences: Preferences = { optimizeBeforeLaunch: true, dock: true, nativeJungleEnabled: true, combat: { ...DEFAULT_COMBAT_PREFERENCES }, combatVolumeDefaultVersion: COMBAT_VOLUME_DEFAULT_VERSION, selectedPlans: {}, positions: {} }
+let preferences: Preferences = { matchmaking: { ...DEFAULT_MATCHMAKING_PREFERENCES }, optimizeBeforeLaunch: true, dock: true, nativeJungleEnabled: true, combat: { ...DEFAULT_COMBAT_PREFERENCES }, combatVolumeDefaultVersion: COMBAT_VOLUME_DEFAULT_VERSION, selectedPlans: {}, positions: {} }
 let state: AppState = {
   client: { connected: false, phase: 'ClientOffline', championId: null, championLocked: false, position: null, mode: 'ranked', message: '等待英雄联盟客户端…' },
   dock: true, canRestore: false, recoveryNeeded: false,
 }
 const nativeJungle = new NativeJungleService(lcu.request, (next) => updateState({ nativeJungle: next }))
+const matchmaking = new MatchmakingService(lcu.request, (next) => updateState({ matchmaking: next }))
 const launcher = new ClientLauncher((next) => updateState({ launcher: next }), new WindowsLauncherRuntime())
 const combatAI = new OpenAICombatJudge()
 let combatApiKey = ''
-const combat = new CombatService(readLiveGame, new WindowsCombatVoice(() => join(app.getPath('userData'), 'combat-voices')), (next) => updateState({ combat: next }), undefined, combatAI, async () => {
+const combat = new CombatService(readLiveGame, new WindowsCombatVoice(
+  () => join(app.getPath('userData'), 'combat-voices'),
+  () => app.isPackaged ? join(process.resourcesPath, 'combat-voices') : join(app.getAppPath(), 'resources', 'combat-voices'),
+), (next) => updateState({ combat: next }), undefined, combatAI, async () => {
   const local = await lcu.request<{ gameName?: string; tagLine?: string; displayName?: string }>('GET', '/lol-summoner/v1/current-summoner')
   return local.gameName && local.tagLine ? [`${local.gameName}#${local.tagLine}`] : local.displayName ? [local.displayName] : []
 })
@@ -116,8 +123,9 @@ function persistPreferences() {
 async function loadPreferences() {
   try {
     const value = JSON.parse(await readFile(join(app.getPath('userData'), 'preferences.json'), 'utf8')) as Partial<Preferences>
-    // Retired automation switches and manual-timer preferences are not loaded or saved.
+    // Retired loadout switches and manual-timer preferences are not loaded or saved.
     for (const key of ['dock', 'nativeJungleEnabled'] as const) if (typeof value[key] === 'boolean') preferences[key] = value[key]
+    try { if (value.matchmaking) preferences.matchmaking = matchmakingPreferences(value.matchmaking) } catch { /* invalid saved automation stays off */ }
     if (typeof value.optimizeBeforeLaunch === 'boolean') preferences.optimizeBeforeLaunch = value.optimizeBeforeLaunch
     if (typeof value.launcherPath === 'string') preferences.launcherPath = value.launcherPath
     preferences.combat = restoreCombatPreferences(value.combat, value.combatVolumeDefaultVersion)
@@ -135,6 +143,7 @@ async function loadPreferences() {
     if (value.positions && typeof value.positions === 'object') preferences.positions = value.positions
   } catch { /* use defaults on first launch */ }
   state = { ...state, dock: preferences.dock }
+  matchmaking.configure(preferences.matchmaking)
   combatAI.configure(combatApiKey, preferences.combatAI?.model, preferences.combatAI?.prompt, preferences.combatAI?.baseUrl)
 }
 
@@ -236,6 +245,7 @@ async function refreshClientState() {
 async function doRefreshClientState() {
   const old = state.client
   const client = await lcu.currentClientState(old)
+  matchmaking.updateClient(client)
   launcher.updateClient(client.connected)
   performance?.updateClient(client)
   const isChampSelect = client.phase === 'ChampSelect'
@@ -294,7 +304,7 @@ async function doRefreshClientState() {
 function startPolling() {
   const tick = async () => {
     await refreshClientState()
-    if (!quitting) pollTimer = setTimeout(() => void tick(), state.client.connected ? 1_300 : 5_000)
+    if (!quitting) pollTimer = setTimeout(() => void tick(), matchmaking.fastPolling ? 500 : state.client.connected ? 1_300 : 5_000)
   }
   void tick()
 }
@@ -514,6 +524,16 @@ ipcMain.handle('rift:set-dock', async (_event, enabled: unknown) => {
   updateState({ dock: enabled })
   await persistPreferences()
 })
+ipcMain.handle('rift:matchmaking-preferences', async (event, value: unknown) => {
+  requireMainWindow(event)
+  const next = matchmakingPreferences(value, preferences.matchmaking)
+  if (next.championId && !data.byKey(next.championId)) throw new Error('英雄资料尚未就绪，请重新选择秒选英雄。')
+  const previous = preferences.matchmaking
+  preferences.matchmaking = next
+  try { await persistPreferences() } catch (error) { preferences.matchmaking = previous; throw error }
+  matchmaking.configure(next)
+  matchmaking.updateClient(state.client)
+})
 ipcMain.handle('rift:native-jungle-enabled', async (_event, enabled: unknown) => {
   if (typeof enabled !== 'boolean') throw new Error('无效的小地图计时偏好。')
   preferences.nativeJungleEnabled = enabled
@@ -687,6 +707,7 @@ else {
 }
 app.on('before-quit', (event) => {
   quitting = true
+  matchmaking.dispose()
   coachGeneration++
   coach.cancel()
   combat.dispose()

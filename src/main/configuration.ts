@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { setTimeout as pause } from 'node:timers/promises'
 import type { ApplyResult, BuildPlan, Champion } from '@shared/types'
 import { readSelection, type ChampSelectSession, type GameflowSession } from './selection'
 
@@ -40,6 +41,7 @@ export interface ConfigSnapshot {
   beforePageIds: number[]
   beforeCurrentId?: number
   beforeItems: ItemSetDocument
+  itemSetsReplaced?: boolean
   beforeSpells?: SpellSelection
   targetPage?: Omit<PerkPage, 'id'> & { id?: number }
   targetItems: ItemSet
@@ -62,7 +64,7 @@ const PAGE_PATH = '/lol-perks/v1/pages'
 export class ConfigurationManager {
   private journal: ConfigurationJournal = { managedItems: {} }
   private busy = false
-  constructor(private readonly request: LcuRequest, private readonly store: JournalStore) {}
+  constructor(private readonly request: LcuRequest, private readonly store: JournalStore, private readonly retryPause: (milliseconds: number) => Promise<void> = pause) {}
 
   async initialize() {
     this.journal = await this.store.load() || { managedItems: {} }
@@ -108,7 +110,9 @@ export class ConfigurationManager {
         status: 'pending', summonerId, championKey: champion.key, sessionId: selection.state.sessionId || '',
         beforePage, beforePageIds: pages.map((page) => page.id),
         beforeCurrentId: pages.find((page) => page.current || page.isActive)?.id,
-        beforeItems, beforeSpells,
+        // Old item sets are intentionally cleared without storing their contents.
+        // Keep the empty document for undoing this write and reading legacy journals.
+        beforeItems: { ...beforeItems, itemSets: [] }, beforeSpells,
         targetPage: runes ? {
           ...(beforePage ? { id: beforePage.id } : {}),
           name: runePageName(champion, plan),
@@ -144,26 +148,15 @@ export class ConfigurationManager {
       }
 
       await checkSelection()
-      // Merge into the latest collection so other client changes are preserved.
+      // Clear existing shop entries before registering the selected plan.
       const latestItems = await this.request<ItemSetDocument>('GET', itemPath(summonerId))
-      // The shop sorts custom sets by descending sortrank, independently of
-      // their position in the LCU collection. Rank the current plan first.
-      targetItems.sortrank = firstItemSetRank(latestItems.itemSets, targetItems.uid)
+      if (!Array.isArray(latestItems.itemSets)) throw new Error('客户端的装备方案接口暂不可用。')
+      snapshot.beforeItems = { ...latestItems, itemSets: [] }
+      snapshot.itemSetsReplaced = true
+      targetItems.sortrank = 1
       snapshot.attempted.items = true
       await this.save(snapshot)
-      // Use the client's explicit creation endpoint for new shop sets, then merge
-      // the collection. Read-back verifies data, not which in-game shop tab is open.
-      if (!latestItems.itemSets.some((set) => set.uid === targetItems.uid)) {
-        await this.request('POST', itemPath(summonerId), targetItems)
-        await checkSelection()
-      }
-      const registeredItems = await this.request<ItemSetDocument>('GET', itemPath(summonerId))
-      if (!registeredItems.itemSets.some((set) => set.uid === targetItems.uid)) throw new Error('客户端未完成装备套装创建，请重新连接后重试。')
-      await this.request('PUT', itemPath(summonerId), {
-        ...registeredItems,
-        itemSets: [targetItems, ...registeredItems.itemSets.filter((set) => set.uid !== targetItems.uid)],
-        timestamp: Date.now(),
-      })
+      await this.replaceItemSets(snapshot, checkSelection)
 
       if (snapshot.targetSpells) {
         await checkSelection()
@@ -184,9 +177,7 @@ export class ConfigurationManager {
       }
       const afterItemSet = afterItems.itemSets.find((set) => set.uid === targetItems.uid)
       if (itemFingerprint(afterItemSet) !== itemFingerprint(targetItems)) throw new Error('客户端没有保留预期的装备方案。')
-      if (afterItemSet?.sortrank !== targetItems.sortrank || afterItems.itemSets.some((set) => set.uid !== targetItems.uid && set.type === 'custom' && set.sortrank >= targetItems.sortrank)) {
-        throw new Error('客户端没有将当前装备方案排到第一套，请重试。')
-      }
+      if (afterItems.itemSets.length !== 1) throw new Error('客户端仍保留其他装备方案，已停止装配。')
       if (snapshot.targetSpells) {
         const member = afterSelection.session.myTeam?.find((player) => player.cellId === afterSelection.session.localPlayerCellId)
         if (member?.spell1Id !== snapshot.targetSpells.spell1Id || member.spell2Id !== snapshot.targetSpells.spell2Id) throw new Error('客户端没有保留预期的召唤师技能。')
@@ -196,12 +187,12 @@ export class ConfigurationManager {
       if (pageId) this.journal.managedPages[summonerId] = pageId
       this.journal.managedItems[managedKey] = targetItems.uid
       await this.save(snapshot)
-      return { ok: true, message: `已配好${runes ? '符文、' : ''}装备方案${applySpells ? '和召唤师技能' : ''}。游戏内按 P → 物品套装，第一套为「${targetItems.title}」。`, summary: [plan.title, ...(snapshot.targetPage ? [String(snapshot.targetPage.name)] : []), targetItems.title] }
+      return { ok: true, message: `已配好${runes ? '符文、' : ''}装备方案${applySpells ? '和召唤师技能' : ''}。旧装备方案已清空，游戏内按 P → 物品套装，当前仅保留「${targetItems.title}」。`, summary: [plan.title, ...(snapshot.targetPage ? [String(snapshot.targetPage.name)] : []), targetItems.title] }
     } catch (error) {
       if (snapshot && Object.values(snapshot.attempted).some(Boolean)) {
         const errors = await this.compensate(snapshot)
         if (errors.length) throw new Error(`${messageOf(error)}；${errors.join('；')}。快照已保留，可点击恢复原配置重试。`)
-        throw new Error(`${messageOf(error)}；已恢复本次配置前的状态。`)
+        throw new Error(`${messageOf(error)}；${snapshot.itemSetsReplaced ? '已撤回本次写入，已清空的旧装备方案不会恢复。' : '已恢复本次配置前的状态。'}`)
       }
       if (snapshot) { this.journal.snapshot = undefined; await this.store.save(this.journal) }
       throw error
@@ -218,7 +209,7 @@ export class ConfigurationManager {
       if (Number(summoner.summonerId || summoner.id) !== snapshot.summonerId) throw new Error('当前账号与快照不一致，请切回原账号后恢复。')
       const errors = await this.compensate(snapshot)
       if (errors.length) throw new Error(`${errors.join('；')}。快照仍然保留。`)
-      return { ok: true, message: '原来的配置已经恢复，下次继续一起开黑。' }
+      return { ok: true, message: snapshot.itemSetsReplaced ? '已撤回本次配置。已清空的旧装备方案不会恢复。' : '原来的配置已经恢复，下次继续一起开黑。' }
     } finally { this.busy = false }
   }
 
@@ -245,6 +236,39 @@ export class ConfigurationManager {
     if (!targetPage) return
     const pages = await this.request<PerkPage[]>('GET', PAGE_PATH)
     return pages.find((page) => !snapshot.beforePageIds.includes(page.id) && page.name === targetPage.name)
+  }
+
+  private async replaceItemSets(snapshot: ConfigSnapshot, checkSelection: () => Promise<unknown>) {
+    const path = itemPath(snapshot.summonerId), target = snapshot.targetItems
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await checkSelection()
+      try {
+        const latest = await this.request<ItemSetDocument>('GET', path)
+        if (!Array.isArray(latest.itemSets)) throw new Error('客户端的装备方案接口暂不可用。')
+        await checkSelection()
+        await this.request('PUT', path, { ...latest, itemSets: [], timestamp: Date.now() })
+        const cleared = await this.request<ItemSetDocument>('GET', path)
+        if (cleared.itemSets.length) throw new Error('客户端没有清空旧装备方案，已停止装配。')
+        await checkSelection()
+        // Recreate even a managed UID after clearing. A lost response is retried
+        // from the clear step, so the same UID cannot accumulate duplicate sets.
+        await this.request('POST', path, target)
+        await checkSelection()
+        const registered = await this.request<ItemSetDocument>('GET', path)
+        if (!registered.itemSets.some((set) => set.uid === target.uid)) throw new Error('客户端未完成装备套装创建，请重新连接后重试。')
+        if (registered.itemSets.length !== 1) throw new Error('清空后出现其他装备方案，请重试。')
+        await checkSelection()
+        await this.request('PUT', path, { ...registered, itemSets: [target], timestamp: Date.now() })
+        const verified = await this.request<ItemSetDocument>('GET', path)
+        if (verified.itemSets.length !== 1 || itemFingerprint(verified.itemSets[0]) !== itemFingerprint(target)) throw new Error('客户端没有保留预期的唯一装备方案。')
+        await checkSelection()
+        return
+      } catch (error) {
+        if (attempt === 2) throw error
+        await checkSelection()
+        await this.retryPause(1_000)
+      }
+    }
   }
 
   private async compensate(snapshot: ConfigSnapshot): Promise<string[]> {
@@ -283,6 +307,7 @@ export class ConfigurationManager {
       const latest = await this.request<ItemSetDocument>('GET', itemPath(snapshot.summonerId))
       const before = snapshot.beforeItems.itemSets.find((set) => set.uid === snapshot.targetItems.uid)
       const current = latest.itemSets.find((set) => set.uid === snapshot.targetItems.uid)
+      if (!before && !current) { snapshot.attempted.items = false; return }
       if (current && itemFingerprint(current) !== itemFingerprint(snapshot.targetItems) && itemFingerprint(current) !== itemFingerprint(before)) throw new Error('检测到你手动修改了装备方案，已保留该修改')
       await this.assertAccount(snapshot.summonerId)
       await this.request('PUT', itemPath(snapshot.summonerId), {
@@ -345,12 +370,6 @@ export class ConfigurationManager {
 }
 
 function itemPath(id: number) { return `/lol-item-sets/v1/item-sets/${id}/sets` }
-function firstItemSetRank(sets: ItemSet[], uid: string): number {
-  const highest = sets.reduce((rank, set) => set.uid !== uid && set.type === 'custom' && Number.isInteger(set.sortrank) ? Math.max(rank, set.sortrank) : rank, 0)
-  // LCU stores sortrank as int32; never overflow into a negative, last-place rank.
-  if (highest >= 2_147_483_647) throw new Error('已有装备套装的排序值达到上限，请在客户端调整排序后重试。')
-  return highest + 1
-}
 function isEditablePerkPage(page: PerkPage) {
   return page.isEditable !== false && page.isDeletable !== false && !page.isTemporary
 }

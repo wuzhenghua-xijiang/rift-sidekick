@@ -12,8 +12,8 @@
 
 ## 下载与信任
 
-- 检索地址：`https://gh-proxy.com/https://api.github.com/repos/wuzhenghua-xijiang/rift-sidekick/releases/latest`。
-- 下载固定到检索所得的具体版本 `/releases/download/vX.Y.Z/`；不依赖镜像提供的任意安装 URL。
+- 检索通过 `gh-proxy.com`、`gh-proxy.org` 同时请求 GitHub 最新 Release API，采用先返回的有效结果，避免单一镜像阻塞。
+- 下载固定到检索所得的具体版本 `/releases/download/vX.Y.Z/`；按 `gh-proxy.com`、`gh-proxy.org`、`ghfast.top`、`ghproxy.net` 切换镜像，不依赖镜像提供的任意安装 URL。下载仍需用户点击，每个候选文件都核对签名清单中的双哈希。
 - 仅允许高于当前版本的正式三段版本；跳过草稿、预发布和旧版本。安装器文件名固定为 `Rift-Sidekick-Setup-X.Y.Z-x64.exe`。
 - `update-manifest.json` 用 Ed25519 签名，绑定版本、标签、安装器文件名、SHA-512 和 SHA-256。公钥内置，私钥位于仓库的 `RIFT_UPDATE_SIGNING_KEY` Actions Secret。
 - `latest.yml` 仅可包含这一份完整安装器；其版本、相对文件名和 SHA-512 必须与验签清单一致，拒绝额外文件、Web installer 或不匹配的哈希。关闭差分下载，避免镜像不支持 Range 或旧 blockmap 导致失败。

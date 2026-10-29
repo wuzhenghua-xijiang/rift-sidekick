@@ -66,12 +66,13 @@ describe('optional OpenAI combat recognition', () => {
     expect(await f.judge.judge({ ...evidence, local: { ...evidence.local, alive: false } }, combatPreferences({}), new AbortController().signal)).toBeNull()
     expect(f.request).not.toHaveBeenCalled()
   })
-  it.each(['grumpy', 'teen', 'sweet'] as const)('passes the %s persona to AI while preserving the event constraints', async (style) => {
+  it.each(['grumpy', 'teen', 'sweet', 'taiwan'] as const)('passes the %s persona to AI while preserving the event constraints', async (style) => {
     const f = fixture()
     await f.invoke(combatPreferences({ tauntStyle: style }))
     const body = JSON.parse(f.request.mock.calls[0][1]?.body as string)
     const input = JSON.parse(body.input)
-    expect(input.tauntPersona).toEqual(COMBAT_TAUNT_STYLES[style])
+    expect(input.voicePersona).toEqual(COMBAT_TAUNT_STYLES[style])
+    expect(body.instructions).toContain('所有类别都遵循 voicePersona')
     expect(input.candidate.supportedKinds).toEqual(['clutch'])
   })
   it('rejects unsafe credential destinations and preserves defaults when loading old preferences', () => {

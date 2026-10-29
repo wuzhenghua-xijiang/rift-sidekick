@@ -4,6 +4,7 @@ import type { NsisUpdater } from 'electron-updater'
 import type { UpdateState } from '@shared/types'
 import * as policy from '@shared/update-policy'
 import { UpdateService, type UpdateRuntime } from './update-service'
+import { RELEASE_SOURCES } from './update-sources'
 
 vi.mock('electron', () => ({ app: { isPackaged: false, getVersion: () => '0.1.6' } }))
 vi.mock('electron-updater', () => ({ NsisUpdater: class {} }))
@@ -55,7 +56,7 @@ describe('application update lifecycle', () => {
     expect((await f.service.check()).status).toBe('available')
     expect(f.runtime.fetchJson).toHaveBeenCalledWith(expect.stringContaining('gh-proxy.com/https://api.github.com/repos/wuzhenghua-xijiang/rift-sidekick/'))
     expect((await f.service.download()).status).toBe('downloaded')
-    expect(f.runtime.createUpdater).toHaveBeenCalledWith(expect.stringContaining('/releases/download/v0.1.7/'))
+    expect(f.runtime.createUpdater).toHaveBeenCalledWith(expect.stringContaining('/releases/download/v0.1.7/'), manifest)
     expect(f.states.some((state) => state.progress === 55)).toBe(true)
     expect(f.runtime.verifyFile).toHaveBeenCalledTimes(1)
     expect((await f.service.install()).status).toBe('installing')
@@ -77,12 +78,12 @@ describe('application update lifecycle', () => {
   it('rejects an extra file or changed hash in unsigned updater metadata', async () => {
     const f = fixture()
     await f.service.check()
-    f.updater.checkForUpdates.mockResolvedValueOnce({ isUpdateAvailable: true, updateInfo: { version: manifest.version, files: [
+    f.updater.checkForUpdates.mockResolvedValue({ isUpdateAvailable: true, updateInfo: { version: manifest.version, files: [
       { url: manifest.installer, sha512: manifest.sha512 }, { url: 'other.exe', sha512: 'untrusted' },
     ] } })
     expect((await f.service.download()).status).toBe('error')
     expect(f.updater.downloadUpdate).not.toHaveBeenCalled()
-    f.updater.checkForUpdates.mockResolvedValueOnce({ isUpdateAvailable: true, updateInfo: { version: manifest.version, files: [{ url: manifest.installer, sha512: 'changed' }] } })
+    f.updater.checkForUpdates.mockResolvedValue({ isUpdateAvailable: true, updateInfo: { version: manifest.version, files: [{ url: manifest.installer, sha512: 'changed' }] } })
     expect((await f.service.download()).status).toBe('error')
     expect(f.updater.downloadUpdate).not.toHaveBeenCalled()
   })
@@ -119,15 +120,43 @@ describe('application update lifecycle', () => {
 
   it('reports invalid server data and prevents overlapping checks', async () => {
     const f = fixture()
-    vi.mocked(f.runtime.fetchJson).mockResolvedValueOnce({ message: 'rate limited' })
+    vi.mocked(f.runtime.fetchJson).mockResolvedValue({ message: 'rate limited' })
     expect((await f.service.check()).status).toBe('error')
+    vi.mocked(f.runtime.fetchJson).mockClear()
     let resolve!: (value: unknown) => void
-    vi.mocked(f.runtime.fetchJson).mockImplementationOnce(() => new Promise((done) => { resolve = done }))
+    vi.mocked(f.runtime.fetchJson).mockImplementation((url) => url.endsWith('/releases/latest') ? new Promise((done) => { resolve = done }) : Promise.resolve(manifest))
     const checking = f.service.check()
     await f.service.check()
-    expect(f.runtime.fetchJson).toHaveBeenCalledTimes(2)
+    expect(f.runtime.fetchJson).toHaveBeenCalledTimes(RELEASE_SOURCES.length)
     resolve(release)
     await checking
     expect(f.latest().status).toBe('available')
+  })
+
+  it('uses another mirror when the first fails for release data, signature and updater metadata', async () => {
+    const f = fixture()
+    vi.mocked(f.runtime.fetchJson).mockImplementation(async (url) => {
+      if (url.startsWith('https://gh-proxy.com/')) throw new Error('镜像不可用')
+      return url.endsWith('/releases/latest') ? release : manifest
+    })
+    vi.mocked(f.runtime.createUpdater).mockImplementation((url) => {
+      if (url.startsWith('https://gh-proxy.com/')) throw new Error('镜像不可用')
+      return f.updater as unknown as NsisUpdater
+    })
+    expect((await f.service.check()).status).toBe('available')
+    expect((await f.service.download()).status).toBe('downloaded')
+    expect(f.runtime.createUpdater).toHaveBeenCalledWith(expect.stringContaining('https://gh-proxy.org/https://github.com/'), manifest)
+    expect(vi.mocked(f.runtime.fetchJson).mock.calls.every(([url]) => !url.startsWith('https://api.github.com/'))).toBe(true)
+    expect(vi.mocked(f.runtime.createUpdater).mock.calls.every(([url]) => !url.startsWith('https://github.com/'))).toBe(true)
+  })
+
+  it('does not wait for a stalled mirror when another mirror responds', async () => {
+    const f = fixture()
+    vi.mocked(f.runtime.fetchJson).mockImplementation(async (url) => {
+      if (url.startsWith('https://gh-proxy.com/')) return new Promise(() => undefined)
+      return url.endsWith('/releases/latest') ? release : manifest
+    })
+    expect((await f.service.check()).status).toBe('available')
+    expect((await f.service.download()).status).toBe('downloaded')
   })
 })

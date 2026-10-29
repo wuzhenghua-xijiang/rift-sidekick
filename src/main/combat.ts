@@ -169,8 +169,7 @@ export class CombatService {
     this.state = { ...this.state, lastReaction: { ...cue, text: text || lines[index], at: this.runtime.now(), source } }
     this.set('speaking', cue.eventId < 0 ? '正在试听中文战斗语音…' : '正在播报本次战斗反馈…')
     try {
-      if (isTaunt(cue.kind)) await this.voice.speak(text || lines[index], this.state.preferences.volume, this.state.preferences.tauntStyle)
-      else await this.voice.speak(text || lines[index], this.state.preferences.volume)
+      await this.voice.speak(text || lines[index], this.state.preferences.volume, this.state.preferences.tauntStyle)
     }
     catch (error) {
       if (generation !== this.speechGeneration || error instanceof SpeechCancelled) throw new SpeechCancelled()

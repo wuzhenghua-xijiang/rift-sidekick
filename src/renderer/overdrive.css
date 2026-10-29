@@ -3367,6 +3367,123 @@ a {
 .settings-row > .outline-button {
   white-space: nowrap;
 }
+.matchmaking-champion {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.instant-pick-control {
+  padding: 10px;
+  margin-bottom: 16px;
+  border: 2px solid var(--ink);
+  background: var(--orange);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.instant-pick-row,
+.instant-pick-row > span,
+.instant-pick-target {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.instant-pick-row > span {
+  font-size: 16px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.instant-pick-row > span > svg {
+  width: 19px;
+  height: 19px;
+  color: var(--ink);
+}
+.instant-pick-target {
+  min-width: 0;
+  min-height: 36px;
+  margin-left: auto;
+  padding: 5px 8px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 800;
+}
+.instant-pick-target > img {
+  width: 26px;
+  height: 26px;
+  object-fit: cover;
+}
+.instant-pick-target > span {
+  max-width: 112px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.instant-pick-row > .toggle {
+  margin-left: 3px;
+}
+.instant-pick-control .matchmaking-status {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  color: var(--ink);
+}
+.instant-pick-control .matchmaking-status > strong {
+  flex-shrink: 0;
+  padding: 1px 4px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 9px;
+}
+.instant-pick-control .matchmaking-status > span {
+  min-width: 0;
+}
+.instant-pick-control .matchmaking-hint {
+  color: var(--ink);
+}
+.instant-pick-control .matchmaking-champion {
+  border-bottom: 1px solid var(--ink);
+}
+.matchmaking-champion > label {
+  font-size: 11px;
+  font-weight: 800;
+}
+.matchmaking-champion > input,
+.matchmaking-champion > select {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+}
+.matchmaking-champion > input:focus-visible,
+.matchmaking-champion > select:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+.matchmaking-hint,
+.matchmaking-status {
+  font-size: 10px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.matchmaking-status {
+  margin: 9px 0 0;
+}
+.matchmaking-error,
+.matchmaking-blocked {
+  color: #943317;
+}
+.matchmaking-settings .toggle:disabled,
+.instant-pick-control .toggle:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
 .toggle {
   width: 32px;
   height: 19px;

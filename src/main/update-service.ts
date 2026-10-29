@@ -1,17 +1,15 @@
 import { app } from 'electron'
-import { NsisUpdater } from 'electron-updater'
+import type { NsisUpdater } from 'electron-updater'
 import { parseLatestRelease, verifyUpdateManifest, type LatestRelease, type SignedUpdateManifest } from '@shared/update-policy'
 import type { UpdateState } from '@shared/types'
 import { verifyUpdateFile } from './update-file'
-
-const REPOSITORY = 'wuzhenghua-xijiang/rift-sidekick'
-const MIRROR = 'https://gh-proxy.com/'
-const RELEASES_API = `${MIRROR}https://api.github.com/repos/${REPOSITORY}/releases/latest`
+import { createUpdateDownloader } from './update-updater'
+import { firstUpdateSource, releaseAssetSources, RELEASE_SOURCES, UPDATE_USER_AGENT } from './update-sources'
 
 async function fetchJson(url: string) {
   const response = await fetch(url, {
-    headers: { Accept: 'application/json', 'User-Agent': 'Rift-Sidekick-Updater' },
-    signal: AbortSignal.timeout(20_000),
+    headers: { Accept: 'application/json', 'User-Agent': UPDATE_USER_AGENT },
+    signal: AbortSignal.timeout(8_000),
   })
   if (!response.ok) throw new Error(`更新镜像返回 HTTP ${response.status}，请稍后重试。`)
   const reader = response.body?.getReader()
@@ -33,15 +31,11 @@ async function fetchJson(url: string) {
   }
 }
 
-function assetUrl(tag: string, name: string) {
-  return `${MIRROR}https://github.com/${REPOSITORY}/releases/download/${tag}/${name}`
-}
-
 export interface UpdateRuntime {
   enabled: boolean
   version: string
   fetchJson: typeof fetchJson
-  createUpdater: (url: string) => NsisUpdater
+  createUpdater: (url: string, manifest: SignedUpdateManifest) => NsisUpdater
   verifyFile: typeof verifyUpdateFile
 }
 
@@ -59,7 +53,7 @@ export class UpdateService {
       enabled: app.isPackaged && process.platform === 'win32',
       version: app.getVersion(),
       fetchJson,
-      createUpdater: (url) => new NsisUpdater({ provider: 'generic', url, useMultipleRangeRequest: false }),
+      createUpdater: createUpdateDownloader,
       verifyFile: verifyUpdateFile,
     },
   ) {
@@ -76,17 +70,19 @@ export class UpdateService {
     this.available = undefined
     this.set({ status: 'checking', version: undefined, progress: undefined, message: '正在通过镜像检查 GitHub 正式版…' })
     try {
-      const payload = await this.runtime.fetchJson(RELEASES_API)
-      if (!payload || typeof payload !== 'object' || !/^v\d+\.\d+\.\d+$/.test(String((payload as { tag_name?: unknown }).tag_name))) {
-        throw new Error('更新镜像返回了无效的版本信息，请稍后重试。')
-      }
+      const payload = await firstUpdateSource(RELEASE_SOURCES, async (url) => {
+        const value = await this.runtime.fetchJson(url)
+        if (!value || typeof value !== 'object' || !/^v\d+\.\d+\.\d+$/.test(String((value as { tag_name?: unknown }).tag_name))) {
+          throw new Error('更新源返回了无效的版本信息，请稍后重试。')
+        }
+        return value
+      })
       const release = parseLatestRelease(payload, this.runtime.version)
       if (!release) {
         this.set({ status: 'up-to-date', message: `暂无比 ${this.runtime.version} 更新的正式版。` })
         return this.current
       }
-      const signed = verifyUpdateManifest(await this.runtime.fetchJson(assetUrl(release.tag, 'update-manifest.json')), release)
-      if (!signed) throw new Error('更新清单的 Ed25519 签名无效，已阻止下载。')
+      await this.signedManifest(release)
       this.available = release
       this.set({ status: 'available', version: release.version, message: `发现新版 ${release.version}，可通过镜像下载。` })
     } catch (error) {
@@ -104,15 +100,25 @@ export class UpdateService {
     this.ready = undefined
     this.set({ status: 'downloading', version: release.version, progress: 0, message: `正在通过镜像下载 ${release.version}…` })
     try {
-      const signed = verifyUpdateManifest(await this.runtime.fetchJson(assetUrl(release.tag, 'update-manifest.json')), release)
-      if (!signed) throw new Error('更新清单签名无效，已停止下载。')
-      const updater = this.runtime.createUpdater(assetUrl(release.tag, ''))
-      updater.disableDifferentialDownload = true
-      updater.disableWebInstaller = true
-      updater.allowDowngrade = false
-      updater.allowPrerelease = false
-      updater.autoDownload = false
-      updater.autoInstallOnAppQuit = false
+      const signed = await this.signedManifest(release)
+      const updater = await firstUpdateSource(releaseAssetSources(release, ''), async (url) => {
+        const candidate = this.runtime.createUpdater(url, signed)
+        candidate.disableDifferentialDownload = true
+        candidate.disableWebInstaller = true
+        candidate.allowDowngrade = false
+        candidate.allowPrerelease = false
+        candidate.autoDownload = false
+        candidate.autoInstallOnAppQuit = false
+        // Each candidate handles its own metadata failure; the fastest valid one wins.
+        candidate.on('error', () => undefined)
+        const result = await candidate.checkForUpdates()
+        const files = result?.updateInfo.files
+        if (!result?.isUpdateAvailable || result.updateInfo.version !== release.version || !Array.isArray(files) || files.length !== 1 ||
+          files[0].url !== release.installer || files[0].sha512 !== signed.sha512 || Object.hasOwn(result.updateInfo, 'packages')) {
+          throw new Error('更新版本、文件或 SHA-512 与签名清单不一致，已拒绝安装。')
+        }
+        return candidate
+      })
       updater.on('download-progress', (progress) => {
         const percent = Number.isFinite(progress.percent) ? Math.round(Math.max(0, Math.min(100, progress.percent))) : 0
         this.set({ status: 'downloading', progress: percent, message: `正在下载更新 ${percent}%` })
@@ -123,12 +129,6 @@ export class UpdateService {
           this.set({ status: 'error', progress: undefined, message: errorMessage(error) })
         }
       })
-      const result = await updater.checkForUpdates()
-      const files = result?.updateInfo.files
-      if (!result?.isUpdateAvailable || result.updateInfo.version !== release.version || !Array.isArray(files) || files.length !== 1 ||
-        files[0].url !== release.installer || files[0].sha512 !== signed.sha512 || Object.hasOwn(result.updateInfo, 'packages')) {
-        throw new Error('更新版本、文件或 SHA-512 与签名清单不一致，已拒绝安装。')
-      }
       const paths = await updater.downloadUpdate()
       if (paths.length !== 1) throw new Error('下载器未提供唯一的完整安装包，请重试。')
       await this.runtime.verifyFile(paths[0], signed)
@@ -170,6 +170,14 @@ export class UpdateService {
   private set(next: Partial<UpdateState> & Pick<UpdateState, 'status' | 'message'>) {
     this.current = { ...this.current, ...next, currentVersion: this.runtime.version }
     this.publish(this.current)
+  }
+
+  private signedManifest(release: LatestRelease) {
+    return firstUpdateSource(releaseAssetSources(release, 'update-manifest.json'), async (url) => {
+      const signed = verifyUpdateManifest(await this.runtime.fetchJson(url), release)
+      if (!signed) throw new Error('更新清单的 Ed25519 签名无效，已阻止下载。')
+      return signed
+    })
   }
 }
 

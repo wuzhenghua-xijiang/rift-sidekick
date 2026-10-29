@@ -1,9 +1,30 @@
 import { execFile } from 'node:child_process'
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
+import { copyFile, mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
-import { COMBAT_SPEECH_SCRIPT } from './combat-voice'
+import { COMBAT_LINES } from '@shared/combat'
+import { COMBAT_AUDIO_SCRIPT, COMBAT_SPEECH_SCRIPT } from './combat-voice'
+import { combatVoiceClipName } from './combat-voice-pack'
+
+it.runIf(process.platform === 'win32')('decodes and plays a bundled MP3 at zero volume using Windows codecs', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'rift-内置语音-'))
+  try {
+    const file = join(directory, '中文路径.mp3')
+    await copyFile(join(process.cwd(), 'resources', 'combat-voices', combatVoiceClipName(COMBAT_LINES.clutch[0], 'sweet')), file)
+    const result = await new Promise<{ error: Error | null; stdout: string; stderr: string }>((resolve) => {
+      const child = execFile('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand',
+        Buffer.from(COMBAT_AUDIO_SCRIPT, 'utf16le').toString('base64')],
+      { windowsHide: true, timeout: 25_000, maxBuffer: 64_000, encoding: 'utf8' }, (error, stdout, stderr) => resolve({ error, stdout, stderr }))
+      child.stdin?.on('error', () => undefined)
+      child.stdin?.end(JSON.stringify({ file, volume: 0 }))
+    })
+    expect(result.error, result.stdout + result.stderr).toBeNull()
+    expect(JSON.parse(result.stdout.trim().replace(/^\uFEFF/, ''))).toEqual({ ok: true, source: 'bundled' })
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+}, 35_000)
 
 it.runIf(process.platform === 'win32')('runs the actual Windows Chinese speech script without playing audio', async () => {
   const cache = await mkdtemp(join(tmpdir(), 'rift-speech-'))

@@ -59,6 +59,7 @@ import {
   useLaneRankings,
 } from './Battle'
 import { NativeJungleSettings } from './Jungle'
+import { AutoAcceptSetting, InstantPickControl } from './MatchmakingSettings'
 import { Launchpad } from './Launchpad'
 import { CombatSettings } from './Combat'
 import { CoachPanel } from './Coach'
@@ -588,6 +589,9 @@ export default function App() {
                 </header>
               )}
 
+              {page === 'recommend' && !playing && (
+                <InstantPickControl state={state.matchmaking} champions={champions} client={client} notify={setToast} />
+              )}
               {page === 'recommend' && showLobby && (
                 <section className="od-lobby">
                   <span className="od-mini-title">
@@ -613,7 +617,11 @@ export default function App() {
                         {client.phase === 'Matchmaking'
                           ? '正在匹配对局'
                           : client.phase === 'ReadyCheck'
-                            ? '请在客户端确认对局'
+                            ? state.matchmaking?.status === 'accepted'
+                              ? '已接受对局，等待其他玩家'
+                              : state.matchmaking?.status === 'accepting'
+                                ? '正在自动接受对局'
+                                : '请在客户端确认对局'
                             : '等待进入选人'}
                       </strong>
                       <p>选好英雄，自动配装。</p>
@@ -1171,6 +1179,7 @@ export default function App() {
                       <h2 className="settings-section-label">
                         开局偏好 <Zap size={16} />
                       </h2>
+                      <AutoAcceptSetting state={state.matchmaking} notify={setToast} />
                       <SettingsRow
                         icon={<Rocket size={19} />}
                         title="游戏启动与优化"

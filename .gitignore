@@ -7,4 +7,5 @@ release/
 !.env.example
 .playwright-cli/
 output/implementation-baseline/
+output/voice-generation/
 output/rift-sidekick-five-designs.zip

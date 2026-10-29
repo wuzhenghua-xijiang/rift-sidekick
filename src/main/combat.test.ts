@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ClientState } from '@shared/types'
-import { COMBAT_TAUNT_LINES, COMBAT_VOLUME_DEFAULT_VERSION, DEFAULT_COMBAT_PROMPT, restoreCombatPreferences, type CombatEvidence } from '@shared/combat'
+import { COMBAT_TAUNT_LINES, COMBAT_VOLUME_DEFAULT_VERSION, DEFAULT_COMBAT_PROMPT, combatLines, combatPreferences, restoreCombatPreferences, type CombatEvidence } from '@shared/combat'
 import { CombatService } from './combat'
 import type { CombatJudge } from './combat-openai'
 
@@ -30,7 +30,7 @@ describe('background combat reactions', () => {
     expect(restoreCombatPreferences({ volume: 35 }, COMBAT_VOLUME_DEFAULT_VERSION).volume).toBe(35)
     const f = harness(); f.service.configure(upgraded)
     await f.service.preview('praise')
-    expect(f.voice.speak).toHaveBeenCalledWith(expect.any(String), 65)
+    expect(f.voice.speak).toHaveBeenCalledWith(expect.any(String), 65, 'sweet')
     f.service.configure({ volume: 35 })
     const saved = JSON.parse(JSON.stringify({ combat: f.service.state.preferences, combatVolumeDefaultVersion: COMBAT_VOLUME_DEFAULT_VERSION }))
     expect(restoreCombatPreferences(saved.combat, saved.combatVolumeDefaultVersion).volume).toBe(35)
@@ -85,13 +85,13 @@ describe('background combat reactions', () => {
     f.kill(); await f.step(1)
     f.service.updateClient({ ...playing, connected: false }); f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
     await f.step(3); expect(f.voice.speak).not.toHaveBeenCalled()
-    f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledWith('这是我的专属夸夸。', 65); f.service.dispose()
+    f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledWith('这是我的专属夸夸。', 65, 'classic'); f.service.dispose()
   })
   it('uses AI conclusions when valid and falls back to rules when AI fails', async () => {
     const ai: CombatJudge = { state: { configured: true, baseUrl: 'https://example.test/v1', model: 'test', prompt: DEFAULT_COMBAT_PROMPT }, judge: vi.fn(async (_e: CombatEvidence) => ({ kind: 'clutch' as const, text: 'AI 专属夸夸。' })) }
     const f = harness(ai); f.service.configure({ mode: 'openai' }); f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
     f.kill(); await f.step(3)
-    expect(f.voice.speak).toHaveBeenCalledWith('AI 专属夸夸。', 65); expect(f.service.state.lastReaction?.source).toBe('openai')
+    expect(f.voice.speak).toHaveBeenCalledWith('AI 专属夸夸。', 65, 'classic'); expect(f.service.state.lastReaction?.source).toBe('openai')
     vi.mocked(ai.judge).mockResolvedValueOnce(undefined)
     await f.step(20); f.kill(); await f.step(3)
     expect(f.voice.speak).toHaveBeenCalledTimes(2); expect(f.service.state.lastReaction?.source).toBe('rules'); f.service.dispose()
@@ -106,7 +106,7 @@ describe('background combat reactions', () => {
     const f = harness()
     f.service.configure({ volume: 2 })
     expect(await f.service.preview('praise')).toMatchObject({ ok: true })
-    expect(f.voice.speak).toHaveBeenCalledWith(expect.any(String), 2)
+    expect(f.voice.speak).toHaveBeenCalledWith(expect.any(String), 2, 'classic')
     f.voice.speak.mockRejectedValueOnce(new Error('未检测到可用的中文语音，请安装后重试。'))
     expect(await f.service.preview('praise')).toMatchObject({ ok: false, message: expect.stringContaining('中文语音') })
     expect(f.service.state.status).toBe('error')
@@ -122,7 +122,7 @@ describe('background combat reactions', () => {
     expect(f.voice.speak).not.toHaveBeenCalled()
     f.service.dispose()
   })
-  it.each(['grumpy', 'teen', 'sweet'] as const)('uses the %s taunt persona for previews and gives custom lines priority', async (style) => {
+  it.each(['grumpy', 'teen', 'sweet', 'taiwan'] as const)('uses the %s taunt persona for previews and gives custom lines priority', async (style) => {
     const f = harness(); f.service.configure({ tauntStyle: style })
     await f.service.preview('taunt')
     expect(f.voice.speak).toHaveBeenLastCalledWith(COMBAT_TAUNT_LINES[style][0], 65, style)
@@ -130,6 +130,29 @@ describe('background combat reactions', () => {
     await f.service.preview('taunt')
     expect(f.voice.speak).toHaveBeenLastCalledWith('这是专属调侃。', 65, style)
     f.service.dispose()
+  })
+  it.each(['grumpy', 'teen', 'sweet', 'taiwan'] as const)('uses the %s persona for praise, custom praise and live reactions', async (style) => {
+    const f = harness(); f.service.configure({ tauntStyle: style })
+    await f.service.preview('praise')
+    expect(f.voice.speak).toHaveBeenLastCalledWith(combatLines(f.service.state.preferences, 'clutch')[0], 65, style)
+    f.service.configure({ customLines: { clutch: ['这是专属夸夸。'] } })
+    await f.service.preview('praise')
+    expect(f.voice.speak).toHaveBeenLastCalledWith('这是专属夸夸。', 65, style)
+    f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
+    f.kill(); await f.step(3)
+    expect(f.voice.speak).toHaveBeenLastCalledWith('这是专属夸夸。', 65, style)
+    f.service.dispose()
+  })
+  it('restores the Taiwan persona from saved preferences and resolves its own lines for every event', () => {
+    const saved = JSON.parse(JSON.stringify(combatPreferences({ tauntStyle: 'taiwan', volume: 2 })))
+    const preferences = restoreCombatPreferences(saved, COMBAT_VOLUME_DEFAULT_VERSION)
+    expect(preferences.tauntStyle).toBe('taiwan')
+    for (const kind of ['clutch', 'multikill', 'ace', 'teamwork', 'kill', 'rough'] as const) {
+      const lines = combatLines(preferences, kind)
+      expect(lines).toHaveLength(10)
+      expect(lines).not.toEqual(combatLines(combatPreferences({ tauntStyle: 'classic' }), kind))
+    }
+    expect(combatPreferences({ tauntStyle: 'unknown' }).tauntStyle).toBe('classic')
   })
   it('drops a late AI response after death, mode changes or disabling', async () => {
     let finish!: (value: { kind: 'clutch'; text: string }) => void

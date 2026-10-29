@@ -36,3 +36,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+Bundled emotional combat speech
+
+The files under resources/combat-voices/ contain original project lines
+synthesized with Qwen3-TTS-12Hz-1.7B-CustomVoice by the Alibaba Qwen team.
+Source model: https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice
+Model/code license: Apache License 2.0
+Generation source: https://huggingface.co/spaces/Qwen/Qwen3-TTS
+Apple Silicon development generation also uses the Apache-2.0 MLX conversion:
+https://huggingface.co/mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-4bit
+The manifest records the text, speaker, instruction and SHA-256 of each clip.
+Only generated compressed audio is distributed; model weights and the
+development synthesis environment are not included in the application.

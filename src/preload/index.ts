@@ -32,6 +32,7 @@ const bridge: RiftBridge = {
   selectPlan: (input) => ipcRenderer.invoke('rift:select-plan', input),
   selectPosition: (input) => ipcRenderer.invoke('rift:select-position', input),
   setDock: (enabled: boolean) => ipcRenderer.invoke('rift:set-dock', enabled),
+  setMatchmakingPreferences: (preferences) => ipcRenderer.invoke('rift:matchmaking-preferences', preferences),
   setNativeJungleEnabled: (enabled) => ipcRenderer.invoke('rift:native-jungle-enabled', enabled),
   setCombatPreferences: (preferences) => ipcRenderer.invoke('rift:combat-preferences', preferences),
   previewCombatVoice: (category) => ipcRenderer.invoke('rift:combat-preview', category),

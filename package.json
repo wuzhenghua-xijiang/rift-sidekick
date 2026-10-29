@@ -1,15 +1,17 @@
 {
   "name": "rift-sidekick",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "private": true,
   "description": "A playful Windows companion for League of Legends champion select.",
   "author": "Rift Sidekick contributors",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
-    "build": "electron-vite build",
+    "build": "npm run voices:check && electron-vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
+    "voices:generate": "python3 scripts/generate-combat-voices.py",
+    "voices:check": "node scripts/check-combat-voices.mjs",
     "dist:win": "npm run build && electron-builder --win nsis --x64 --publish never"
   },
   "dependencies": {
@@ -47,6 +49,14 @@
       {
         "from": "build/icon.ico",
         "to": "tray.ico"
+      },
+      {
+        "from": "resources/combat-voices",
+        "to": "combat-voices",
+        "filter": [
+          "*.mp3",
+          "manifest.json"
+        ]
       }
     ],
     "win": {

@@ -272,11 +272,12 @@ export function CombatSettings({
             />
           </label>
           <label className="combat-frequency" htmlFor="combat-taunt-style">
-            <span>调侃风格</span>
+            <span>播报人设</span>
             <select
               id="combat-taunt-style"
+              aria-label="播报人设"
               value={preferences.tauntStyle}
-              disabled={!preferences.taunt}
+              disabled={!preferences.taunt && !preferences.praise}
               onChange={(event) =>
                 void save({
                   tauntStyle: event.target
@@ -406,7 +407,7 @@ export function CombatSettings({
         </p>
         <p>
           AI
-          模式会发送匿名战斗数据，可能产生接口费用。语音在本机生成，助手隐藏后仍可播报。
+          模式会发送匿名战斗数据，可能产生接口费用。夸夸与调侃共用人设，内置台词离线播放；专属和 AI 新台词由本机语音生成。
         </p>
       </details>
       <DockFooter>

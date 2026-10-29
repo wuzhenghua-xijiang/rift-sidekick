@@ -16,7 +16,7 @@ export interface ChampSelectSession {
   localPlayerCellId?: number
   myTeam?: ChampSelectMember[]
   theirTeam?: ChampSelectMember[]
-  actions?: Array<Array<{ actorCellId?: number; type?: string; championId?: number; completed?: boolean }>>
+  actions?: Array<Array<{ id?: number; actorCellId?: number; type?: string; championId?: number; completed?: boolean; isInProgress?: boolean }>>
   bans?: { myTeamBans?: number[]; theirTeamBans?: number[] }
 }
 export interface GameflowSession {
