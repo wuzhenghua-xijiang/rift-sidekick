@@ -404,10 +404,11 @@ ipcMain.handle('rift:coach-analyze', async (event, input: CoachRequest) => {
   const generation = ++coachGeneration
   const snapshot = () => coachDraft(input, { ...state.client, patch: data.getPatch() }, data.getChampions())
   const draft = snapshot()
-  const evidence = await coachEvidence.get(draft)
-  if (generation !== coachGeneration || coachDraftKey(draft) !== coachDraftKey(snapshot())) throw new Error('阵容已变化，请基于最新选人重新分析。')
+  const clientConnected = state.client.connected
+  const evidence = await coachEvidence.get(draft, clientConnected)
+  if (generation !== coachGeneration || clientConnected !== state.client.connected || coachDraftKey(draft) !== coachDraftKey(snapshot())) throw new Error('阵容已变化，请基于最新选人重新分析。')
   const analysis = await coach.analyze(settings, draft, data.getChampions(), evidence)
-  if (generation !== coachGeneration || coachDraftKey(draft) !== coachDraftKey(snapshot())) throw new Error('阵容已变化，请基于最新选人重新分析。')
+  if (generation !== coachGeneration || clientConnected !== state.client.connected || coachDraftKey(draft) !== coachDraftKey(snapshot())) throw new Error('阵容已变化，请基于最新选人重新分析。')
   return analysis
 })
 

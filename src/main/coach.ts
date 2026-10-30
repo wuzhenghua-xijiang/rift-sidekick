@@ -73,7 +73,7 @@ export class CoachService {
     return { ok: true, message: `连接成功，${settings.model} 已返回回复。` }
   }
   analyze(settings: CoachCredentials, draft: CoachDraft, champions: Champion[], evidence: CoachEvidence): Promise<CoachAnalysis> {
-    const key = JSON.stringify([settings.baseUrl, settings.model, settings.coachPrompt, coachDraftKey(draft), evidence.gameVersion, evidence.rankings?.patch, evidence.rankings?.fetchedAt, evidence.notes?.patch])
+    const key = JSON.stringify([settings.baseUrl, settings.model, settings.coachPrompt, coachDraftKey(draft), evidence.gameVersion, evidence.rankings?.patch, evidence.rankings?.fetchedAt, evidence.notes?.patch, evidence.warnings])
     const cached = this.cache.get(key)
     if (cached && Date.now() - cached.generatedAt < 5 * 60_000) {
       if (this.pending?.key !== key) this.cancel()
