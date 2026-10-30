@@ -5,7 +5,7 @@ import type { CoachEvidence } from './coach'
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 /** Riot's 2025+ public patch names use the year (25.x), while Data Dragon uses 15.x. */
 export function publicPatch(version: string): string {
-  const match = /^(\d+)\.(\d+)/.exec(version.trim())
+  const match = /^(\d+)\.(\d+)(?:\.\d+)*$/.exec(version.trim())
   if (!match) return ''
   const major = Number(match[1])
   return `${major >= 15 && major < 25 ? major + 10 : major}.${Number(match[2])}`
@@ -33,11 +33,11 @@ export class CoachEvidenceService {
     const notes = patch ? await this.getNotes(patch) : undefined
     if (!version) warnings.push(clientConnected ? '未读取到客户端版本；以资源版本作为参考。' : '当前未连接客户端；以资源版本作为预览参考。')
     if (draft.mode === 'ranked' && !rankings) warnings.push('分路统计暂不可用，建议以英雄机制为依据。')
-    if (rankings && publicPatch(rankings.patch) !== patch) warnings.push(`统计版本 ${rankings.patch} 与分析版本 ${patch} 不同，仅作参考。`)
+    if (rankings && (!patch || publicPatch(rankings.patch) !== patch)) warnings.push(`统计版本 ${rankings.patch} 与分析版本 ${patch || '未知'} 不同，已排除该统计。`)
     if (version && publicPatch(draft.dataPatch) !== publicPatch(version)) warnings.push(`客户端 ${version} 与资源 ${draft.dataPatch} 版本不同。`)
     if (!notes) warnings.push('未取得对应版本的官方改动公告。')
-    if (draft.opponentSource === 'unknown') warnings.push('敌方对位未确认，请在对位选择中指定；当前建议保留条件。')
-    return { gameVersion: version, rankings, notes, warnings }
+    if (draft.mode === 'ranked' && draft.opponentSource === 'unknown') warnings.push('敌方对位未确认，请在对位选择中指定；当前建议保留条件。')
+    return { gameVersion: version, rankings: patch && publicPatch(rankings?.patch || '') === patch ? rankings : undefined, notes, warnings }
   }
   private async clientVersion(session: string) {
     if (this.version?.session === session && this.version.value) return this.version.value

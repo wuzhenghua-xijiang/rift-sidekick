@@ -46,6 +46,7 @@ import type {
 import { searchChampions } from '@shared/champion-search'
 import { isPlaying, isPostGame } from '@shared/gameflow'
 import { configurationStatus } from '@shared/configuration-status'
+import { AramGuide } from './AramGuide'
 import {
   isLoadoutMode,
   matchesConfiguration,
@@ -196,6 +197,7 @@ export default function App() {
     position,
     planId: plan?.id,
     hasPlan: Boolean(plan),
+    planCache: plan?.cache,
     loading,
     busy,
   })
@@ -898,6 +900,7 @@ export default function App() {
                               </button>
                             ))}
                           </div>
+                          {plan.cache && <p className="recommend-cache" role="status">离线缓存 · {new Date(plan.fetchedAt).toLocaleString('zh-CN')}<br /><b>{plan.cache.stale ? '已过期或版本不符，仅供查看' : '应用前仍会核对本局版本与资源'}</b></p>}
                           <details className="recommend-details">
                             <summary>
                               方案与数据说明 <ChevronDown size={13} />
@@ -925,6 +928,7 @@ export default function App() {
                           plan={plan}
                         />
                       )}
+                      {champion && (mode === 'aram' || mode === 'aram-mayhem') && <AramGuide key={`${champion.id}:${mode}`} champion={champion} mode={mode} plans={plans} />}
                       <button
                         className="od-coach-teaser"
                         onClick={() => setPage('coach')}
@@ -1087,6 +1091,7 @@ export default function App() {
               )}
               {page === 'field' && (
                 <>
+                  {champion && (mode === 'aram' || mode === 'aram-mayhem') && <AramGuide key={`${champion.id}:${mode}`} champion={champion} mode={mode} plans={plans} />}
                   {mode === 'ranked' && champion && (
                     <MatchupCard
                       champion={champion}

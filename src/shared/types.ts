@@ -1,9 +1,12 @@
 import type { NativeJungleState } from './jungle'
 import type { LauncherState, PerformanceState } from './desktop-tools'
 import type { CombatAISettings, CombatPreferences, CombatState } from './combat'
-import type { CoachAnalysis, CoachMember, CoachRequest, CoachSettings, CoachSettingsInput } from './coach'
+import type { CoachAnalysis, CoachMember, CoachPoolPreferences, CoachRequest, CoachSettings, CoachSettingsInput } from './coach'
 import type { MatchmakingPreferences, MatchmakingState } from './matchmaking'
 import type { ChatMuteState } from './chat-mute'
+import type { MatchDetail, MatchTimeline, PlayerProfile } from './history'
+import type { AramGuide } from './aram'
+export type { MatchSummary, PlayerProfile, MatchDetail, MatchPlayer, MatchTimeline } from './history'
 
 export type Position = 'top' | 'jungle' | 'mid' | 'adc' | 'support'
 export type QueueMode = 'ranked' | 'aram' | 'aram-mayhem'
@@ -59,6 +62,7 @@ export interface BuildPlan {
   games?: number
   statsPatch?: string
   notice?: string
+  cache?: { storedAt: number; stale: boolean; patchMatches: boolean }
   runes?: RuneBuild
   itemGroups: ItemGroup[]
   summonerSpellIds: number[]
@@ -128,15 +132,6 @@ export interface ApplyResult {
 
 export interface HonorResult extends ApplyResult { retryable: boolean }
 
-export interface MatchSummary {
-  gameId: number; championId: number; win: boolean; kills: number; deaths: number; assists: number
-  cs: number; damage: number; duration: number; at: number; mode: string; queueId: number
-}
-export interface PlayerProfile {
-  name: string; rank?: string; matches: MatchSummary[]
-  mastery: Array<{ championId: number; level: number; points: number }>
-  warnings: string[]; offset: number; hasMore: boolean; fetchedAt: number
-}
 export interface TftDeck {
   id: string; name: string; code: string; tier: string; average: number; top4: number; games: number
   units: Array<{ name: string; core: boolean; items: string[]; x: number; y: number }>
@@ -171,6 +166,7 @@ export interface RiftBridge {
   testCoachConnection(input: CoachSettingsInput): Promise<ApplyResult>
   analyzeCoach(input: CoachRequest): Promise<CoachAnalysis>
   cancelCoach(): Promise<void>
+  saveCoachPool(input: CoachPoolPreferences): Promise<void>
   scanGameClient(): Promise<LauncherState>
   chooseGameClient(): Promise<void>
   selectGameClient(path: string): Promise<void>
@@ -184,6 +180,9 @@ export interface RiftBridge {
   restoreConfig(): Promise<ApplyResult>
   keepCurrentConfig(): Promise<ApplyResult>
   getProfile(offset: number): Promise<PlayerProfile>
+  getMatchDetail(gameId: number): Promise<MatchDetail>
+  getMatchTimeline(gameId: number): Promise<MatchTimeline>
+  getAramGuide(input: { championId: string; mode: 'aram' | 'aram-mayhem' }): Promise<AramGuide>
   fetchLaneRankings(position: Position): Promise<LaneRankings>
   getChampionAdvice(championId: string): Promise<ChampionAdvice>
   getPostGame(): Promise<PostGameData>

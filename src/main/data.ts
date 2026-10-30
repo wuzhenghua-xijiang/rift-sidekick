@@ -62,6 +62,7 @@ export class DataService {
   }
 
   async verifyPlan(plan: BuildPlan, clientVersion: string, includeSpells: boolean) {
+    if (plan.cache && (plan.cache.stale || Date.now() - plan.cache.storedAt > 86_400_000)) throw new Error('这套离线方案已过期或版本不匹配，只供查看。请联网刷新后再应用。')
     if (!patchLine(clientVersion) || patchLine(clientVersion) !== patchLine(plan.patch)) throw new Error(`客户端版本 ${clientVersion || '未知'} 与方案资源 ${plan.patch} 不一致，暂缓写入。请等待资料更新后重试。`)
     if (plan.statsPatch && patchLine(plan.statsPatch) !== patchLine(clientVersion)) throw new Error('推荐统计与客户端版本不一致，请刷新方案后重试。')
     validateCatalog(plan, await this.getCatalog(plan.patch), includeSpells)
@@ -82,8 +83,21 @@ export class DataService {
       if (!response.ok) throw new Error('无法验证当前版本的装备和符文，请稍后重试；方案仍可手动查看。')
       return await response.json() as T
     }
-    const [items, styles, spells] = await Promise.all([read<{ data: GameCatalog['items'] }>('item'), read<RuneStyle[]>('runesReforged'), read<{ data: GameCatalog['spells'] }>('summoner')])
-    return { items: items.data, styles, spells: spells.data }
+    if (!/^\d+\.\d+\.\d+$/.test(patch)) throw new Error('资源版本无效。')
+    const folder = join(app.getPath('userData'), 'cache')
+    const file = join(folder, `catalog-${patch}.json`)
+    try {
+      const [items, styles, spells] = await Promise.all([read<{ data: GameCatalog['items'] }>('item'), read<RuneStyle[]>('runesReforged'), read<{ data: GameCatalog['spells'] }>('summoner')])
+      const catalog = { items: items.data, styles, spells: spells.data }
+      await mkdir(folder, { recursive: true }).then(() => writeFile(file, JSON.stringify({ patch, catalog }), 'utf8')).catch(() => undefined)
+      return catalog
+    } catch (error) {
+      try {
+        const saved = JSON.parse(await readFile(file, 'utf8')) as { patch?: string; catalog?: GameCatalog }
+        if (saved.patch === patch && saved.catalog?.items && Array.isArray(saved.catalog.styles) && saved.catalog.spells) return saved.catalog
+      } catch { /* Missing or corrupt snapshots never bypass catalog verification. */ }
+      throw error
+    }
   }
 
   async refresh() {

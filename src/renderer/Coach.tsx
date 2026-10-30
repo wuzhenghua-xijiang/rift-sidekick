@@ -14,15 +14,18 @@ import {
   DEFAULT_COACH_SETTINGS,
   coachDraft,
   coachDraftKey,
+  coachDraftStatus,
   type CoachAnalysis,
   type CoachRequest,
   type CoachSettings,
   type CoachSuggestion,
   type CoachTeamPick,
 } from '@shared/coach'
+import { COACH_COPY_LIMITS, coachNoticeSummary } from '@shared/coach-copy'
 import jinxArt from './assets/jinx-fractured.jpg'
 import type { Champion, ClientState, Position, QueueMode } from '@shared/types'
 import { DockFooter } from './DockFooter'
+import { CoachPool } from './CoachPool'
 
 const message = (error: unknown) =>
   (error instanceof Error ? error.message : 'AI 教练暂时无法响应。').replace(
@@ -67,6 +70,7 @@ export function CoachPanel({
     ...(opponentId ? { opponentId } : {}),
   }
   const draft = coachDraft(input, client, champions)
+  const draftStatus = coachDraftStatus(draft)
   const key = coachDraftKey(draft)
   const ready = settings.hasApiKey && Boolean(settings.model)
   const settingsKey = JSON.stringify([
@@ -75,6 +79,7 @@ export function CoachPanel({
     settings.hasApiKey,
     settings.autoAnalyze,
     settings.coachPrompt,
+    settings.pool,
   ])
   const requestRef = useRef(input)
   requestRef.current = input
@@ -107,6 +112,7 @@ export function CoachPanel({
     const token = ++generation.current
     setBusy(true)
     setError('')
+    setAnalysis(undefined)
     try {
       const result = await window.rift.analyzeCoach(requestRef.current)
       if (generation.current === token) setAnalysis(result)
@@ -144,8 +150,8 @@ export function CoachPanel({
     setOpponentId(undefined)
   }, [client.sessionId])
   useEffect(() => {
-    setTab(draft.championLocked ? 'team' : 'picks')
-  }, [draft.championLocked, mode])
+    setTab(draft.championLocked || draft.mode !== 'ranked' ? 'team' : 'picks')
+  }, [draft.championLocked, draft.mode])
 
   return (
     <section className="coach-panel" aria-label="AI 选人教练">
@@ -173,6 +179,7 @@ export function CoachPanel({
           <Settings2 size={16} />
         </button>
       </div>
+      <CoachPool pool={settings.pool} champions={champions} />
       {!ready ? (
         <div className="coach-welcome">
           <p>选人、Ban 位、阵容补位。先连接你的模型。</p>
@@ -204,10 +211,10 @@ export function CoachPanel({
               >
                 {[
                   { id: 'picks' as const, label: '英雄选择' },
-                  ...(mode === 'ranked'
+                  ...(draft.mode === 'ranked'
                     ? [{ id: 'bans' as const, label: 'Ban 推荐' }]
                     : []),
-                  { id: 'team' as const, label: '阵容搭配' },
+                  { id: 'team' as const, label: draftStatus.fullComposition ? '阵容点评' : '阵容搭配' },
                 ].map((entry) => (
                   <button
                     key={entry.id}
@@ -241,29 +248,47 @@ export function CoachPanel({
                     choose={chooseChampion}
                     empty={
                       draft.championLocked
-                        ? '本局英雄已锁定，可查看阵容补位推荐。'
+                        ? '本局英雄已锁定，可查看阵容分析。'
+                        : draft.mode !== 'ranked'
+                          ? '未读取本局可交换英雄池，仅分析已知组合。'
                         : '当前没有足够依据推荐额外英雄。'
                     }
                   />
                 )}
                 {tab === 'team' && (
                   <div className="coach-composition">
-                    <CoachSuggestions
-                      entries={current.teamPicks}
-                      champions={champions}
-                      empty={
-                        current.composition
-                          ? '当前没有额外的阵容补位推荐。'
-                          : '队友选择尚未公开，暂不安排阵容补位。'
-                      }
-                    />
+                    {current.composition && (
+                      <p className="coach-composition-copy">
+                        <CoachCopy value={current.composition} limit={COACH_COPY_LIMITS.composition} label="阵容分析" />
+                      </p>
+                    )}
+                    {(!current.composition || current.teamPicks.length > 0) && (
+                      <CoachSuggestions
+                        entries={current.teamPicks}
+                        champions={champions}
+                        empty="队友选择尚未公开，暂不安排阵容补位。"
+                      />
+                    )}
                   </div>
                 )}
               </div>
               <div className="od-coach-call">
                 <Swords size={20} />
-                <p>{current.summary}</p>
+                <p>
+                  <CoachCopy value={current.summary} limit={draftStatus.fullComposition ? COACH_COPY_LIMITS.finalSummary : COACH_COPY_LIMITS.summary} label="教练结论" />
+                </p>
               </div>
+              {current.warnings.length > 0 && (
+                <details className="coach-visible-warnings">
+                  <summary>
+                    <span>{coachNoticeSummary(current.warnings)}</span>
+                    <ChevronDown size={12} />
+                  </summary>
+                  <ul>
+                    {current.warnings.map((warning, index) => <li key={index}>{warning}</li>)}
+                  </ul>
+                </details>
+              )}
               <details className="coach-details">
                 <summary>
                   决策依据与版本 <ChevronDown size={13} />
@@ -274,6 +299,16 @@ export function CoachPanel({
                     <p>{current.patchImpact}</p>
                   </>
                 )}
+                {current.personal && (
+                  <p className="coach-evidence-note">
+                    近期同模式 {current.personal.recentGames} 场
+                    {current.personal.sampleScope?.position
+                      ? `，其中${COACH_POSITIONS[current.personal.sampleScope.position]} ${current.personal.sampleScope.positionGames} 场`
+                      : ''}
+                    {' '}· 常玩 {current.personal.familiarChampionIds.length} 位 · 想练 {current.personal.learningChampionIds.length} 位。
+                    样本跨补丁，胜率排除未知胜负；熟练度跨模式，近期胜率不代表本局胜率。
+                  </p>
+                )}
                 {current.watchouts.length > 0 && (
                   <>
                     <h4>改变推荐的条件</h4>
@@ -283,11 +318,6 @@ export function CoachPanel({
                       ))}
                     </ul>
                   </>
-                )}
-                {current.warnings.length > 0 && (
-                  <p className="coach-evidence-note">
-                    {current.warnings.join(' ')}
-                  </p>
                 )}
                 <p className="coach-sources">
                   {current.sources.map((source) => (
@@ -313,9 +343,9 @@ export function CoachPanel({
             <summary>
               <b>
                 {heroName || '等待选择'} ·{' '}
-                {mode === 'ranked'
-                  ? COACH_POSITIONS[position]
-                  : mode === 'aram'
+                {draft.mode === 'ranked'
+                  ? COACH_POSITIONS[draft.position]
+                  : draft.mode === 'aram'
                     ? '极地大乱斗'
                     : '海克斯大乱斗'}
               </b>
@@ -332,8 +362,8 @@ export function CoachPanel({
                 <span className="sr-only">AI 教练分路</span>
                 <select
                   aria-label="AI 教练分路"
-                  value={position}
-                  disabled={mode !== 'ranked'}
+                  value={draft.position}
+                  disabled={draft.mode !== 'ranked' || Boolean(live && client.position)}
                   onChange={(event) =>
                     choosePosition(event.target.value as Position)
                   }
@@ -351,6 +381,7 @@ export function CoachPanel({
               对位
               <select
                 aria-label="AI 教练对位英雄"
+                disabled={draft.mode !== 'ranked'}
                 value={opponentId || ''}
                 onChange={(event) =>
                   setOpponentId(Number(event.target.value) || undefined)
@@ -401,6 +432,29 @@ export function CoachPanel({
         </DockFooter>
       )}
     </section>
+  )
+}
+
+function CoachCopy({ value, limit, label }: { value: string; limit: number; label: string }) {
+  const [expanded, setExpanded] = useState(false)
+  useEffect(() => setExpanded(false), [value])
+  const characters = Array.from(value)
+  const long = characters.length > limit
+  return (
+    <>
+      <span>{long && !expanded ? characters.slice(0, limit).join('').trimEnd() + '…' : value}</span>
+      {long && (
+        <button
+          type="button"
+          className="coach-copy-toggle"
+          aria-label={`${expanded ? '收起' : '展开'}完整${label}`}
+          aria-expanded={expanded}
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? '收起' : '展开'}
+        </button>
+      )}
+    </>
   )
 }
 

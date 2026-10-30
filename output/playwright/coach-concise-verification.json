@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-30",
+  "mode": "Production React, CoachService and parser with synthetic replies; muted, no online model calls or LCU writes.",
+  "generationTargets": {
+    "summaryCharacters": 32,
+    "finalSummaryCharacters": 64,
+    "reasonCharacters": 28,
+    "compositionCharacters": 56,
+    "patchImpactCharacters": 40,
+    "watchoutCharacters": 24,
+    "watchouts": 1,
+    "pickAndBanPreference": "One primary, one alternate only when useful"
+  },
+  "checks": {
+    "relatedUnitTestsPassed": 73,
+    "typecheck": "passed",
+    "build": "passed",
+    "conciseUiChecksPassed": 45,
+    "guardrailUiChecksPassed": 27,
+    "pageErrors": [],
+    "dockSizes": ["430x720", "390x560"]
+  },
+  "verifiedBehaviors": [
+    "Short conclusions render without extra controls",
+    "Long conclusions and composition expose a marked preview and keyboard-accessible full text",
+    "Expansion state does not leak into a new analysis",
+    "Overlapping notices are grouped while all original warnings remain available",
+    "Filtered candidates and missing Mayhem augments remain visibly signaled",
+    "Complete-draft estimate label and both sides remain visible",
+    "Previously rejected probability and contradictory recommendation replies remain rejected",
+    "No horizontal overflow at either supported dock size"
+  ],
+  "scripts": [
+    "output/implementation-preview/coach-concise-capture.js",
+    "output/implementation-preview/coach-audit-recheck.js"
+  ],
+  "logs": [
+    "output/playwright/coach-concise-tests.log",
+    "output/playwright/coach-concise-typecheck.log",
+    "output/playwright/coach-concise-build.log",
+    "output/playwright/coach-concise-ui.log",
+    "output/playwright/coach-concise-guardrails.log"
+  ],
+  "screenshots": [
+    "output/playwright/coach-concise-overview-430.png",
+    "output/playwright/coach-concise-overview-390.png",
+    "output/playwright/coach-concise-long-430.png",
+    "output/playwright/coach-concise-long-390.png"
+  ],
+  "designComparisons": [
+    "output/playwright/coach-concise-compare-430.png",
+    "output/playwright/coach-concise-compare-390.png"
+  ],
+  "limitations": [
+    "Generation lengths are prompt targets; no live model adherence was measured.",
+    "Preview length does not alter the full parsed analysis or its validation.",
+    "No real Windows LCU acceptance."
+  ]
+}

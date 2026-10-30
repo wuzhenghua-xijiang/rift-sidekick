@@ -85,6 +85,18 @@ function checkResponse(response: Response) {
   if (!response.ok) throw new Error(`推荐数据暂时不可用（OP.GG ${response.status}）。`)
 }
 
+export function fetchAramData(path: 'balance' | number): Promise<unknown> {
+  const route = path === 'balance' ? '/api/contents/aram-balance' : `/api/contents/stats/champions/${path}/aram-augments`
+  return enqueueProvider(async () => {
+    const response = await fetch(`https://lol-api-champion.op.gg${route}?hl=zh_CN`, {
+      headers: { Accept: 'application/json', 'User-Agent': USER_AGENT, Origin: 'https://op.gg', Referer: 'https://op.gg/' },
+      signal: AbortSignal.timeout(12_000),
+    })
+    checkResponse(response)
+    return response.json()
+  })
+}
+
 // Share provider pacing and Retry-After handling with the lane tier list.
 export function fetchLaneStatistics(): Promise<unknown> {
   return enqueueProvider(async () => {

@@ -25,6 +25,11 @@ describe('configuration availability', () => {
     expect(get({ recoveryNeeded: true }).canApply).toBe(false)
     expect(get({}, { busy: true }).canApply).toBe(false)
   })
+  it('keeps expired offline recommendations read only and allows current snapshots to be validated', () => {
+    expect(get({}, { planCache: { stale: true, storedAt: Date.now() } }).canApply).toBe(false)
+    expect(get({}, { planCache: { stale: false, storedAt: Date.now() - 86_400_001 } }).canApply).toBe(false)
+    expect(get({}, { planCache: { stale: false, storedAt: Date.now() } }).canApply).toBe(true)
+  })
   it.each(['Lobby', 'GameStart', 'InProgress', 'Reconnect', 'EndOfGame'])('never enables writes during %s', (phase) => {
     expect(get({ client: { ...state.client, phase } }).canApply).toBe(false)
   })

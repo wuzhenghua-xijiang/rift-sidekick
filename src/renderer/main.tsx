@@ -7,6 +7,7 @@ import '@fontsource/barlow-condensed/900.css'
 import '@fontsource/dm-mono/400.css'
 import './overdrive.css'
 import './overdrive-reference.css'
+import './enhancements.css'
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

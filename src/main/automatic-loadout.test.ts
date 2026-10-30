@@ -19,6 +19,7 @@ const fixture = vi.hoisted(() => ({
   lanes: vi.fn<() => Promise<unknown>>(),
   preferences: {} as Record<string, unknown>,
   savedPreferences: '',
+  fallback: undefined as BuildPlan[] | undefined,
   champions: [
     { id: 'Ahri', key: 103, name: '阿狸', title: '', tags: [], icon: '', splash: '' },
     { id: 'Ziggs', key: 115, name: '吉格斯', title: '', tags: [], icon: '', splash: '' },
@@ -61,6 +62,7 @@ vi.mock('./configuration', () => ({ ConfigurationManager: class {
   get isBusy() { return fixture.busy } apply = fixture.apply
 }, messageOf: (error: unknown) => error instanceof Error ? error.message : String(error) }))
 vi.mock('./opgg', () => ({ fetchRecommendedBuilds: fixture.fetch, fetchLaneStatistics: fixture.lanes }))
+vi.mock('./recommendation-cache', () => ({ RecommendationCache: class { async save() {} async fallback() { return fixture.fallback } } }))
 vi.mock('./windows-dock', () => ({ WindowsDock: class { attach() {} setSuppressed() {} stop() {} setEnabled = fixture.dockEnabled } }))
 vi.mock('./native-jungle', () => ({ NativeJungleService: class { configure() {} updateClient() {} dispose() {} } }))
 vi.mock('./client-launcher', () => ({
@@ -85,6 +87,7 @@ beforeEach(() => {
   fixture.windowBounds.mockClear(); fixture.dockEnabled.mockClear()
   fixture.launch.mockClear()
   fixture.preferences = { autoConfig: false, includeSpells: false }; fixture.savedPreferences = ''
+  fixture.fallback = undefined
   fixture.client = { connected: true, phase: 'ChampSelect', championId: 103, championLocked: true, position: 'mid', mode: 'ranked', sessionId: 'game-1' }
   fixture.fetch.mockReset().mockImplementation(async (...args) => plansFor(args[0] as Champion, args[1] as Position, args[2] as QueueMode))
   fixture.lanes.mockReset().mockResolvedValue({ meta: { version: '16.21' }, data: [
@@ -118,6 +121,39 @@ describe('automatic selection configuration from the main process', () => {
     } })
     await save(event, { autoPick: false })
     expect(JSON.parse(fixture.savedPreferences).matchmaking).toEqual({ autoAccept: true, autoPick: false, championId: 103 })
+  })
+  it('persists and restores the coach pool without requiring an API key', async () => {
+    fixture.client.phase = 'Lobby'
+    await start()
+    const save = fixture.handlers.get('rift:coach-pool')!
+    const event = { sender: fixture.sender }
+    await expect(save({ sender: {} }, { mode: 'all', championIds: [], learningChampionIds: [] })).rejects.toThrow('主窗口')
+    await expect(save(event, { mode: 'custom', championIds: [999999], learningChampionIds: [] })).rejects.toThrow('英雄资料')
+    await save(event, { mode: 'custom', championIds: [103], learningChampionIds: [115] })
+    const saved = JSON.parse(fixture.savedPreferences)
+    expect(saved.coachPool).toEqual({ mode: 'custom', championIds: [103], learningChampionIds: [115] })
+    expect(await fixture.handlers.get('rift:get-state')!()).toMatchObject({ coach: { hasApiKey: false, pool: saved.coachPool } })
+    fixture.preferences = saved
+    vi.resetModules()
+    await start()
+    expect(await fixture.handlers.get('rift:get-state')!()).toMatchObject({ coach: { pool: saved.coachPool } })
+  })
+  it.each([false, true])('validates an offline snapshot and prevents expired writes (stale=%s)', async (stale) => {
+    fixture.fallback = plansFor(fixture.champions[0], 'mid', 'ranked').map((plan) => ({ ...plan, cache: { storedAt: Date.now(), stale, patchMatches: true } }))
+    fixture.fetch.mockRejectedValue(new Error('offline'))
+    await start(); await vi.advanceTimersByTimeAsync(1150)
+    expect(fixture.apply).toHaveBeenCalledTimes(stale ? 0 : 1)
+    expect(fixture.verify).toHaveBeenCalledTimes(stale ? 0 : 1)
+    if (stale) expect(await fixture.handlers.get('rift:get-state')!()).toMatchObject({ lastConfig: { ok: false, message: expect.stringContaining('仅供查看') } })
+  })
+  it('uses a snapshot within five seconds when the upstream stays pending', async () => {
+    fixture.fallback = plansFor(fixture.champions[0], 'mid', 'ranked').map((plan) => ({ ...plan, cache: { storedAt: Date.now(), stale: false, patchMatches: true } }))
+    fixture.fetch.mockImplementation(() => new Promise(() => {}))
+    await start(); await vi.advanceTimersByTimeAsync(1150)
+    expect(fixture.apply).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(fixture.apply).toHaveBeenCalledOnce()
+    expect(fixture.verify).toHaveBeenCalledOnce()
   })
   it('launches the official client without account settings or any password IPC handlers', async () => {
     await start()

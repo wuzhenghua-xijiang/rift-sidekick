@@ -7,6 +7,35 @@ export interface CoachSettings {
   autoAnalyze: boolean
   coachPrompt?: string
   combatPrompt?: string
+  pool?: CoachPoolPreferences
+}
+export interface CoachPoolPreferences {
+  mode: 'all' | 'familiar' | 'custom'
+  championIds: number[]
+  learningChampionIds: number[]
+}
+export const DEFAULT_COACH_POOL: CoachPoolPreferences = { mode: 'all', championIds: [], learningChampionIds: [] }
+export function coachPoolPreferences(raw: unknown): CoachPoolPreferences {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('英雄池偏好无效。')
+  const value = raw as Record<string, unknown>
+  if (!['all', 'familiar', 'custom'].includes(String(value.mode))) throw new Error('请选择推荐范围。')
+  const ids = (input: unknown) => {
+    if (!Array.isArray(input) || input.length > 30 || input.some((id) => !Number.isSafeInteger(id) || id <= 0)) throw new Error('每组英雄最多选择 30 个。')
+    return [...new Set(input)] as number[]
+  }
+  const preferences = { mode: value.mode as CoachPoolPreferences['mode'], championIds: ids(value.championIds), learningChampionIds: ids(value.learningChampionIds) }
+  if (preferences.mode === 'custom' && !preferences.championIds.length && !preferences.learningChampionIds.length) throw new Error('请先添加至少一个指定或想练的英雄。')
+  return preferences
+}
+export interface CoachPersonalContext {
+  poolMode: CoachPoolPreferences['mode']
+  familiarChampionIds: number[]
+  learningChampionIds: number[]
+  allowedChampionIds: number[] | null
+  recentGames: number
+  sampleScope: { mode: QueueMode; queueIds: number[]; position: Position | null; positionGames: number; patchVerified: false }
+  champions: Array<{ championId: number; games: number; decidedGames: number; wins: number; winRate: number | null; positionGames: number; positionDecidedGames: number; positionWinRate: number | null; masteryPoints: number | null }>
+  warnings: string[]
 }
 export interface CoachSettingsInput {
   baseUrl: string
@@ -26,11 +55,14 @@ export interface CoachRequest {
 export interface CoachMember { championId: number; position: Position | null; locked: boolean }
 export interface CoachDraft {
   source: 'live' | 'preview'
+  clientConnected: boolean
+  clientPhase: string
   sessionId: string
   championId: number | null
   championLocked: boolean
   position: Position
   mode: QueueMode
+  queueId?: number
   allies: CoachMember[]
   enemies: CoachMember[]
   bannedChampionIds: number[]
@@ -54,9 +86,10 @@ export interface CoachAnalysis {
   gameVersion?: string
   model: string
   generatedAt: number
+  personal?: CoachPersonalContext
 }
 export const DEFAULT_COACH_PROMPT = `你是「峡谷 AI 教练」，专注英雄联盟 BP、英雄克制与团战阵容分析。
-结合本局版本、模式、本人分路、双方公开的预选与锁定英雄、已禁英雄，给出明确的选人和 Ban 优先级，并为尚未确定的位置推荐能与现有队友配合的英雄。先给结论，再说明具体机制、阵容收益与主要代价；不展开补刀、走位等操作教学。
+结合本局版本、模式、本人分路与双方公开选择，给出选人、Ban 首选及必要的阵容补位。每项只说关键收益与主要代价，备选最多一个；摘要与理由不重复，不展开操作教学。
 熟悉全英雄机制、常见分路、对线与阵容克制、开团反开、保护和输出环境。区分预选与锁定、对线优势与团战适配；不猜未知对手分路，不推荐已禁或不可选英雄，不劝更换已锁定英雄。
 先核对客户端、Data Dragon、统计和公告的版本，只使用匹配且适用于本局的证据。不编造版本改动、统计胜率、样本或技能数值；资料不足时按已知机制收窄判断。
 双方五人均锁定后，停止选人和 Ban 建议，比较双方赢法与短板，给出标明「仅按阵容估计」的粗粒度胜率倾向和一句贴合阵容的轻吐槽。大乱斗按该模式评价，海克斯资料不足时只点评已知组合。用简短、具体的中文，遵循系统规定的 JSON 格式。`
@@ -75,17 +108,38 @@ export function coachDraft(input: CoachRequest, client: ClientState, champions: 
     .map(({ championId, position, locked }) => ({ championId, position, locked }))
     .sort((a, b) => a.championId - b.championId)
   const enemies = live ? members(client.enemies || (client.enemyChampionIds || []).map((championId) => ({ championId, position: null, locked: false }))) : []
-  const assigned = enemies.filter((enemy) => enemy.position === input.position && enemy.locked)
+  const position = live && client.position && Object.hasOwn(COACH_POSITIONS, client.position) ? client.position : input.position
+  const assigned = enemies.filter((enemy) => enemy.position === position && enemy.locked)
   const manual = input.opponentId && known.has(input.opponentId) && (!live || enemies.some((enemy) => enemy.championId === input.opponentId)) ? input.opponentId : null
   const opponentId = manual || (assigned.length === 1 ? assigned[0].championId : null)
   const selected = live ? client.championId : champions.find((champion) => champion.id === input.championId)?.key
   return {
-    source: live ? 'live' : 'preview', sessionId: live ? client.sessionId || '' : '',
+    source: live ? 'live' : 'preview', clientConnected: client.connected, clientPhase: client.phase,
+    sessionId: live ? client.sessionId || '' : '',
     championId: selected && known.has(selected) ? selected : null, championLocked: live && client.championLocked,
-    position: input.position, mode: live && ['ranked', 'aram', 'aram-mayhem'].includes(client.mode) ? client.mode as QueueMode : input.mode,
+    position, mode: live && ['ranked', 'aram', 'aram-mayhem'].includes(client.mode) ? client.mode as QueueMode : input.mode,
+    ...(live && Number.isSafeInteger(client.queueId) && client.queueId! > 0 ? { queueId: client.queueId } : {}),
     allies: live ? members(client.allies) : [], enemies,
     bannedChampionIds: live ? [...new Set(client.bannedChampionIds || [])].filter((id) => known.has(id)).sort((a, b) => a - b) : [],
     opponentId, opponentSource: manual ? 'manual' : opponentId ? 'assigned' : 'unknown', dataPatch: client.patch || '',
   }
 }
 export function coachDraftKey(draft: CoachDraft): string { return JSON.stringify(draft) }
+
+/** Finality is a program rule, including clients whose ally list already contains self. */
+export function coachDraftStatus(draft: CoachDraft) {
+  const allies = [...draft.allies]
+  if (draft.championId && !allies.some((ally) => ally.championId === draft.championId)) {
+    allies.push({ championId: draft.championId, position: draft.position, locked: draft.championLocked })
+  }
+  const complete = (members: CoachMember[]) => members.length === 5 && new Set(members.map((member) => member.championId)).size === 5 && members.every((member) => member.locked)
+  const ownTeamFilled = new Set(allies.map((member) => member.championId)).size >= 5
+  const ownTeamComplete = Boolean(draft.championId && draft.championLocked && complete(allies))
+  const fullComposition = ownTeamComplete && complete(draft.enemies)
+  return { ownTeamComplete, fullComposition,
+    canPick: draft.mode === 'ranked' && !draft.championLocked && !fullComposition,
+    canBan: draft.mode === 'ranked' && !fullComposition,
+    canSuggestTeam: draft.mode === 'ranked' && !ownTeamFilled,
+    canEstimate: fullComposition && draft.mode !== 'aram-mayhem',
+  }
+}

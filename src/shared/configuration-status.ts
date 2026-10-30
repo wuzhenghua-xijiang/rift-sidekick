@@ -3,8 +3,8 @@ import { isPlaying } from './gameflow'
 import { matchesConfiguration } from './selection-context'
 
 /** Keep a saved preference distinct from the ability to write to this client now. */
-export function configurationStatus({ state, championKey, mode, position, planId, hasPlan, loading, busy }: {
-  state: AppState; championKey?: number; mode: QueueMode; position?: Position; planId?: string; hasPlan: boolean; loading: boolean; busy: boolean
+export function configurationStatus({ state, championKey, mode, position, planId, hasPlan, planCache, loading, busy }: {
+  state: AppState; championKey?: number; mode: QueueMode; position?: Position; planId?: string; hasPlan: boolean; planCache?: { stale: boolean; storedAt: number }; loading: boolean; busy: boolean
 }) {
   const { client } = state
   const blocked = (caption: string, hint: string, tone = 'muted') => ({ canApply: false, caption, hint, tone, applied: false, buttonLabel: tone === 'working' ? '同步中' : '应用方案' })
@@ -23,6 +23,7 @@ export function configurationStatus({ state, championKey, mode, position, planId
   if (!client.championLocked) return blocked('等待锁定英雄', '锁定后自动应用符文、召唤师技能与装备')
   if (loading) return blocked('正在获取推荐…', '方案准备好后即可同步', 'working')
   if (!hasPlan) return blocked('暂无可用方案', '刷新推荐或切换分路后重试', 'warning')
+  if (planCache && (planCache.stale || Date.now() - planCache.storedAt > 86_400_000)) return blocked('离线方案仅供查看', '缓存已过期或版本不符，请联网刷新', 'warning')
   const result = state.lastConfig
   const currentResult = matchesConfiguration(result?.target, client, position) ? result : undefined
   if (currentResult && !currentResult.ok && !currentResult.busy) return {

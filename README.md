@@ -4,9 +4,11 @@
 
 给《英雄联盟》召唤师准备的 Windows 侧边助手：选人时帮你找出装、配符文、看对位，让 AI 教练参谋 BP；对局中有开黑搭子式的语音，结束后再看看这一把打得怎么样。
 
-[下载 Windows 正式版](https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/latest) · [看看新版变化](docs/releases/v0.2.7.md) · [反馈问题 / 提建议](https://github.com/wuzhenghua-xijiang/rift-sidekick/issues)
+[下载 Windows 正式版](https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/latest) · [看看新版变化](docs/releases/v0.2.8.md) · [反馈问题 / 提建议](https://github.com/wuzhenghua-xijiang/rift-sidekick/issues)
 
-**当前版本：0.2.7 · Windows 10 / 11 x64 · 基础功能无需 AI Key**
+**当前版本：0.2.8 · Windows 10 / 11 x64 · 基础功能无需 AI Key**
+
+本版新增战绩筛选、十人详情与时间线、大乱斗平衡与海克斯资料、教练英雄池及推荐离线缓存；AI 教练采用短结论、短理由，长内容可展开。[新增功能与验证范围 →](docs/HISTORY-ARAM.md)
 
 > 独立玩家项目，非 Riot Games、腾讯或 WeGame 官方产品，未宣称获得其授权、认可或安全认证。使用前请阅读文末的[使用边界与声明](#使用边界与声明)。
 
@@ -63,7 +65,7 @@ AI 教练需要自行配置 OpenAI 或兼容接口的 Base URL、模型和 API K
 
 ## 三步上场
 
-1. **下载安装。** 到 [GitHub Releases](https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/latest) 下载 `Rift-Sidekick-Setup-0.2.7-x64.exe` 并安装。请从本仓库发布页获取，核对随包的 `SHA256SUMS.txt`；当前安装包尚无 Windows 发布者代码签名，勿为安装而关闭安全防护。
+1. **下载安装。** 到 [GitHub Releases](https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/latest) 下载 `Rift-Sidekick-Setup-0.2.8-x64.exe` 并安装。请从本仓库发布页获取，核对随包的 `SHA256SUMS.txt`；当前安装包尚无 Windows 发布者代码签名，勿为安装而关闭安全防护。
 2. **打开官方客户端。** 启动助手，确认游戏路径，点击启动；账号登录、验证与大区选择在英雄联盟官方窗口完成。你在官方客户端登录后，助手自动连接，不需要向助手提供 QQ 密码。
 3. **选个英雄。** 进入选人后查看方案，锁定后检查是否显示“已应用”；想换就点另一套。要用 AI，再去 **设置 → OpenAI** 填写连接信息，回到教练页生成建议。
 
@@ -92,7 +94,7 @@ AI 教练需要自行配置 OpenAI 或兼容接口的 Base URL、模型和 API K
 
 游戏登录在官方客户端完成。助手使用本机客户端接口提供的状态与数据；LCU 连接凭证仅用于本机连接，不发送给推荐服务或更新镜像。
 
-推荐、图片和更新需要访问对应网络服务。**启用 AI 后，分析所需的阵容、版本资料或战斗事件等上下文会发送到你配置的服务商**，并受其条款、隐私政策和计费规则约束；不想发送这些内容时，不启用 AI 功能。API Key 在本机通过系统加密保存，并用于向你配置的接口认证；不要在 Issue、日志或截图中公开密钥。
+推荐、图片和更新需要访问对应网络服务。**启用 AI 后，分析所需的阵容、版本资料或战斗事件等上下文会发送到你配置的服务商**，并受其条款、隐私政策和计费规则约束；个人推荐会包含匿名英雄池、熟练度与近期同模式汇总，不含昵称、PUUID 或账号编号。不想发送这些内容时，不启用 AI 功能。API Key 在本机通过系统加密保存，并用于向你配置的接口认证；不要在 Issue、日志或截图中公开密钥。
 
 设置、缓存与恢复快照保存在 Windows 的 `%APPDATA%/rift-sidekick/`。提交问题时，请先遮盖账号标识、聊天内容、令牌、密钥等个人或敏感信息。
 

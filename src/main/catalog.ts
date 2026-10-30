@@ -1,4 +1,4 @@
-import type { BuildPlan } from '@shared/types'
+import type { BuildPlan, MatchDetail } from '@shared/types'
 
 export interface RuneStyle { id: number; name?: string; icon?: string; slots: Array<{ runes: Array<{ id: number; name?: string; icon?: string }> }> }
 export interface CatalogItem {
@@ -16,6 +16,22 @@ export interface GameCatalog {
 }
 
 export function patchLine(version: string) { return /^(\d+\.\d+)(?:\.|$)/.exec(version)?.[1] }
+
+export function matchAssets(detail: MatchDetail, catalog: GameCatalog, patch: string): NonNullable<MatchDetail['assets']> {
+  const assets: NonNullable<MatchDetail['assets']> = { items: {}, runes: {}, spells: {} }
+  const runeIds = new Set(detail.players.flatMap((player) => player.runeIds))
+  for (const id of new Set(detail.players.flatMap((player) => player.itemIds))) if (id > 0 && catalog.items[id]) {
+    assets.items[id] = { name: catalog.items[id].name || `装备 ${id}`, icon: `https://ddragon.leagueoflegends.com/cdn/${patch}/img/item/${id}.png` }
+  }
+  for (const rune of catalog.styles.flatMap((style) => [style, ...style.slots.flatMap((slot) => slot.runes)])) if (runeIds.has(rune.id)) {
+    assets.runes[rune.id] = { name: rune.name || `符文 ${rune.id}`, icon: rune.icon ? `https://ddragon.leagueoflegends.com/cdn/img/${rune.icon}` : undefined }
+  }
+  const spellIds = new Set(detail.players.flatMap((player) => player.spellIds))
+  for (const spell of Object.values(catalog.spells)) if (spellIds.has(Number(spell.key))) {
+    assets.spells[Number(spell.key)] = { name: spell.name || `技能 ${spell.key}`, icon: spell.image?.full ? `https://ddragon.leagueoflegends.com/cdn/${patch}/img/spell/${spell.image.full}` : undefined }
+  }
+  return assets
+}
 
 export function validateCatalog(plan: BuildPlan, catalog: GameCatalog, includeSpells: boolean) {
   const map = plan.mode === 'ranked' ? '11' : '12'

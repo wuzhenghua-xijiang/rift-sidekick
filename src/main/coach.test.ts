@@ -78,7 +78,7 @@ describe('OpenAI-compatible coach', () => {
     const context = { ...draft, allies: [{ championId: 99, position: 'support' as const, locked: false }], bannedChampionIds: [157], enemies: [{ championId: 86, position: 'top' as const, locked: true }] }
     const recommendations = [157, 99, 103, 86, 9999, 64, 64].map((championId) => ({ championId, reason: '建议' }))
     const parsed = parseCoachAnalysis('```json\n' + JSON.stringify({ ...output, bans: recommendations, picks: recommendations }) + '\n```', context, champions)
-    expect(parsed.bans.map((entry) => entry.championId)).toEqual([64])
+    expect(parsed.bans).toEqual([])
     expect(parsed.picks.map((entry) => entry.championId)).toEqual([103, 64])
     expect(parseCoachAnalysis(JSON.stringify(output), { ...draft, mode: 'aram-mayhem' }, champions).bans).toEqual([])
     expect(parseCoachAnalysis(JSON.stringify(output), { ...draft, opponentId: 157 }, champions).bans).toEqual([])

@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-30",
+  "round": 2,
+  "mode": "Synthetic adversarial replies through production CoachService/parser and React; no online model calls, no LCU writes, muted.",
+  "checks": {
+    "typecheck": "passed",
+    "build": "passed",
+    "unitTestsPassed": 511,
+    "unitTestsSkippedWindows": 8,
+    "uiChecksPassed": 27,
+    "pageErrors": [],
+    "dockSizes": ["430x720", "390x560"]
+  },
+  "uiScenarios": [
+    "Reject Markdown and full-width probability formatting before draft completion",
+    "Reject Chinese numeral and English probability claims before draft completion",
+    "Reject positive summary instructions for heroes filtered from the personal pool",
+    "Reject ban instructions conflicting with retained pick or teammate suggestions",
+    "Render a valid labelled estimate and composition for a complete draft",
+    "Hide connected lobby preview advice after disconnect"
+  ],
+  "unitScenariosAdded": [
+    "Reject an extra incompatible prediction appended to a valid estimate",
+    "Reject reverse-order positive instructions without rejecting exclusions or observed enemy choices",
+    "Allow retaining a locked allied hero without allowing that occupied hero as a new pick",
+    "Reject incomplete required field types",
+    "Invalidate preview keys on disconnect or client phase change",
+    "Reject personal evidence from an unexpected account",
+    "Exclude duplicate and incomplete matches from sample size and familiar pool"
+  ],
+  "script": "output/implementation-preview/coach-audit-recheck.js",
+  "logs": [
+    "output/playwright/coach-recheck-tests.log",
+    "output/playwright/coach-recheck-typecheck.log",
+    "output/playwright/coach-recheck-build.log",
+    "output/playwright/coach-recheck-ui.log"
+  ],
+  "screenshots": [
+    "output/playwright/coach-recheck-rejected-430.png",
+    "output/playwright/coach-recheck-rejected-390.png"
+  ],
+  "limitations": [
+    "Free-text rules cover tested expressions, not every semantic paraphrase.",
+    "No live model semantic evaluation or per-ability verification in this audit.",
+    "No calibrated match probability model.",
+    "No real Windows LCU or account-switch acceptance."
+  ]
+}

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>战绩与大乱斗增强 · 验收记录</title><style>
+*{box-sizing:border-box}body{margin:0;padding:32px;background:#efede6;color:#1b1b1c;font:14px/1.7 system-ui,sans-serif}main{max-width:1150px;margin:auto}h1{font-size:30px;line-height:1.2;border-left:6px solid #f95a2c;padding-left:16px}h2{font-size:20px;margin-top:36px}p{max-width:850px}a{color:inherit;text-decoration-color:#f95a2c}figure{margin:0}figcaption{font-size:12px;margin:8px 0}img{display:block;width:100%;height:auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}.grid img{max-width:430px}.status{padding:12px 16px;border:1px solid #1b1b1c;background:#e1dccf}details{margin:20px 0;border-top:1px solid #aaa396}summary{padding:12px 0;cursor:pointer}small{color:#686359}@media(max-width:600px){body{padding:16px}}
+</style></head><body><main>
+<h1>战绩中心、大乱斗资料与推荐增强</h1>
+<p>2026-10-30 本地源码验收。正式 React 组件、示例战绩桥接、实取菲兹强化快照；声音静音，没有真实客户端写入或外部模型调用。尚未发布安装包。</p>
+<p class="status">468 项自动测试通过，8 项特定环境测试跳过 · 类型检查 / 生产构建通过 · 62 项界面检查通过。Windows 国服的真实战绩、时间线与回放启动待实机确认。</p>
+<p><a href="../../docs/HISTORY-ARAM.md">功能与数据说明</a> · <a href="../playwright/enhancements-verification.json">检查结果 JSON</a></p>
+<h2>战绩与复盘 · 390 小窗</h2><div class="grid">
+<figure><figcaption>默认折叠筛选，保留原海报与战绩条</figcaption><img src="../playwright/enhancements-history-390.png" alt="战绩默认视图，示例数据"></figure>
+<figure><figcaption>十人详情、装备、符文与召唤师技能</figcaption><img src="../playwright/enhancements-players-390.png" alt="双方数据展开，示例数据"></figure>
+<figure><figcaption>时间点、经济曲线与本人参与事件</figcaption><img src="../playwright/enhancements-timeline-390.png" alt="复盘时间线，示例数据"></figure>
+</div>
+<h2>大乱斗、教练英雄池与离线缓存</h2><div class="grid">
+<figure><figcaption>海克斯强化中文说明与真实来源分值</figcaption><img src="../playwright/enhancements-mayhem-390.png" alt="菲兹海克斯强化快照"></figure>
+<figure><figcaption>指定与想练英雄分组保存</figcaption><img src="../playwright/enhancements-pool-390.png" alt="教练英雄池，示例偏好"></figure>
+<figure><figcaption>过期缓存只读，应用按钮禁用</figcaption><img src="../playwright/enhancements-offline-390.png" alt="离线缓存状态，示例方案"></figure>
+</div>
+<h2>同尺寸设计对照</h2><p>左：确认基准 / 示例；右：当前正式组件 / 示例。战绩页添加折叠入口，登录与冠军画报保留原构图。</p>
+<details open><summary>战绩 · 390×560</summary><img src="../playwright/enhancements-compare-history-390.png" alt="战绩与原稿并排对照"></details>
+<details><summary>战绩 · 430×720</summary><img src="../playwright/enhancements-compare-history-430.png" alt="430 战绩并排对照"></details>
+<details><summary>冠军画报 · 390×560</summary><img src="../playwright/enhancements-compare-postgame-390.png" alt="赛后画报并排对照"></details>
+<details><summary>登录 · 1100×740</summary><img src="../playwright/enhancements-compare-login-1100.png" alt="登录页面并排对照"></details>
+<p><small>来源缺少补丁号时如实标注；海克斯表现分与热度不是胜率。截图仅验证界面与本次数据解析，不证明真实对局结果或收益。</small></p>
+</main></body></html>

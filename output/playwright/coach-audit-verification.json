@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-30",
+  "mode": "Production CoachService/parser and React components with synthetic provider responses; muted; no online model calls or LCU writes.",
+  "checks": {
+    "typecheck": "passed",
+    "build": "passed",
+    "unitTestsPassed": 496,
+    "unitTestsSkippedWindows": 8,
+    "uiMainChecksPassed": 54,
+    "uiSupplementChecksPassed": 8,
+    "mainFlowPageErrors": [],
+    "dockSizes": ["430x720", "390x560"],
+    "loginSizes": ["1100x740", "840x640"]
+  },
+  "scripts": [
+    "output/implementation-preview/coach-audit-capture.js",
+    "output/implementation-preview/coach-audit-supplement.js"
+  ],
+  "comparisons": [
+    "output/playwright/coach-audit-compare-430.png",
+    "output/playwright/coach-audit-compare-390.png"
+  ],
+  "limitations": [
+    "No live model semantic evaluation in this audit.",
+    "No per-ability or counter-interaction verification.",
+    "No calibrated match probability model.",
+    "No live ARAM exchange pool or selected augments.",
+    "No real Windows LCU acceptance."
+  ]
+}

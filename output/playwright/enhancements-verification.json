@@ -1,0 +1,232 @@
+{
+  "mode": "Production React components, example match bridge and live Fizz ARAM snapshot, muted; no LCU or external model writes.",
+  "checks": [
+    "history-430: no horizontal overflow",
+    "430: pagination produces 50 unique matches",
+    "430: mayhem filter excludes ordinary ARAM",
+    "430: result filter excludes defeats",
+    "performance-430: no horizontal overflow",
+    "review-430: no horizontal overflow",
+    "430: ten actual participants shown",
+    "430: named spells and equipment load",
+    "players-430: no horizontal overflow",
+    "430: timeline slider selects a real frame",
+    "430: local timeline event filter works",
+    "timeline-430: no horizontal overflow",
+    "430: replay action uses selected game id",
+    "430: learning hero remains a separate preference",
+    "pool-430: no horizontal overflow",
+    "430: saved pool survives reload",
+    "430: failed pool save preserves effective scope",
+    "430: augment list is progressively disclosed",
+    "430: performance is not presented as win rate",
+    "mayhem-430: no horizontal overflow",
+    "430: rarity filter uses official metadata",
+    "430: augment empty search state is explicit",
+    "430: ordinary ARAM never shows Mayhem augments",
+    "aram-430: no horizontal overflow",
+    "430: stale offline plan cannot be applied",
+    "offline-430: no horizontal overflow",
+    "postgame-430: no horizontal overflow",
+    "430: postgame newspaper links to complete match timeline",
+    "history-390: no horizontal overflow",
+    "390: pagination produces 50 unique matches",
+    "390: mayhem filter excludes ordinary ARAM",
+    "390: result filter excludes defeats",
+    "performance-390: no horizontal overflow",
+    "review-390: no horizontal overflow",
+    "390: ten actual participants shown",
+    "390: named spells and equipment load",
+    "players-390: no horizontal overflow",
+    "390: timeline slider selects a real frame",
+    "390: local timeline event filter works",
+    "timeline-390: no horizontal overflow",
+    "390: replay action uses selected game id",
+    "390: learning hero remains a separate preference",
+    "pool-390: no horizontal overflow",
+    "390: saved pool survives reload",
+    "390: failed pool save preserves effective scope",
+    "390: augment list is progressively disclosed",
+    "390: performance is not presented as win rate",
+    "mayhem-390: no horizontal overflow",
+    "390: rarity filter uses official metadata",
+    "390: augment empty search state is explicit",
+    "390: ordinary ARAM never shows Mayhem augments",
+    "aram-390: no horizontal overflow",
+    "390: stale offline plan cannot be applied",
+    "offline-390: no horizontal overflow",
+    "postgame-390: no horizontal overflow",
+    "390: postgame newspaper links to complete match timeline",
+    "missing timeline keeps a factual fallback and retry",
+    "ARAM service failure has an actionable retry",
+    "login-1100: no horizontal overflow",
+    "login-840: no horizontal overflow",
+    "no renderer page errors",
+    "390: partial ARAM evidence stays readable and missing sources recover on retry"
+  ],
+  "screenshots": [
+    {
+      "name": "history-430",
+      "viewport": 430,
+      "body": 430,
+      "content": 383,
+      "available": 383
+    },
+    {
+      "name": "performance-430",
+      "viewport": 430,
+      "body": 430,
+      "content": 383,
+      "available": 383
+    },
+    {
+      "name": "review-430",
+      "viewport": 430,
+      "body": 430,
+      "content": 383,
+      "available": 383
+    },
+    {
+      "name": "players-430",
+      "viewport": 430,
+      "body": 430,
+      "content": 383,
+      "available": 383
+    },
+    {
+      "name": "timeline-430",
+      "viewport": 430,
+      "body": 430,
+      "content": 383,
+      "available": 383
+    },
+    {
+      "name": "pool-430",
+      "viewport": 430,
+      "body": 430,
+      "content": 383,
+      "available": 383
+    },
+    {
+      "name": "mayhem-430",
+      "viewport": 430,
+      "body": 430,
+      "content": 383,
+      "available": 383
+    },
+    {
+      "name": "aram-430",
+      "viewport": 430,
+      "body": 430,
+      "content": 383,
+      "available": 383
+    },
+    {
+      "name": "offline-430",
+      "viewport": 430,
+      "body": 430,
+      "content": 383,
+      "available": 383
+    },
+    {
+      "name": "postgame-430",
+      "viewport": 430,
+      "body": 430,
+      "content": 383,
+      "available": 383
+    },
+    {
+      "name": "history-390",
+      "viewport": 390,
+      "body": 390,
+      "content": 343,
+      "available": 343
+    },
+    {
+      "name": "performance-390",
+      "viewport": 390,
+      "body": 390,
+      "content": 343,
+      "available": 343
+    },
+    {
+      "name": "review-390",
+      "viewport": 390,
+      "body": 390,
+      "content": 343,
+      "available": 343
+    },
+    {
+      "name": "players-390",
+      "viewport": 390,
+      "body": 390,
+      "content": 343,
+      "available": 343
+    },
+    {
+      "name": "timeline-390",
+      "viewport": 390,
+      "body": 390,
+      "content": 343,
+      "available": 343
+    },
+    {
+      "name": "pool-390",
+      "viewport": 390,
+      "body": 390,
+      "content": 343,
+      "available": 343
+    },
+    {
+      "name": "mayhem-390",
+      "viewport": 390,
+      "body": 390,
+      "content": 343,
+      "available": 343
+    },
+    {
+      "name": "aram-390",
+      "viewport": 390,
+      "body": 390,
+      "content": 343,
+      "available": 343
+    },
+    {
+      "name": "offline-390",
+      "viewport": 390,
+      "body": 390,
+      "content": 343,
+      "available": 343
+    },
+    {
+      "name": "postgame-390",
+      "viewport": 390,
+      "body": 390,
+      "content": 343,
+      "available": 343
+    },
+    {
+      "name": "login-1100",
+      "viewport": 1100,
+      "body": 1100
+    },
+    {
+      "name": "login-840",
+      "viewport": 840,
+      "body": 840
+    }
+  ],
+  "errors": [],
+  "validation": {
+    "typecheck": "passed",
+    "tests": 468,
+    "skippedTests": 8,
+    "build": "passed",
+    "liveAram": {
+      "championId": 105,
+      "augments": 225,
+      "adjustments": 3
+    },
+    "windowsLcu": "pending real Windows client"
+  }
+}

@@ -29,6 +29,7 @@ import { LANE_TIPS, resolveLaneOpponent } from '@shared/matchup'
 import { canRetainPostGame, isPostGame } from '@shared/gameflow'
 import { gameModeName } from '@shared/game-mode'
 import { DockFooter } from './DockFooter'
+import { HistoryMatchDetails } from './HistoryCenter'
 
 const LANES: Record<Position, string> = {
   top: '上路',
@@ -710,10 +711,12 @@ export function PostGamePanel({
   const [selected, setSelected] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const selectionGame = useRef(0)
   const post = client.connected && isPostGame(client.phase)
   const retain = canRetainPostGame(client)
   const sessionId = client.sessionId
+  useEffect(() => setHistoryOpen(false), [sessionId])
   useEffect(() => {
     if (!post) {
       setLoading(false)
@@ -975,6 +978,7 @@ export function PostGamePanel({
               。参团率按我方击杀计算，补刀含野怪；缺失指标显示 —。
             </p>
           </details>
+          <details className="enhancement-fold postgame-history" open={historyOpen} onToggle={(event) => setHistoryOpen(event.currentTarget.open)}><summary><b>双方数据与对局时间线</b><ChevronDown size={14} /></summary>{historyOpen && <HistoryMatchDetails key={report.gameId} gameId={report.gameId} champions={champions} notify={notify} prepare />}</details>
           {post && (
             <>
               <div className="postgame-section-label">

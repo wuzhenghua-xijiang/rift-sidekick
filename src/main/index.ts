@@ -7,15 +7,19 @@ import { rankBuildPlans } from '@shared/build-plans'
 import { GameWindowPolicy } from '@shared/gameflow'
 import { isLoadoutMode } from '@shared/selection-context'
 import { DataService } from './data'
+import { matchAssets, patchLine } from './catalog'
 import { LcuService } from './lcu'
 import { MatchmakingService } from './matchmaking'
 import { DEFAULT_MATCHMAKING_PREFERENCES, matchmakingPreferences, type MatchmakingPreferences } from '@shared/matchmaking'
 import { ConfigurationManager, messageOf } from './configuration'
 import { FileJournal } from './journal'
 import { fetchRecommendedBuilds } from './opgg'
+import { RecommendationCache } from './recommendation-cache'
+import { AramService } from './aram'
 import { WindowsDock } from './windows-dock'
 import { windowPresentation } from './window-presentation'
-import { fetchProfile } from './profile'
+import { ProfileService, profileIdentityKey, type ProfileIdentity } from './profile'
+import { coachPersonalContext } from './coach-personal'
 import { fetchTftGuide } from './tft'
 import { LaneRankingService } from './lane-rankings'
 import { PostGameService } from './postgame'
@@ -30,7 +34,7 @@ import { WindowsCombatVoice } from './combat-voice'
 import { readLiveGame } from './live-client'
 import { COMBAT_VOLUME_DEFAULT_VERSION, DEFAULT_COMBAT_BASE_URL, DEFAULT_COMBAT_MODEL, DEFAULT_COMBAT_PROMPT, DEFAULT_COMBAT_PREFERENCES, combatPreferences, restoreCombatPreferences, type CombatPreferences } from '@shared/combat'
 import { combatBaseUrl, OpenAICombatJudge } from './combat-openai'
-import { coachDraft, coachDraftKey, type CoachRequest, type CoachSettingsInput } from '@shared/coach'
+import { coachDraft, coachDraftKey, coachPoolPreferences, DEFAULT_COACH_POOL, type CoachPoolPreferences, type CoachRequest, type CoachSettingsInput } from '@shared/coach'
 import { CoachSettingsStore } from './coach-settings'
 import { migrateSharedAI, sharedCombatConnection } from './shared-ai'
 import { CoachService } from './coach'
@@ -38,6 +42,7 @@ import { CoachEvidenceService } from './coach-evidence'
 
 interface Preferences {
   matchmaking: MatchmakingPreferences
+  coachPool: CoachPoolPreferences
   optimizeBeforeLaunch: boolean
   launcherPath?: string
   dock: boolean
@@ -60,8 +65,10 @@ const coachEvidence = new CoachEvidenceService((position) => laneRankings.get(po
 let coachSettings: CoachSettingsStore
 let coachGeneration = 0
 const postGame = new PostGameService(lcu.request)
+const profileService = new ProfileService(lcu.request)
+const aram = new AramService()
+let recommendationCache: RecommendationCache | undefined
 const planRegistry = new Map<string, { championId: string; plan: BuildPlan }>()
-const replayGames = new Map<number, number>()
 const tftCodes = new Map<string, string>()
 let configuration: ConfigurationManager
 let updates: UpdateService | undefined
@@ -86,7 +93,7 @@ let previousPhase = ''
 let operation = 0
 let quitting = false
 let preferencesWrites: Promise<void> = Promise.resolve()
-let preferences: Preferences = { matchmaking: { ...DEFAULT_MATCHMAKING_PREFERENCES }, optimizeBeforeLaunch: true, dock: true, nativeJungleEnabled: true, chatMuteEnabled: false, combat: { ...DEFAULT_COMBAT_PREFERENCES }, combatVolumeDefaultVersion: COMBAT_VOLUME_DEFAULT_VERSION, selectedPlans: {}, positions: {} }
+let preferences: Preferences = { matchmaking: { ...DEFAULT_MATCHMAKING_PREFERENCES }, coachPool: { ...DEFAULT_COACH_POOL }, optimizeBeforeLaunch: true, dock: true, nativeJungleEnabled: true, chatMuteEnabled: false, combat: { ...DEFAULT_COMBAT_PREFERENCES }, combatVolumeDefaultVersion: COMBAT_VOLUME_DEFAULT_VERSION, selectedPlans: {}, positions: {} }
 let state: AppState = {
   client: { connected: false, phase: 'ClientOffline', championId: null, championLocked: false, position: null, mode: 'ranked', message: '等待英雄联盟客户端…' },
   dock: true, canRestore: false, recoveryNeeded: false,
@@ -129,6 +136,7 @@ async function loadPreferences() {
     // Retired loadout switches and manual-timer preferences are not loaded or saved.
     for (const key of ['dock', 'nativeJungleEnabled', 'chatMuteEnabled'] as const) if (typeof value[key] === 'boolean') preferences[key] = value[key]
     try { if (value.matchmaking) preferences.matchmaking = matchmakingPreferences(value.matchmaking) } catch { /* invalid saved automation stays off */ }
+    try { if (value.coachPool) preferences.coachPool = coachPoolPreferences(value.coachPool) } catch { /* Retain the unrestricted default if saved preferences are invalid. */ }
     if (typeof value.optimizeBeforeLaunch === 'boolean') preferences.optimizeBeforeLaunch = value.optimizeBeforeLaunch
     if (typeof value.launcherPath === 'string') preferences.launcherPath = value.launcherPath
     preferences.combat = restoreCombatPreferences(value.combat, value.combatVolumeDefaultVersion)
@@ -154,7 +162,7 @@ function installSecurityHeaders() {
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false))
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({ responseHeaders: { ...details.responseHeaders, 'Content-Security-Policy': [
-      `default-src 'self'; script-src 'self'${process.env.ELECTRON_RENDERER_URL ? " 'unsafe-inline'" : ''}; style-src 'self' 'unsafe-inline'; img-src 'self' https://ddragon.leagueoflegends.com data:; connect-src 'self'${process.env.ELECTRON_RENDERER_URL ? ' ws://localhost:* ws://127.0.0.1:*' : ''}; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-src 'none';`,
+      `default-src 'self'; script-src 'self'${process.env.ELECTRON_RENDERER_URL ? " 'unsafe-inline'" : ''}; style-src 'self' 'unsafe-inline'; img-src 'self' https://ddragon.leagueoflegends.com https://game.gtimg.cn data:; connect-src 'self'${process.env.ELECTRON_RENDERER_URL ? ' ws://localhost:* ws://127.0.0.1:*' : ''}; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-src 'none';`,
     ] } })
   })
 }
@@ -324,7 +332,18 @@ async function loadPlans(championId: string, position: Position, mode: QueueMode
   const champion = data.byId(championId)
   if (!champion) throw new Error('暂时没有这个英雄的资料，请更新后再试。')
   const patch = data.getPatch()
-  const plans = await fetchRecommendedBuilds(champion, position, mode, patch, () => data.getCatalog(patch))
+  const query = { championId, position, mode, patch }
+  const cached = await recommendationCache?.fallback(query)
+  const live = (async () => {
+    const plans = await fetchRecommendedBuilds(champion, position, mode, patch, () => data.getCatalog(patch))
+    await recommendationCache?.save(query, plans).catch(() => undefined)
+    return plans
+  })()
+  let deadline: ReturnType<typeof setTimeout> | undefined
+  const plans = cached?.length ? await Promise.race([
+    live.catch(() => cached),
+    new Promise<BuildPlan[]>((resolve) => { deadline = setTimeout(() => resolve(cached), 5_000) }),
+  ]).finally(() => { if (deadline) clearTimeout(deadline) }) : await live
   if (planRegistry.size > 500) planRegistry.clear()
   for (const plan of plans) planRegistry.set(plan.id, { championId, plan })
   const preferred = preferences.selectedPlans[planKey(championId, position, mode)]
@@ -362,6 +381,7 @@ async function runAutoConfig(identity: string, token: number, championKey: numbe
 }
 async function applyPlan(championId: string, plan: BuildPlan, guard: () => boolean) {
   if (state.update?.status === 'installing') throw new Error('助手正在安装更新，请重启后配置。')
+  if (plan.cache && (plan.cache.stale || Date.now() - plan.cache.storedAt > 86_400_000)) throw new Error('离线方案已过期或版本不匹配，仅供查看。请联网刷新后再应用。')
   const version = await lcu.request<string>('GET', '/lol-patch/v1/game-version')
   const includeSpells = plan.mode !== 'aram-mayhem'
   await data.verifyPlan(plan, version, includeSpells)
@@ -372,7 +392,7 @@ const validMode = (value: unknown): value is QueueMode => typeof value === 'stri
 function planKey(championId: string, position: Position, mode: QueueMode) { return `${championId}:${position}:${mode}` }
 function registeredPlan(championId: unknown, planId: unknown) {
   const found = planRegistry.get(String(planId))
-  if (!found || found.championId !== championId || Date.now() - found.plan.fetchedAt > 15 * 60_000) throw new Error('这套方案已过期，请点更新重新获取。')
+  if (!found || found.championId !== championId || (!found.plan.cache && Date.now() - found.plan.fetchedAt > 15 * 60_000)) throw new Error('这套方案已过期，请点更新重新获取。')
   return found
 }
 
@@ -382,8 +402,19 @@ ipcMain.handle('rift:coach-save', async (event, input: CoachSettingsInput) => {
   coachGeneration++
   coach.reset()
   syncSharedAI()
-  updateState({ coach: settings })
+  updateState({ coach: { ...settings, pool: preferences.coachPool } })
   return settings
+})
+ipcMain.handle('rift:coach-pool', async (event, input: unknown) => {
+  requireMainWindow(event)
+  const next = coachPoolPreferences(input)
+  if ([...next.championIds, ...next.learningChampionIds].some((id) => !data.byKey(id))) throw new Error('英雄资料已变化，请重新选择。')
+  const previous = preferences.coachPool
+  preferences.coachPool = next
+  try { await persistPreferences() } catch (error) { preferences.coachPool = previous; throw error }
+  coachGeneration++
+  coach.reset()
+  updateState({ coach: { ...coachSettings.publicSettings, pool: next } })
 })
 ipcMain.handle('rift:coach-models', (event, input: CoachSettingsInput) => {
   requireMainWindow(event)
@@ -405,9 +436,13 @@ ipcMain.handle('rift:coach-analyze', async (event, input: CoachRequest) => {
   const snapshot = () => coachDraft(input, { ...state.client, patch: data.getPatch() }, data.getChampions())
   const draft = snapshot()
   const clientConnected = state.client.connected
-  const evidence = await coachEvidence.get(draft, clientConnected)
+  const identity = clientConnected ? await lcu.request<ProfileIdentity>('GET', '/lol-summoner/v1/current-summoner').catch(() => undefined) : undefined
+  const [evidence, personalProfile] = await Promise.all([coachEvidence.get(draft, clientConnected), identity ? profileService.get(0).catch(() => null) : Promise.resolve(null)])
+  if (identity && profileIdentityKey(await lcu.request<ProfileIdentity>('GET', '/lol-summoner/v1/current-summoner')) !== profileIdentityKey(identity)) throw new Error('登录账号已改变，请重新分析。')
+  evidence.personal = coachPersonalContext(personalProfile, preferences.coachPool, draft, data.getChampions(), identity ? profileIdentityKey(identity) : undefined)
   if (generation !== coachGeneration || clientConnected !== state.client.connected || coachDraftKey(draft) !== coachDraftKey(snapshot())) throw new Error('阵容已变化，请基于最新选人重新分析。')
   const analysis = await coach.analyze(settings, draft, data.getChampions(), evidence)
+  if (identity && profileIdentityKey(await lcu.request<ProfileIdentity>('GET', '/lol-summoner/v1/current-summoner')) !== profileIdentityKey(identity)) throw new Error('登录账号已改变，请重新分析。')
   if (generation !== coachGeneration || clientConnected !== state.client.connected || coachDraftKey(draft) !== coachDraftKey(snapshot())) throw new Error('阵容已变化，请基于最新选人重新分析。')
   return analysis
 })
@@ -432,12 +467,37 @@ ipcMain.handle('rift:honor', (_event, input: unknown) => {
   const value = input as { gameId?: number; puuids?: string[] } | null
   return postGame.honor(value?.gameId!, value?.puuids!)
 })
-ipcMain.handle('rift:get-profile', async (_event, offset: unknown) => {
+ipcMain.handle('rift:get-profile', async (event, offset: unknown) => {
+  requireMainWindow(event)
   if (typeof offset !== 'number' || !Number.isInteger(offset) || offset < 0 || offset > 180 || offset % 20) throw new Error('战绩页码无效。')
-  const profile = await fetchProfile(lcu.request, offset)
-  for (const [id, at] of replayGames) if (Date.now() - at > 30 * 60_000) replayGames.delete(id)
-  for (const match of profile.matches) replayGames.set(match.gameId, Date.now())
-  return profile
+  return profileService.get(offset)
+})
+ipcMain.handle('rift:match-detail', async (event, gameId: unknown) => {
+  requireMainWindow(event)
+  if (typeof gameId !== 'number' || !Number.isSafeInteger(gameId)) throw new Error('对局编号无效。')
+  const detail = await profileService.detail(gameId)
+  const patch = patchLine(detail.patch)
+  if (!patch) return { ...detail, warnings: [...detail.warnings, '未提供对局版本，装备、符文与技能保留原始编号。'] }
+  try {
+    const catalog = await data.getCatalog(`${patch}.1`)
+    await profileService.authorize(gameId)
+    return { ...detail, assets: matchAssets(detail, catalog, `${patch}.1`) }
+  } catch {
+    await profileService.authorize(gameId)
+    return { ...detail, warnings: [...detail.warnings, '历史版本资源暂不可用，缺失的装备、符文与技能名称保留原始编号。'] }
+  }
+})
+ipcMain.handle('rift:match-timeline', (event, gameId: unknown) => {
+  requireMainWindow(event)
+  if (typeof gameId !== 'number' || !Number.isSafeInteger(gameId)) throw new Error('对局编号无效。')
+  return profileService.timeline(gameId)
+})
+ipcMain.handle('rift:aram-guide', (event, input: unknown) => {
+  requireMainWindow(event)
+  const value = input as { championId?: string; mode?: string } | null
+  const hero = typeof value?.championId === 'string' ? data.byId(value.championId) : undefined
+  if (!hero || value?.mode !== 'aram' && value?.mode !== 'aram-mayhem') throw new Error('请先选择大乱斗模式和有效英雄。')
+  return aram.get(hero.key, value.mode, data.getPatch())
 })
 ipcMain.handle('rift:fetch-tft', async () => {
   const guide = await fetchTftGuide(data.getChampions())
@@ -450,11 +510,13 @@ ipcMain.handle('rift:copy-tft-code', (_event, id: unknown) => {
   if (!code) throw new Error('阵容已更新，请刷新后重新复制。')
   clipboard.writeText(code)
 })
-ipcMain.handle('rift:replay', async (_event, input) => {
+ipcMain.handle('rift:replay', async (event, input) => {
+  requireMainWindow(event)
   try {
-    if (!input || !Number.isSafeInteger(input.gameId) || !replayGames.has(input.gameId) || !['download', 'watch'].includes(input.action)) throw new Error('请先从自己的战绩列表选择对局。')
+    if (!input || !Number.isSafeInteger(input.gameId) || !['download', 'watch'].includes(input.action)) throw new Error('请先从自己的战绩列表选择对局。')
     const phase = await lcu.request<string>('GET', '/lol-gameflow/v1/gameflow-phase')
     if (!['None', 'Lobby', 'EndOfGame', 'PreEndOfGame', 'WaitingForStats'].includes(phase)) throw new Error('请在对局和选人结束后观看回放。')
+    await profileService.authorize(input.gameId)
     await lcu.request('POST', `/lol-replays/v1/rofls/${input.gameId}/${input.action}`, { componentType: 'match-history' })
     return { ok: true, message: input.action === 'download' ? '已请求客户端下载回放；下载完成后可点观看。' : '已请求客户端打开回放。' }
   } catch (error) { return { ok: false, message: messageOf(error) } }
@@ -583,7 +645,7 @@ ipcMain.handle('rift:combat-ai-settings', async (event, value: unknown) => {
     ...(input.model !== undefined ? { model: input.model as string } : {}),
     ...(input.apiKey !== undefined ? { apiKey: input.apiKey as string } : {}),
     ...(input.prompt !== undefined ? { combatPrompt: input.prompt as string } : {}), clearApiKey: input.clearApiKey === true })
-  coachGeneration++; coach.reset(); syncSharedAI(); updateState({ coach: settings })
+  coachGeneration++; coach.reset(); syncSharedAI(); updateState({ coach: { ...settings, pool: preferences.coachPool } })
 })
 
 function syncSharedAI() {
@@ -680,7 +742,8 @@ else {
     } catch { /* Keep legacy credentials on disk if migration cannot finish. */ }
     combatApiKey = ''
     syncSharedAI()
-    updateState({ coach: coachSettings.publicSettings })
+    updateState({ coach: { ...coachSettings.publicSettings, pool: preferences.coachPool } })
+    recommendationCache = new RecommendationCache(join(app.getPath('userData'), 'cache', 'recommendations'))
     performance = new PerformanceService((next) => updateState({ performance: next }), new WindowsPerformanceRuntime(), new FilePerformanceStore(join(app.getPath('userData'), 'performance.json')))
     await performance.initialize(preferences.optimizeBeforeLaunch)
     updateState({ launcher: launcher.state })

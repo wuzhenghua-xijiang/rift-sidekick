@@ -22,4 +22,16 @@ describe('AI coach draft snapshots', () => {
     expect(coachDraftKey(first)).toBe(coachDraftKey(coachDraft(request, { ...client, bannedChampionIds: [157, 99] }, champions)))
     for (const changed of [{ ...first, championId: 103 }, { ...first, sessionId: 'game-2' }, { ...first, bannedChampionIds: [99] }]) expect(coachDraftKey(changed)).not.toBe(coachDraftKey(first))
   })
+  it('withdraws a connected preview when the client disconnects or changes phase with otherwise identical inputs', () => {
+    const lobby = { ...client, phase: 'Lobby', championId: null, championLocked: false }
+    const connected = coachDraft(request, lobby, champions)
+    expect(coachDraftKey(connected)).not.toBe(coachDraftKey(coachDraft(request, { ...lobby, connected: false }, champions)))
+    expect(coachDraftKey(connected)).not.toBe(coachDraftKey(coachDraft(request, { ...lobby, phase: 'InProgress' }, champions)))
+  })
+  it('binds live advice to the assigned lane and mode while preserving manual preview choices', () => {
+    const live = { ...client, queueId: 450, position: 'top' as const, mode: 'aram' as const, enemies: [{ championId: 157, position: 'top' as const, locked: true }] }
+    expect(coachDraft(request, live, champions)).toMatchObject({ position: 'top', mode: 'aram', queueId: 450, opponentId: 157 })
+    expect(coachDraft(request, { ...live, connected: false }, champions)).toMatchObject({ position: 'mid', mode: 'ranked', opponentId: null })
+    expect(coachDraft(request, { ...live, connected: false }, champions)).not.toHaveProperty('queueId')
+  })
 })
