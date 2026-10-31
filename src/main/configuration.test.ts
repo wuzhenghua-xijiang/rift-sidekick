@@ -18,15 +18,16 @@ class MemoryStore implements JournalStore {
 function harness(resources: ConstructorParameters<typeof ConfigurationManager>[3] = {}) {
   const store = new MemoryStore()
   const db = {
-    pages: [{ id: 1, name: '我的原符文', isDeletable: true, isEditable: true, isTemporary: false, isRecommendationOverride: false, current: true, primaryStyleId: 8000, subStyleId: 8200, selectedPerkIds: [8005, 8009, 9104, 8014, 8210, 8236, 5005, 5008, 5001] }] as PerkPage[],
+    pages: [{ id: 1, name: '我的原符文', isDeletable: true, isEditable: true, isTemporary: false, isRecommendationOverride: false, order: 0, current: true, primaryStyleId: 8000, subStyleId: 8200, selectedPerkIds: [8005, 8009, 9104, 8014, 8210, 8236, 5005, 5008, 5001] }] as PerkPage[],
     items: { accountId: 99, itemSets: [{ ...createItemSet(champion, plan, 'player-owned'), title: '我自己配的' }], timestamp: 1 } as ItemSetDocument,
     spell1Id: 4, spell2Id: 12, championId: 103, completed: true, canAdd: true, phase: 'ChampSelect', summonerId: 99, gameId: 1234,
     queue: { id: 420, mapId: 11, gameMode: 'CLASSIC' },
-    failPostOnce: false, failItemsAfterWriteOnce: false, failRollbackItems: false, additionalSetOnFailure: false,
+    failPostOnce: false, failPageCreationOnce: false, nextPageId: 2, failItemsAfterWriteOnce: false, failRollbackItems: false, additionalSetOnFailure: false,
     dropPageWrite: false, dropPageDelete: false, dropItemRegistration: false, dropItemClear: false,
     failClearWrites: 0, failRegistrationWrites: 0, failFinalWrites: 0, lostRegistrationResponses: 0,
     writes: [] as string[],
     itemWrites: [] as Array<{ method: string; body: unknown }>,
+    pageWrites: [] as Array<{ method: string; body: unknown }>,
     beforeRequest: undefined as undefined | ((method: string, path: string) => Promise<void>),
   }
   const request: LcuRequest = async <T>(method: string, path: string, raw?: unknown): Promise<T> => {
@@ -45,7 +46,11 @@ function harness(resources: ConstructorParameters<typeof ConfigurationManager>[3
     else if (path === '/lol-perks/v1/inventory') value = { canAddCustomPage: db.canAdd }
     else if (path === '/lol-perks/v1/pages' && method === 'GET') value = db.pages
     else if (path === '/lol-perks/v1/pages' && method === 'POST') {
-      const page = { ...body, id: Math.max(...db.pages.map((entry) => entry.id)) + 1, current: false, isDeletable: true } as PerkPage
+      db.pageWrites.push({ method, body })
+      if (db.failPageCreationOnce) { db.failPageCreationOnce = false; throw new Error('符文创建失败') }
+      db.nextPageId = Math.max(db.nextPageId, ...db.pages.map((entry) => entry.id + 1))
+      if (body.current) db.pages.forEach((page) => { page.current = false })
+      const page = { ...body, id: db.nextPageId++, current: Boolean(body.current), isDeletable: true } as PerkPage
       db.pages.push(page)
       if (db.failPostOnce) { db.failPostOnce = false; throw new Error('POST 超时') }
       value = page
@@ -55,7 +60,10 @@ function harness(resources: ConstructorParameters<typeof ConfigurationManager>[3
       if (method === 'DELETE' && !db.dropPageDelete) db.pages = db.pages.filter((page) => page.id !== id)
       else if (method === 'PUT' && !db.dropPageWrite) db.pages = db.pages.map((page) => page.id === id ? { ...page, ...body } as PerkPage : page)
     }
-    else if (path === '/lol-perks/v1/currentpage') db.pages.forEach((page) => { page.current = page.id === Number(raw) })
+    else if (path === '/lol-perks/v1/currentpage') {
+      if (method === 'GET') value = db.pages.find((page) => page.current)
+      else db.pages.forEach((page) => { page.current = page.id === Number(raw) })
+    }
     else if (path.includes('/lol-item-sets/')) {
       if (method !== 'GET') db.itemWrites.push({ method, body: structuredClone(raw) })
       if (method === 'GET') value = { ...db.items, itemSets: [...db.items.itemSets].sort((a, b) => b.sortrank - a.sortrank) }
@@ -379,12 +387,45 @@ describe('LCU configuration transaction', () => {
     await manager.initialize()
     await manager.apply(champion, plan, false)
     expect(db.pages.filter((page) => page.name.startsWith('Rift ·'))).toHaveLength(1)
-    expect(db.pages.find((page) => page.current)).toMatchObject({ id: 2, isTemporary: false, isRecommendationOverride: false })
+    expect(db.pages.find((page) => page.current)).toMatchObject({ id: 10, isTemporary: false, isRecommendationOverride: false })
     expect(db.pages.find((page) => page.id === 1)?.name).toBe(original.name)
     await manager.restore()
-    expect(db.pages.find((page) => page.current)).toMatchObject({ id: 10, name: 'Rift · 阿狸 · 上一套' })
-    expect(db.pages.find((page) => page.id === 2)?.name).toBe('Rift · 拉克丝 · 旧推荐')
+    expect(db.pages.find((page) => page.current)).toMatchObject({ id: 12, name: 'Rift · 阿狸 · 上一套' })
+    expect(db.pages.find((page) => page.name === 'Rift · 拉克丝 · 旧推荐')?.id).toBe(11)
     expect(db.pages.find((page) => page.id === 9)?.name).toBe('预设页')
+  })
+  it('recreates an owned rune page with clean writable fields instead of retaining stale dropdown metadata', async () => {
+    const { db, manager, store } = harness()
+    db.pages = [{ ...db.pages[0], name: 'Rift · 上一英雄 · 旧方案', uiPerks: ['stale'], pageKeystone: { name: 'stale' }, recommendationIndex: 2 }]
+    const original = structuredClone(db.pages[0])
+    await manager.initialize()
+    await manager.apply(champion, { ...plan, runes: { ...plan.runes!, primaryRuneNames: ['电刑'] } }, false)
+    expect(db.pages).toHaveLength(1)
+    expect(db.pages[0]).toMatchObject({ id: 2, name: 'Rift · 阿狸 · 电刑', current: true, order: 0, isTemporary: false, isRecommendationOverride: false })
+    expect(db.pages[0]).not.toHaveProperty('uiPerks')
+    expect(db.pages[0]).not.toHaveProperty('pageKeystone')
+    expect(db.writes.slice(0, 2)).toEqual(['DELETE /lol-perks/v1/pages/1', 'POST /lol-perks/v1/pages'])
+    expect(db.pageWrites[0].body).not.toHaveProperty('id')
+    expect(store.journal?.snapshot?.removedPages?.[0].page).toEqual(original)
+    await manager.restore()
+    expect(db.pages).toHaveLength(1)
+    expect(db.pages[0]).toMatchObject({ id: 3, name: original.name, current: true, selectedPerkIds: original.selectedPerkIds })
+  })
+  it.each([false, true])('restores the removed current page if replacement creation fails (lost response=%s)', async (lost) => {
+    const { db, manager } = harness()
+    // Same display name with different runes must not confuse the restored
+    // original with a replacement whose POST response was lost.
+    db.pages[0].name = `Rift · 阿狸 · ${plan.title}`
+    const original = structuredClone(db.pages[0])
+    db.canAdd = false
+    if (lost) db.failPostOnce = true
+    else db.failPageCreationOnce = true
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, false)).rejects.toThrow('已恢复')
+    expect(db.pages).toHaveLength(1)
+    expect(db.pages[0]).toMatchObject({ name: original.name, current: true, selectedPerkIds: original.selectedPerkIds })
+    expect(db.itemWrites).toHaveLength(0)
+    expect(manager.recoveryNeeded).toBe(false)
   })
   it('does not silently succeed when old managed rune pages could not be deleted', async () => {
     const { db, manager } = harness()
@@ -403,7 +444,9 @@ describe('LCU configuration transaction', () => {
     await manager.initialize()
     await manager.apply(champion, plan, false)
     expect(db.items.itemSets[0]).toMatchObject({ sortrank: 0 })
-    expect(db.items.itemSets[0].blocks.find((block) => block.type === '合成散件 · 核心')?.items).toEqual([{ id: '1052', count: 1 }, { id: '3108', count: 1 }])
+    expect(db.items.itemSets[0].blocks.find((block) => block.type === '过渡')?.items).toEqual([{ id: '1052', count: 1 }])
+    expect(db.items.itemSets[0].blocks.find((block) => block.type === '中间套')?.items).toEqual([{ id: '3108', count: 1 }])
+    expect(db.items.itemSets[0].blocks.at(-1)?.type).toBe('成装')
     expect(plan.itemGroups).toHaveLength(2)
     expect(plan.purchaseGroups).toBeUndefined()
   })
@@ -413,7 +456,7 @@ describe('LCU configuration transaction', () => {
       prepare: vi.fn(async () => ({ root: 'Game/Config', champion: 'Ahri', championKey: 103, backupFile: 'backup.json', entries: [] })),
       apply: vi.fn(async () => { disk = 'rift'; throw new Error('推荐文件写入失败') }),
       verify: vi.fn(async () => undefined),
-      restore: vi.fn(async () => { disk = 'wegame' }),
+      restore: vi.fn(async () => { expect(db.items.itemSets).toEqual([]); disk = 'wegame' }),
     }
     const { db, manager } = harness({ files })
     await manager.initialize()
@@ -434,6 +477,18 @@ describe('LCU configuration transaction', () => {
     await expect(manager.apply(champion, plan, false)).rejects.toThrow('未找到游戏 Config 目录')
     expect(db.writes).toEqual([])
     expect(db.items.itemSets[0].uid).toBe('player-owned')
+  })
+  it('restores disk files after a failed LCU export even when the file manager never started applying', async () => {
+    const files = {
+      prepare: vi.fn(async () => ({ root: 'Game/Config', champion: 'Ahri', championKey: 103, backupFile: 'backup.json', entries: [] })),
+      apply: vi.fn(), verify: vi.fn(), restore: vi.fn(async () => { expect(db.items.itemSets).toEqual([]) }),
+    }
+    const { db, manager } = harness({ files })
+    db.failFinalWrites = 3
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, false)).rejects.toThrow('已撤回本次写入')
+    expect(files.apply).not.toHaveBeenCalled()
+    expect(files.restore).toHaveBeenCalledOnce()
   })
   it('cancels after a selection change and restores the page already written', async () => {
     const { db, manager } = harness()

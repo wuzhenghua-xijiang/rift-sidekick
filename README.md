@@ -4,11 +4,11 @@
 
 给《英雄联盟》召唤师准备的 Windows 侧边助手：选人时帮你找出装、配符文、看对位，让 AI 教练参谋 BP；对局中有开黑搭子式的语音，结束后再看看这一把打得怎么样。
 
-[下载 Windows 正式版](https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/latest) · [看看新版变化](docs/releases/v0.2.9.md) · [反馈问题 / 提建议](https://github.com/wuzhenghua-xijiang/rift-sidekick/issues)
+[下载 Windows 正式版](https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/latest) · [看看新版变化](docs/releases/v0.2.10.md) · [反馈问题 / 提建议](https://github.com/wuzhenghua-xijiang/rift-sidekick/issues)
 
-**当前版本：0.2.9 · Windows 10 / 11 x64 · 基础功能无需 AI Key**
+**当前版本：0.2.10 · Windows 10 / 11 x64 · 基础功能无需 AI Key**
 
-本版补齐装备合成散件与中间件，清理历史助手符文页和带来源标记的旧 WeGame 装备推荐，并同步游戏内套装排序。[本版修复与验证范围 →](docs/releases/v0.2.9.md)
+本版将商店套装整理为出门装、过渡、中间套、成装四阶段；合并散件、清理 Pallas/101 残留和旧全局副本，并重建助手符文页刷新下拉列表。[本版修复与验证范围 →](docs/releases/v0.2.10.md)
 
 > 独立玩家项目，非 Riot Games、腾讯或 WeGame 官方产品，未宣称获得其授权、认可或安全认证。使用前请阅读文末的[使用边界与声明](#使用边界与声明)。
 
@@ -23,7 +23,7 @@
 - **召唤师峡谷、普通大乱斗**：同步符文、召唤师技能和商店装备套装。
 - **海克斯大乱斗**：只同步装备，当前使用明确标注的普通大乱斗装备参考，不套用其胜率。
 - **游戏里找装备**：按 **P → 物品套装 → `Rift · 英雄 · 方案`**。它不替换游戏原生的“推荐”标签。
-- **散件也能找**：套装包含来源提供的出门装，以及按当前版本配方展开的基础散件、中间件和成装；推荐卡片继续展示六件成装。
+- **散件也能找**：商店套装从上往下按出门装 → 过渡 → 中间套 → 成装排列，每阶段一栏，成装栏完整保留方案装备；推荐卡片继续展示六件成装。
 
 ### 选人室里，多一个 AI 教练
 
@@ -66,7 +66,7 @@ AI 教练需要自行配置 OpenAI 或兼容接口的 Base URL、模型和 API K
 
 ## 三步上场
 
-1. **下载安装。** 到 [GitHub Releases](https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/latest) 下载 `Rift-Sidekick-Setup-0.2.9-x64.exe` 并安装。请从本仓库发布页获取，核对随包的 `SHA256SUMS.txt`；当前安装包尚无 Windows 发布者代码签名，勿为安装而关闭安全防护。
+1. **下载安装。** 到 [GitHub Releases](https://github.com/wuzhenghua-xijiang/rift-sidekick/releases/latest) 下载 `Rift-Sidekick-Setup-0.2.10-x64.exe` 并安装。请从本仓库发布页获取，核对随包的 `SHA256SUMS.txt`；当前安装包尚无 Windows 发布者代码签名，勿为安装而关闭安全防护。
 2. **打开官方客户端。** 启动助手，确认游戏路径，点击启动；账号登录、验证与大区选择在英雄联盟官方窗口完成。你在官方客户端登录后，助手自动连接，不需要向助手提供 QQ 密码。
 3. **选个英雄。** 进入选人后查看方案，锁定后检查是否显示“已应用”；想换就点另一套。要用 AI，再去 **设置 → OpenAI** 填写连接信息，回到教练页生成建议。
 

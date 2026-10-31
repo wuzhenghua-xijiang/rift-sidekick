@@ -123,18 +123,21 @@ export class ConfigurationManager {
       const managedKey = `${summonerId}:${champion.key}:${plan.mode}`
       const targetItems = createItemSet(champion, plan, this.journal.managedItems[managedKey])
       const recommendationFiles = this.resources.files ? await this.resources.files.prepare(champion, plan, targetItems) : undefined
+      const recreateManaged = beforePage && isManagedPerkPage(beforePage)
       snapshot = {
         status: 'pending', summonerId, championKey: champion.key, sessionId: selection.state.sessionId || '',
-        beforePage, beforePageIds: pages.map((page) => page.id),
+        beforePage: recreateManaged ? undefined : beforePage, beforePageIds: pages.map((page) => page.id),
         beforeCurrentId: pages.find((page) => page.current || page.isActive)?.id,
-        removedPages: pages.filter((page) => page.id !== beforePage?.id && isManagedPerkPage(page)).map((page) => ({ page })),
+        removedPages: pages.filter((page) => (recreateManaged || page.id !== beforePage?.id) && isManagedPerkPage(page)).map((page) => ({ page })),
         recommendationFiles,
         // Old item sets are intentionally cleared without storing their contents.
         // Keep the empty document for undoing this write and reading legacy journals.
         beforeItems: { ...beforeItems, itemSets: [] }, beforeSpells,
         targetPage: runes ? {
-          ...(beforePage ? { id: beforePage.id } : {}),
+          ...(beforePage && !recreateManaged ? { id: beforePage.id } : {}),
           name: runePageName(champion, plan),
+          current: true,
+          order: 0,
           isEditable: true,
           isTemporary: false,
           isRecommendationOverride: false,
@@ -152,9 +155,22 @@ export class ConfigurationManager {
       let pageId: number | undefined
       if (snapshot.targetPage) {
         snapshot.attempted.page = true
+        snapshot.attempted.current = true
         await this.save(snapshot)
-        if (beforePage) {
-          await this.request('PUT', `${PAGE_PATH}/${beforePage.id}`, { ...beforePage, ...snapshot.targetPage })
+        // Replacing managed pages sends Delete/Create events to the client's
+        // dropdown. PUT can leave the old label and an empty '-' placeholder.
+        for (const { page } of snapshot.removedPages || []) {
+          await checkSelection()
+          const current = (await this.request<PerkPage[]>('GET', PAGE_PATH)).find((entry) => entry.id === page.id)
+          if (!current) continue
+          if (pageFingerprint(current) !== pageFingerprint(page)) throw new Error('历史助手符文页已被手动修改，已停止清理。')
+          await checkSelection()
+          await this.request('DELETE', `${PAGE_PATH}/${page.id}`)
+          if ((await this.request<PerkPage[]>('GET', PAGE_PATH)).some((entry) => entry.id === page.id)) throw new Error('客户端没有清理历史助手符文页。')
+        }
+        await checkSelection()
+        if (snapshot.beforePage) {
+          await this.request('PUT', `${PAGE_PATH}/${snapshot.beforePage.id}`, snapshot.targetPage)
         } else {
           const created = await this.request<PerkPage>('POST', PAGE_PATH, snapshot.targetPage)
           snapshot.targetPage.id = created?.id || (await this.findCreatedPage(snapshot))?.id
@@ -163,17 +179,7 @@ export class ConfigurationManager {
         pageId = snapshot.targetPage.id!
         await this.save(snapshot)
         await checkSelection()
-        snapshot.attempted.current = true
-        await this.save(snapshot)
         await this.request('PUT', '/lol-perks/v1/currentpage', pageId)
-        for (const { page } of snapshot.removedPages || []) {
-          await checkSelection()
-          const current = (await this.request<PerkPage[]>('GET', PAGE_PATH)).find((entry) => entry.id === page.id)
-          if (!current) continue
-          if (pageFingerprint(current) !== pageFingerprint(page)) throw new Error('历史助手符文页已被手动修改，已停止清理。')
-          await this.request('DELETE', `${PAGE_PATH}/${page.id}`)
-          if ((await this.request<PerkPage[]>('GET', PAGE_PATH)).some((entry) => entry.id === page.id)) throw new Error('客户端没有清理历史助手符文页。')
-        }
       }
 
       await checkSelection()
@@ -183,6 +189,8 @@ export class ConfigurationManager {
       snapshot.beforeItems = { ...latestItems, itemSets: [] }
       snapshot.itemSetsReplaced = true
       snapshot.attempted.items = true
+      // LCU itself can rewrite the champion's RIOT_ItemSet file during PUT/POST.
+      snapshot.attempted.files = Boolean(this.resources.files && snapshot.recommendationFiles)
       await this.save(snapshot)
       await this.replaceItemSets(snapshot, checkSelection)
 
@@ -190,7 +198,7 @@ export class ConfigurationManager {
         await checkSelection()
         snapshot.attempted.files = true
         await this.save(snapshot)
-        await this.resources.files.apply(snapshot.recommendationFiles, checkSelection)
+        await this.resources.files.apply(snapshot.recommendationFiles, checkSelection, () => this.save(snapshot!))
       }
 
       if (snapshot.targetSpells) {
@@ -200,16 +208,18 @@ export class ConfigurationManager {
         await this.request('PATCH', '/lol-champ-select/v1/session/my-selection', snapshot.targetSpells)
       }
       // An HTTP 2xx response is not sufficient: read the written values back.
-      const [afterPages, afterItems, afterSelection] = await Promise.all([
+      const [afterPages, afterItems, afterSelection, selectedPage] = await Promise.all([
         snapshot.targetPage ? this.request<PerkPage[]>('GET', PAGE_PATH) : Promise.resolve([] as PerkPage[]),
         this.request<ItemSetDocument>('GET', itemPath(summonerId)),
         checkSelection(),
+        snapshot.targetPage ? this.request<PerkPage>('GET', '/lol-perks/v1/currentpage') : Promise.resolve(undefined),
         snapshot.recommendationFiles && this.resources.files ? this.resources.files.verify(snapshot.recommendationFiles) : Promise.resolve(),
       ])
       const afterPage = afterPages.find((page) => page.id === pageId)
       if (snapshot.targetPage) {
         if (!afterPage || pageFingerprint(afterPage) !== pageFingerprint(snapshot.targetPage)) throw new Error('客户端没有保留预期的符文配置。')
-        if (!afterPage.current && !afterPage.isActive) throw new Error('客户端没有切换到助手符文页。')
+        if (!selectedPage || selectedPage.id !== pageId || pageFingerprint(selectedPage) !== pageFingerprint(snapshot.targetPage)) throw new Error('客户端没有切换到助手符文页。')
+        if (afterPages.filter(isManagedPerkPage).length !== 1) throw new Error('客户端仍保留重复的助手符文页。')
         if (afterPage.isTemporary || afterPage.isRecommendationOverride) throw new Error('客户端仍将助手符文页视为临时推荐页。')
       }
       const afterItemSet = afterItems.itemSets.find((set) => set.uid === targetItems.uid)
@@ -272,7 +282,7 @@ export class ConfigurationManager {
     const targetPage = snapshot.targetPage
     if (!targetPage) return
     const pages = await this.request<PerkPage[]>('GET', PAGE_PATH)
-    return pages.find((page) => !snapshot.beforePageIds.includes(page.id) && page.name === targetPage.name)
+    return pages.find((page) => !snapshot.beforePageIds.includes(page.id) && pageFingerprint(page) === pageFingerprint(targetPage))
   }
 
   private async replaceItemSets(snapshot: ConfigSnapshot, checkSelection: () => Promise<unknown>) {
@@ -319,11 +329,6 @@ export class ConfigurationManager {
     const attempt = async (label: string, operation: () => Promise<void>) => {
       try { await operation() } catch (error) { errors.push(`${label}：${messageOf(error)}`) }
     }
-    if (snapshot.attempted.files && snapshot.recommendationFiles) await attempt('推荐文件恢复失败', async () => {
-      if (!this.resources.files) throw new Error('推荐文件管理器不可用，请重启后恢复')
-      await this.resources.files.restore(snapshot.recommendationFiles!, () => this.assertAccount(snapshot.summonerId))
-      snapshot.attempted.files = false
-    })
     if (snapshot.attempted.spells && snapshot.beforeSpells) await attempt('技能恢复失败', async () => {
       const beforeSpells = snapshot.beforeSpells!
       const phase = await this.request<string>('GET', '/lol-gameflow/v1/gameflow-phase')
@@ -362,6 +367,26 @@ export class ConfigurationManager {
       if (itemFingerprint(restored) !== itemFingerprint(before) || restored?.sortrank !== before?.sortrank) throw new Error('客户端没有保留恢复后的装备方案')
       snapshot.attempted.items = false
     })
+    if (snapshot.attempted.files && snapshot.recommendationFiles) await attempt('推荐文件恢复失败', async () => {
+      if (snapshot.attempted.items) throw new Error('需先恢复客户端装备，避免再次覆盖推荐文件')
+      if (!this.resources.files) throw new Error('推荐文件管理器不可用，请重启后恢复')
+      await this.resources.files.restore(snapshot.recommendationFiles!, () => this.assertAccount(snapshot.summonerId))
+      snapshot.attempted.files = false
+    })
+    // Free the replacement page's slot before restoring deleted pages. This is
+    // also resumable after a lost POST response or a restart during recovery.
+    if (snapshot.targetPage && !snapshot.beforePage && snapshot.attempted.page) await attempt('新符文页撤回失败', async () => {
+      const pages = await this.request<PerkPage[]>('GET', PAGE_PATH)
+      const target = snapshot.targetPage!.id ? pages.find((page) => page.id === snapshot.targetPage!.id) : await this.findCreatedPage(snapshot)
+      if (target) {
+        if (pageFingerprint(target) !== pageFingerprint(snapshot.targetPage!)) throw new Error('检测到你手动修改了助手符文页，已保留该修改')
+        await this.assertAccount(snapshot.summonerId)
+        await this.request('DELETE', `${PAGE_PATH}/${target.id}`)
+        if ((await this.request<PerkPage[]>('GET', PAGE_PATH)).some((page) => page.id === target.id)) throw new Error('客户端没有保留恢复后的符文配置')
+      }
+      snapshot.attempted.page = false
+      await this.save(snapshot)
+    })
     for (const removed of snapshot.removedPages || []) await attempt('历史符文页恢复失败', async () => {
       const pages = await this.request<PerkPage[]>('GET', PAGE_PATH)
       const existing = pages.find((page) => page.id === (removed.restoredId || removed.page.id))
@@ -370,9 +395,8 @@ export class ConfigurationManager {
         return
       }
       await this.assertAccount(snapshot.summonerId)
-      const { id: _id, ...page } = removed.page
       try {
-        const restored = await this.request<PerkPage>('POST', PAGE_PATH, { ...page, current: false, isActive: false })
+        const restored = await this.request<PerkPage>('POST', PAGE_PATH, { ...writablePerkPage(removed.page), id: undefined, current: false })
         removed.restoredId = restored?.id
       } finally {
         const latest = await this.request<PerkPage[]>('GET', PAGE_PATH)
@@ -385,14 +409,15 @@ export class ConfigurationManager {
     const targetPage = snapshot.targetPage
     if (targetPage && (snapshot.attempted.page || snapshot.attempted.current)) await attempt('符文恢复失败', async () => {
       const pages = await this.request<PerkPage[]>('GET', PAGE_PATH)
-      const target = targetPage.id
+      const target = !snapshot.attempted.page ? undefined : targetPage.id
         ? pages.find((page) => page.id === targetPage.id)
-        : pages.find((page) => !snapshot.beforePageIds.includes(page.id) && page.name === targetPage.name)
+        : pages.find((page) => !snapshot.beforePageIds.includes(page.id) && pageFingerprint(page) === pageFingerprint(targetPage))
       if (target && pageFingerprint(target) !== pageFingerprint(targetPage) && (!snapshot.beforePage || pageFingerprint(target) !== pageFingerprint(snapshot.beforePage))) {
         throw new Error('检测到你手动修改了助手符文页，已保留该修改')
       }
       const originalCurrentId = snapshot.removedPages?.find((entry) => entry.page.id === snapshot.beforeCurrentId)?.restoredId || snapshot.beforeCurrentId
-      if (target && snapshot.attempted.current && (target.current || target.isActive) && originalCurrentId && pages.some((page) => page.id === originalCurrentId)) {
+      if (snapshot.attempted.current && originalCurrentId && !pages.some((page) => page.id === originalCurrentId) && snapshot.removedPages?.some((entry) => entry.page.id === snapshot.beforeCurrentId)) throw new Error('原来的当前符文页尚未恢复')
+      if (snapshot.attempted.current && (!target || target.current || target.isActive) && originalCurrentId && pages.some((page) => page.id === originalCurrentId)) {
         await this.assertAccount(snapshot.summonerId)
         await this.request('PUT', '/lol-perks/v1/currentpage', originalCurrentId)
         const verified = await this.request<PerkPage[]>('GET', PAGE_PATH)
@@ -400,7 +425,7 @@ export class ConfigurationManager {
       }
       if (snapshot.attempted.page && target) {
         await this.assertAccount(snapshot.summonerId)
-        if (snapshot.beforePage) await this.request('PUT', `${PAGE_PATH}/${target.id}`, snapshot.beforePage)
+        if (snapshot.beforePage) await this.request('PUT', `${PAGE_PATH}/${target.id}`, writablePerkPage(snapshot.beforePage))
         else await this.request('DELETE', `${PAGE_PATH}/${target.id}`)
         const verified = (await this.request<PerkPage[]>('GET', PAGE_PATH)).find((page) => page.id === target.id)
         if (snapshot.beforePage ? !verified || pageFingerprint(verified) !== pageFingerprint(snapshot.beforePage) : Boolean(verified)) throw new Error('客户端没有保留恢复后的符文配置')
@@ -440,7 +465,10 @@ function isManagedPerkPage(page: PerkPage) {
   return /^Rift\s*·\s*/.test(page.name) && page.isEditable !== false && page.isDeletable !== false
 }
 function runePageName(champion: Champion, plan: BuildPlan) {
-  return `Rift · ${champion.name} · ${plan.title || '推荐符文'}`.slice(0, 48)
+  return `Rift · ${champion.name} · ${plan.runes?.primaryRuneNames[0] || plan.title || '推荐符文'}`.slice(0, 48)
+}
+function writablePerkPage(page: PerkPage) {
+  return Object.fromEntries(['id', 'name', 'current', 'order', 'isEditable', 'isTemporary', 'isRecommendationOverride', 'primaryStyleId', 'subStyleId', 'selectedPerkIds'].filter((field) => page[field] !== undefined).map((field) => [field, page[field]]))
 }
 function same(a: unknown, b: unknown): boolean { return stable(a) === stable(b) }
 function stable(value: unknown): string {

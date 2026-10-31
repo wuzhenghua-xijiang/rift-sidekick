@@ -65,10 +65,13 @@ describe('multiple real recommendation samples', () => {
     }
     expect(isFinishedItem(catalog.items[3877], 'ranked')).toBe(true)
   })
-  it('provides shop starters and per-item recipes separately from the six finished card items', () => {
+  it('orders compact shop stages and retains all six completed items in the last block', () => {
     for (const plan of build(sample())) {
-      expect(plan.purchaseGroups?.[0]).toEqual({ label: '出门装', ids: [1056, 2003, 2003], names: ['多兰之戒', '药水', '药水'] })
-      expect(plan.purchaseGroups?.find((group) => group.label === '合成散件 · 法师之靴')?.ids).toEqual([1001])
+      expect(plan.purchaseGroups?.at(-1)?.ids).toEqual(plan.itemGroups.flatMap((group) => group.ids))
+      expect(plan.purchaseGroups?.at(-1)?.ids).toHaveLength(6)
+      expect(plan.purchaseGroups?.find((group) => group.label === '出门装')).toEqual({ label: '出门装', ids: [1056, 2003, 2003], names: ['多兰之戒', '药水', '药水'] })
+      expect(plan.purchaseGroups?.find((group) => group.label === '过渡')?.ids).toContain(1001)
+      expect(plan.purchaseGroups!.length).toBeLessThanOrEqual(4)
       expect(plan.purchaseGroups?.some((group) => group.ids.includes(1058))).toBe(true)
       expect(plan.itemGroups.flatMap((group) => group.ids)).toHaveLength(6)
     }

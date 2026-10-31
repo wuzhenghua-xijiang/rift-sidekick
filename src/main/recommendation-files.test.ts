@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, symlink, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -33,7 +33,7 @@ async function harness(tencent = true) {
 }
 
 describe('game recommendation files', () => {
-  it.each([true, false])('writes a stable first-ranked global recommendation and backs up old generated files (Tencent=%s)', async (tencent) => {
+  it.each([true, false])('writes one champion recommendation and backs up old generated files (Tencent=%s)', async (tencent) => {
     const { global, specific, service, wegame } = await harness(tencent)
     await writeFile(join(global, 'wegame.json'), wegame)
     await writeFile(join(specific, 'tgp-build.json'), wegame)
@@ -44,22 +44,23 @@ describe('game recommendation files', () => {
     const snapshot = await service.prepare(champion, plan, target)
     expect(JSON.parse(await readFile(snapshot.backupFile, 'utf8')).entries).toEqual(snapshot.entries)
     await service.apply(snapshot, async () => undefined)
-    const output = JSON.parse(await readFile(join(global, 'rift-sidekick-103-ranked.json'), 'utf8'))
-    expect(output).toMatchObject({ uid: target.uid, type: 'global', sortrank: 0, blocks: target.blocks })
+    const output = JSON.parse(await readFile(join(specific, 'RIOT_ItemSet_1.json'), 'utf8'))
+    expect(output).toMatchObject({ uid: target.uid, champion: 'Ahri', type: 'custom', sortrank: 0, blocks: target.blocks })
     await expect(readFile(join(global, 'wegame.json'))).rejects.toMatchObject({ code: 'ENOENT' })
     await expect(readFile(join(specific, 'tgp-build.json'))).rejects.toMatchObject({ code: 'ENOENT' })
     expect(await readFile(join(global, 'personal.json'), 'utf8')).toBe(personal)
-    expect(await readFile(join(global, 'wegame-lux.json'), 'utf8')).toBe(otherChampion)
+    await expect(readFile(join(global, 'wegame-lux.json'))).rejects.toMatchObject({ code: 'ENOENT' })
     await service.restore(snapshot, async () => undefined)
     expect(await readFile(join(global, 'wegame.json'), 'utf8')).toBe(wegame)
     expect(await readFile(join(specific, 'tgp-build.json'), 'utf8')).toBe(wegame)
-    await expect(readFile(join(global, 'rift-sidekick-103-ranked.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+    expect(await readFile(join(global, 'wegame-lux.json'), 'utf8')).toBe(otherChampion)
+    await expect(readFile(join(specific, 'RIOT_ItemSet_1.json'))).rejects.toMatchObject({ code: 'ENOENT' })
   })
   it('retains a new manual file edit during undo, then can retry recovery', async () => {
-    const { global, service } = await harness()
+    const { specific, service } = await harness()
     const snapshot = await service.prepare(champion, plan, target)
     await service.apply(snapshot, async () => undefined)
-    const file = join(global, 'rift-sidekick-103-ranked.json')
+    const file = join(specific, 'RIOT_ItemSet_1.json')
     await writeFile(file, 'manual edit')
     await expect(service.restore(snapshot, async () => undefined)).rejects.toThrow('手动修改')
     expect(await readFile(file, 'utf8')).toBe('manual edit')
@@ -68,7 +69,7 @@ describe('game recommendation files', () => {
     await expect(readFile(file)).rejects.toMatchObject({ code: 'ENOENT' })
   })
   it('detects competing WeGame writes before reporting success', async () => {
-    const { global, service, wegame } = await harness()
+    const { global, specific, service, wegame } = await harness()
     await writeFile(join(global, 'wegame.json'), wegame)
     const snapshot = await service.prepare(champion, plan, target)
     await service.apply(snapshot, async () => undefined)
@@ -85,21 +86,21 @@ describe('game recommendation files', () => {
     expect(await readFile(competitor, 'utf8')).toBe(wegame)
   })
   it('rolls back a partial cleanup when selection changes before writing the replacement', async () => {
-    const { global, service, wegame } = await harness()
+    const { global, specific, service, wegame } = await harness()
     await writeFile(join(global, 'wegame.json'), wegame)
     const snapshot = await service.prepare(champion, plan, target)
     const guard = vi.fn().mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined).mockRejectedValue(new Error('选人已改变'))
     await expect(service.apply(snapshot, guard)).rejects.toThrow('选人已改变')
     await service.restore(snapshot, async () => undefined)
     expect(await readFile(join(global, 'wegame.json'), 'utf8')).toBe(wegame)
-    await expect(readFile(join(global, 'rift-sidekick-103-ranked.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(readFile(join(specific, 'RIOT_ItemSet_1.json'))).rejects.toMatchObject({ code: 'ENOENT' })
   })
   it('uses the same path and UID when switching builds and can restore the previous recommendation', async () => {
-    const { global, service } = await harness()
+    const { specific, service } = await harness()
     await service.apply(await service.prepare(champion, plan, target), async () => undefined)
     const next = await service.prepare(champion, plan, { ...target, title: 'Rift · 阿狸 · 备选' })
     await service.apply(next, async () => undefined)
-    const path = join(global, 'rift-sidekick-103-ranked.json')
+    const path = join(specific, 'RIOT_ItemSet_1.json')
     expect(JSON.parse(await readFile(path, 'utf8')).title).toContain('备选')
     await service.restore(next, async () => undefined)
     expect(JSON.parse(await readFile(path, 'utf8'))).toMatchObject({ uid: target.uid, title: target.title })
@@ -111,6 +112,84 @@ describe('game recommendation files', () => {
     await rm(global, { recursive: true }); await symlink(external, global, 'junction')
     await expect(service.prepare(champion, plan, target)).rejects.toThrow('重定向')
     expect(await readFile(join(external, 'wegame.json'), 'utf8')).toBe(wegame)
+  })
+  it('cleans unscoped Pallas / 101 recommendations and old Rift global copies from every champion', async () => {
+    const { global, specific, service } = await harness()
+    const pallas = JSON.stringify({ ...target, uid: 'LOL_127-stale', title: '101资料站-丽桑卓大乱斗登场率高', associatedChampions: [] })
+    const oldOther = JSON.stringify({ ...target, uid: 'old-lux', title: 'Rift · 拉克丝 · 旧推荐', associatedChampions: [99] })
+    await writeFile(join(global, 'Pallas_stale.json'), pallas)
+    await writeFile(join(global, 'rift-sidekick-99-aram.json'), oldOther)
+    await writeFile(join(global, 'rift-sidekick-103-ranked.json'), JSON.stringify({ ...target, type: 'global' }))
+    const snapshot = await service.prepare(champion, plan, target)
+    // This is the client-created export observed on the actual Tencent client.
+    await writeFile(join(specific, 'RIOT_ItemSet_1.json'), JSON.stringify({ ...target, sortrank: 9999 }))
+    await service.apply(snapshot, async () => undefined)
+    for (const name of ['Pallas_stale.json', 'rift-sidekick-99-aram.json', 'rift-sidekick-103-ranked.json']) {
+      await expect(readFile(join(global, name))).rejects.toMatchObject({ code: 'ENOENT' })
+    }
+    expect(JSON.parse(await readFile(join(specific, 'RIOT_ItemSet_1.json'), 'utf8'))).toMatchObject({ uid: target.uid, type: 'custom', sortrank: 0 })
+    await service.restore(snapshot, async () => undefined)
+    expect(await readFile(join(global, 'Pallas_stale.json'), 'utf8')).toBe(pallas)
+    expect(await readFile(join(global, 'rift-sidekick-99-aram.json'), 'utf8')).toBe(oldOther)
+  })
+  it('records a late LCU duplicate before removing it and preserves its recovery snapshot', async () => {
+    const { specific, service } = await harness()
+    const snapshot = await service.prepare(champion, plan, target)
+    const duplicate = JSON.stringify({ ...target, sortrank: 9999 })
+    await writeFile(join(specific, 'RIOT_ItemSet_2.json'), duplicate)
+    const persist = vi.fn(async () => {
+      expect(JSON.parse(await readFile(snapshot.backupFile, 'utf8')).entries).toContainEqual({ path: 'Champions/Ahri/Recommended/RIOT_ItemSet_2.json', before: duplicate })
+    })
+    await service.apply(snapshot, async () => undefined, persist)
+    expect(persist).toHaveBeenCalledTimes(2)
+    await expect(readFile(join(specific, 'RIOT_ItemSet_2.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+    await service.restore(snapshot, async () => undefined)
+    expect(await readFile(join(specific, 'RIOT_ItemSet_2.json'), 'utf8')).toBe(duplicate)
+  })
+  it('rejects a manual change to the expected Riot export instead of accepting the same UID alone', async () => {
+    const { specific, service } = await harness()
+    const snapshot = await service.prepare(champion, plan, target)
+    const manual = JSON.stringify({ ...target, title: '我的修改', sortrank: 9999 })
+    await writeFile(join(specific, 'RIOT_ItemSet_1.json'), manual)
+    await expect(service.apply(snapshot, async () => undefined)).rejects.toThrow('其他程序修改')
+    expect(await readFile(join(specific, 'RIOT_ItemSet_1.json'), 'utf8')).toBe(manual)
+  })
+  it('accepts a client export that already exactly matches the normalized recommendation', async () => {
+    const { specific, service } = await harness()
+    const snapshot = await service.prepare(champion, plan, target)
+    const file = join(specific, 'RIOT_ItemSet_1.json')
+    const expected = snapshot.entries.find((entry) => entry.after)!.after!
+    await writeFile(file, expected)
+    await service.apply(snapshot, async () => undefined)
+    expect(await readFile(file, 'utf8')).toBe(expected)
+    expect(snapshot.applied).toBe(true)
+  })
+  it('restores the original file after undoing LCU items deletes the applied export', async () => {
+    const { specific, service } = await harness()
+    const file = join(specific, 'RIOT_ItemSet_1.json')
+    const previous = JSON.stringify({ ...target, uid: 'previous', title: 'Rift · 阿狸 · 上一套' })
+    await writeFile(file, previous)
+    const snapshot = await service.prepare(champion, plan, target)
+    await service.apply(snapshot, async () => undefined)
+    await unlink(file)
+    await service.restore(snapshot, async () => undefined)
+    expect(await readFile(file, 'utf8')).toBe(previous)
+  })
+  it('can recover a captured client export if selection changes before any recommendation write', async () => {
+    const { specific, service } = await harness()
+    const previous = JSON.stringify({ ...target, uid: 'previous', title: 'Rift · 阿狸 · 上一套' })
+    const file = join(specific, 'RIOT_ItemSet_1.json')
+    await writeFile(file, previous)
+    const snapshot = await service.prepare(champion, plan, target)
+    const exported = JSON.stringify({ ...target, sortrank: 9999 })
+    await writeFile(file, exported)
+    const persist = vi.fn(async () => {
+      expect(snapshot.entries.find((entry) => entry.after)?.exported).toBe(exported)
+    })
+    await expect(service.apply(snapshot, async () => { throw new Error('选人已改变') }, persist)).rejects.toThrow('选人已改变')
+    expect(persist).toHaveBeenCalledOnce()
+    await service.restore(snapshot, async () => undefined)
+    expect(await readFile(file, 'utf8')).toBe(previous)
   })
   it('rejects an unavailable game installation before creating or deleting any recommendation', async () => {
     const { service, request } = await harness()
