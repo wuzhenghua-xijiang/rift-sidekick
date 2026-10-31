@@ -5,6 +5,7 @@ import { buildRecommendations } from './recommendations'
 const ENDPOINT = 'https://mcp-api.op.gg/mcp'
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 const OUTPUT_FIELDS = [
+  'data.starter_items.{ids[]}',
   'data.core_items.{ids[],play,win}', 'data.boots.{ids[]}',
   'data.last_items[].{ids[]}', 'data.fourth_items[].{ids[]}', 'data.fifth_items[].{ids[]}', 'data.sixth_items[].{ids[]}',
   'data.summoner_spells.{ids[]}',

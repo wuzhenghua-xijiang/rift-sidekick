@@ -65,6 +65,14 @@ describe('multiple real recommendation samples', () => {
     }
     expect(isFinishedItem(catalog.items[3877], 'ranked')).toBe(true)
   })
+  it('provides shop starters and per-item recipes separately from the six finished card items', () => {
+    for (const plan of build(sample())) {
+      expect(plan.purchaseGroups?.[0]).toEqual({ label: '出门装', ids: [1056, 2003, 2003], names: ['多兰之戒', '药水', '药水'] })
+      expect(plan.purchaseGroups?.find((group) => group.label === '合成散件 · 法师之靴')?.ids).toEqual([1001])
+      expect(plan.purchaseGroups?.some((group) => group.ids.includes(1058))).toBe(true)
+      expect(plan.itemGroups.flatMap((group) => group.ids)).toHaveLength(6)
+    }
+  })
   it('does not rename duplicates or synthesize extra plans from one provider sample', () => {
     const input = sample()
     input.data.core_items = [input.data.core_items[0], { ...input.data.core_items[0], ids: [...input.data.core_items[0].ids].reverse() }]

@@ -15,10 +15,10 @@ class MemoryStore implements JournalStore {
   async load() { return structuredClone(this.journal) }
   async save(journal: ConfigurationJournal) { this.journal = structuredClone(journal); this.saves.push(structuredClone(journal)) }
 }
-function harness() {
+function harness(resources: ConstructorParameters<typeof ConfigurationManager>[3] = {}) {
   const store = new MemoryStore()
   const db = {
-    pages: [{ id: 1, name: '我的原符文', isDeletable: true, isEditable: true, current: true, primaryStyleId: 8000, subStyleId: 8200, selectedPerkIds: [8005, 8009, 9104, 8014, 8210, 8236, 5005, 5008, 5001] }] as PerkPage[],
+    pages: [{ id: 1, name: '我的原符文', isDeletable: true, isEditable: true, isTemporary: false, isRecommendationOverride: false, current: true, primaryStyleId: 8000, subStyleId: 8200, selectedPerkIds: [8005, 8009, 9104, 8014, 8210, 8236, 5005, 5008, 5001] }] as PerkPage[],
     items: { accountId: 99, itemSets: [{ ...createItemSet(champion, plan, 'player-owned'), title: '我自己配的' }], timestamp: 1 } as ItemSetDocument,
     spell1Id: 4, spell2Id: 12, championId: 103, completed: true, canAdd: true, phase: 'ChampSelect', summonerId: 99, gameId: 1234,
     queue: { id: 420, mapId: 11, gameMode: 'CLASSIC' },
@@ -86,7 +86,7 @@ function harness() {
     return structuredClone(value) as T
   }
   const retryPause = vi.fn(async (_milliseconds: number) => undefined)
-  return { db, store, manager: new ConfigurationManager(request, store, retryPause), request, retryPause }
+  return { db, store, manager: new ConfigurationManager(request, store, retryPause, resources), request, retryPause }
 }
 
 describe('LCU configuration transaction', () => {
@@ -366,6 +366,74 @@ describe('LCU configuration transaction', () => {
     db.pages = db.pages.map((page) => ({ ...page, isEditable: false }))
     await expect(manager.apply(champion, plan, false)).rejects.toThrow('可编辑的符文页')
     expect(db.pages).toHaveLength(2)
+  })
+  it('rediscovers historical Rift pages after a missing journal, removes duplicates and restores their original selection on undo', async () => {
+    const { db, manager } = harness()
+    const original = structuredClone(db.pages[0])
+    db.pages = [
+      { ...original, current: false },
+      { ...original, id: 2, name: 'Rift · 拉克丝 · 旧推荐', current: false, isTemporary: true, isRecommendationOverride: true },
+      { ...original, id: 3, name: 'Rift · 阿狸 · 上一套', current: true },
+      { ...original, id: 9, name: '预设页', current: false, isEditable: false, isDeletable: false },
+    ]
+    await manager.initialize()
+    await manager.apply(champion, plan, false)
+    expect(db.pages.filter((page) => page.name.startsWith('Rift ·'))).toHaveLength(1)
+    expect(db.pages.find((page) => page.current)).toMatchObject({ id: 2, isTemporary: false, isRecommendationOverride: false })
+    expect(db.pages.find((page) => page.id === 1)?.name).toBe(original.name)
+    await manager.restore()
+    expect(db.pages.find((page) => page.current)).toMatchObject({ id: 10, name: 'Rift · 阿狸 · 上一套' })
+    expect(db.pages.find((page) => page.id === 2)?.name).toBe('Rift · 拉克丝 · 旧推荐')
+    expect(db.pages.find((page) => page.id === 9)?.name).toBe('预设页')
+  })
+  it('does not silently succeed when old managed rune pages could not be deleted', async () => {
+    const { db, manager } = harness()
+    db.pages.push({ ...db.pages[0], id: 2, name: 'Rift · 旧页一', current: false }, { ...db.pages[0], id: 3, name: 'Rift · 旧页二', current: false })
+    db.dropPageDelete = true
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, false)).rejects.toThrow('没有清理历史助手符文页')
+    expect(db.pages.find((page) => page.id === 2)?.name).toBe('Rift · 旧页一')
+    expect(db.itemWrites).toHaveLength(0)
+  })
+  it('rebuilds shop components for legacy cached plans while preserving compact finished equipment', async () => {
+    const catalog = { items: {
+      3118: { name: '核心', from: ['3108'] }, 3108: { name: '中件', from: ['1052', '1052'] }, 1052: { name: '散件' },
+    }, styles: [], spells: {} }
+    const { db, manager } = harness({ catalog: async () => catalog })
+    await manager.initialize()
+    await manager.apply(champion, plan, false)
+    expect(db.items.itemSets[0]).toMatchObject({ sortrank: 0 })
+    expect(db.items.itemSets[0].blocks.find((block) => block.type === '合成散件 · 核心')?.items).toEqual([{ id: '1052', count: 1 }, { id: '3108', count: 1 }])
+    expect(plan.itemGroups).toHaveLength(2)
+    expect(plan.purchaseGroups).toBeUndefined()
+  })
+  it('restores partially written recommendation files and LCU configuration together after a disk error', async () => {
+    let disk = 'wegame'
+    const files = {
+      prepare: vi.fn(async () => ({ root: 'Game/Config', champion: 'Ahri', championKey: 103, backupFile: 'backup.json', entries: [] })),
+      apply: vi.fn(async () => { disk = 'rift'; throw new Error('推荐文件写入失败') }),
+      verify: vi.fn(async () => undefined),
+      restore: vi.fn(async () => { disk = 'wegame' }),
+    }
+    const { db, manager } = harness({ files })
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, true)).rejects.toThrow('推荐文件写入失败')
+    expect(disk).toBe('wegame')
+    expect(db.items.itemSets).toEqual([])
+    expect(db.pages).toHaveLength(1)
+    expect(db.spell2Id).toBe(12)
+    expect(manager.canRestore).toBe(false)
+  })
+  it('stops before any LCU write if the game recommendation directory cannot be prepared', async () => {
+    const files = {
+      prepare: vi.fn(async () => { throw new Error('未找到游戏 Config 目录') }),
+      apply: vi.fn(), verify: vi.fn(), restore: vi.fn(),
+    }
+    const { db, manager } = harness({ files })
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, false)).rejects.toThrow('未找到游戏 Config 目录')
+    expect(db.writes).toEqual([])
+    expect(db.items.itemSets[0].uid).toBe('player-owned')
   })
   it('cancels after a selection change and restores the page already written', async () => {
     const { db, manager } = harness()

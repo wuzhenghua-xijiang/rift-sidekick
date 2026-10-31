@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import type { BuildPlan, Champion, Position, QueueMode, RuneBuild } from '@shared/types'
 import { buildPlanKey, runeBuildKey } from '@shared/build-plans'
 import { patchLine, validateCatalog, type CatalogItem, type GameCatalog } from './catalog'
+import { purchaseGroups } from './item-components'
 
 type Row = Record<string, unknown>
 const record = (value: unknown): Row => value && typeof value === 'object' && !Array.isArray(value) ? value as Row : {}
@@ -120,6 +121,11 @@ export function buildRecommendations(input: unknown, champion: Champion, positio
       }),
       combos: rows(data.skill_combos).map((entry) => text(entry.name)).filter(Boolean).slice(0, 8),
     }
+    const starter = rows(data.starter_items).map((entry) => ids(entry.ids)).find((items) => items.length && items.every((id) => {
+      const item = catalog.items[id]
+      return item && item.maps?.[mode === 'ranked' ? '11' : '12'] !== false && item.gold?.purchasable !== false && item.inStore !== false && !item.requiredChampion
+    })) || []
+    plan.purchaseGroups = purchaseGroups(plan, catalog, starter)
     return { plan, tank }
   }).filter(({ plan }) => {
     try { validateCatalog(plan, catalog, false); return true } catch { return false }

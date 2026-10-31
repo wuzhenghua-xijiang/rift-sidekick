@@ -1,6 +1,6 @@
 {
   "name": "rift-sidekick",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "private": true,
   "description": "A playful Windows companion for League of Legends champion select.",
   "author": "Rift Sidekick contributors",

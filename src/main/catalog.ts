@@ -7,6 +7,8 @@ export interface CatalogItem {
   from?: string[]
   into?: string[]
   tags?: string[]
+  inStore?: boolean
+  requiredChampion?: string
   gold?: { total?: number; purchasable?: boolean }
 }
 export interface GameCatalog {
@@ -35,7 +37,7 @@ export function matchAssets(detail: MatchDetail, catalog: GameCatalog, patch: st
 
 export function validateCatalog(plan: BuildPlan, catalog: GameCatalog, includeSpells: boolean) {
   const map = plan.mode === 'ranked' ? '11' : '12'
-  for (const id of plan.itemGroups.flatMap((group) => group.ids)) {
+  for (const id of [...plan.itemGroups, ...(plan.purchaseGroups || [])].flatMap((group) => group.ids)) {
     const item = catalog.items[String(id)]
     if (!item || item.maps?.[map] === false) throw new Error(`装备 ${id} 不适用于当前版本或模式，请刷新方案。`)
   }

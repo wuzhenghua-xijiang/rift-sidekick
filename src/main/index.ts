@@ -13,6 +13,7 @@ import { MatchmakingService } from './matchmaking'
 import { DEFAULT_MATCHMAKING_PREFERENCES, matchmakingPreferences, type MatchmakingPreferences } from '@shared/matchmaking'
 import { ConfigurationManager, messageOf } from './configuration'
 import { FileJournal } from './journal'
+import { RecommendationFiles } from './recommendation-files'
 import { fetchRecommendedBuilds } from './opgg'
 import { RecommendationCache } from './recommendation-cache'
 import { AramService } from './aram'
@@ -748,7 +749,10 @@ else {
     await performance.initialize(preferences.optimizeBeforeLaunch)
     updateState({ launcher: launcher.state })
     await data.initialize()
-    configuration = new ConfigurationManager(lcu.request, new FileJournal(join(app.getPath('userData'), 'configuration.json')))
+    configuration = new ConfigurationManager(lcu.request, new FileJournal(join(app.getPath('userData'), 'configuration.json')), undefined, {
+      catalog: (patch) => data.getCatalog(patch),
+      files: new RecommendationFiles(lcu.request, join(app.getPath('userData'), 'recommendation-backups')),
+    })
     try { await configuration.initialize(); configurationReady = true; updateConfigurationState() }
     catch (error) { updateState({ recoveryNeeded: true, lastConfig: { ok: false, message: messageOf(error), at: Date.now() } }) }
     installSecurityHeaders()

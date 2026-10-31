@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { setTimeout as pause } from 'node:timers/promises'
 import type { ApplyResult, BuildPlan, Champion } from '@shared/types'
 import { readSelection, type ChampSelectSession, type GameflowSession } from './selection'
+import type { GameCatalog } from './catalog'
+import { purchaseGroups } from './item-components'
+import type { RecommendationFiles, RecommendationFileSnapshot } from './recommendation-files'
 
 export type LcuRequest = <T = unknown>(method: string, path: string, body?: unknown) => Promise<T>
 export interface PerkPage {
@@ -10,6 +13,7 @@ export interface PerkPage {
   isDeletable?: boolean
   isEditable?: boolean
   isTemporary?: boolean
+  isRecommendationOverride?: boolean
   current?: boolean
   isActive?: boolean
   primaryStyleId?: number
@@ -40,13 +44,15 @@ export interface ConfigSnapshot {
   beforePage?: PerkPage
   beforePageIds: number[]
   beforeCurrentId?: number
+  removedPages?: Array<{ page: PerkPage; restoredId?: number }>
+  recommendationFiles?: RecommendationFileSnapshot
   beforeItems: ItemSetDocument
   itemSetsReplaced?: boolean
   beforeSpells?: SpellSelection
   targetPage?: Omit<PerkPage, 'id'> & { id?: number }
   targetItems: ItemSet
   targetSpells?: SpellSelection
-  attempted: { page: boolean; current: boolean; items: boolean; spells: boolean }
+  attempted: { page: boolean; current: boolean; items: boolean; spells: boolean; files?: boolean }
 }
 export interface ConfigurationJournal {
   managedPages?: Record<string, number>
@@ -64,7 +70,12 @@ const PAGE_PATH = '/lol-perks/v1/pages'
 export class ConfigurationManager {
   private journal: ConfigurationJournal = { managedItems: {} }
   private busy = false
-  constructor(private readonly request: LcuRequest, private readonly store: JournalStore, private readonly retryPause: (milliseconds: number) => Promise<void> = pause) {}
+  constructor(
+    private readonly request: LcuRequest,
+    private readonly store: JournalStore,
+    private readonly retryPause: (milliseconds: number) => Promise<void> = pause,
+    private readonly resources: { catalog?: (patch: string) => Promise<GameCatalog>; files?: Pick<RecommendationFiles, 'prepare' | 'apply' | 'verify' | 'restore'> } = {},
+  ) {}
 
   async initialize() {
     this.journal = await this.store.load() || { managedItems: {} }
@@ -82,6 +93,11 @@ export class ConfigurationManager {
     let snapshot: ConfigSnapshot | undefined
     try {
       validatePlan(plan)
+      if (this.resources.catalog) {
+        const catalog = await this.resources.catalog(plan.patch)
+        const starters = plan.purchaseGroups?.find((group) => group.label === '出门装')?.ids || []
+        plan = { ...plan, purchaseGroups: purchaseGroups(plan, catalog, starters) }
+      }
       const runes = plan.runes
       const applySpells = includeSpells && plan.mode !== 'aram-mayhem'
       const selection = await this.selection(champion, plan, guard)
@@ -91,7 +107,7 @@ export class ConfigurationManager {
       ])
       const summonerId = Number(summoner.summonerId || summoner.id)
       if (!Number.isSafeInteger(summonerId) || summonerId <= 0) throw new Error('无法读取当前账号，请重新连接客户端。')
-      let beforePage = pages.find((page) => page.id === this.journal.managedPages?.[summonerId] && page.isDeletable && page.isEditable !== false && !page.isTemporary)
+      let beforePage = pages.find((page) => page.id === this.journal.managedPages?.[summonerId] && isManagedPerkPage(page)) || pages.find(isManagedPerkPage)
       if (runes && !beforePage) {
         const inventory = await this.request<{ canAddCustomPage?: boolean }>('GET', '/lol-perks/v1/inventory')
         if (inventory.canAddCustomPage !== true) {
@@ -106,10 +122,13 @@ export class ConfigurationManager {
       if (applySpells && !beforeSpells) throw new Error('暂时无法读取本局召唤师技能，请稍后重试或重新连接客户端。')
       const managedKey = `${summonerId}:${champion.key}:${plan.mode}`
       const targetItems = createItemSet(champion, plan, this.journal.managedItems[managedKey])
+      const recommendationFiles = this.resources.files ? await this.resources.files.prepare(champion, plan, targetItems) : undefined
       snapshot = {
         status: 'pending', summonerId, championKey: champion.key, sessionId: selection.state.sessionId || '',
         beforePage, beforePageIds: pages.map((page) => page.id),
         beforeCurrentId: pages.find((page) => page.current || page.isActive)?.id,
+        removedPages: pages.filter((page) => page.id !== beforePage?.id && isManagedPerkPage(page)).map((page) => ({ page })),
+        recommendationFiles,
         // Old item sets are intentionally cleared without storing their contents.
         // Keep the empty document for undoing this write and reading legacy journals.
         beforeItems: { ...beforeItems, itemSets: [] }, beforeSpells,
@@ -117,6 +136,8 @@ export class ConfigurationManager {
           ...(beforePage ? { id: beforePage.id } : {}),
           name: runePageName(champion, plan),
           isEditable: true,
+          isTemporary: false,
+          isRecommendationOverride: false,
           primaryStyleId: runes.primaryStyleId,
           subStyleId: runes.secondaryStyleId,
           selectedPerkIds: [...runes.primaryRuneIds, ...runes.secondaryRuneIds, ...runes.statModIds],
@@ -145,6 +166,14 @@ export class ConfigurationManager {
         snapshot.attempted.current = true
         await this.save(snapshot)
         await this.request('PUT', '/lol-perks/v1/currentpage', pageId)
+        for (const { page } of snapshot.removedPages || []) {
+          await checkSelection()
+          const current = (await this.request<PerkPage[]>('GET', PAGE_PATH)).find((entry) => entry.id === page.id)
+          if (!current) continue
+          if (pageFingerprint(current) !== pageFingerprint(page)) throw new Error('历史助手符文页已被手动修改，已停止清理。')
+          await this.request('DELETE', `${PAGE_PATH}/${page.id}`)
+          if ((await this.request<PerkPage[]>('GET', PAGE_PATH)).some((entry) => entry.id === page.id)) throw new Error('客户端没有清理历史助手符文页。')
+        }
       }
 
       await checkSelection()
@@ -153,10 +182,16 @@ export class ConfigurationManager {
       if (!Array.isArray(latestItems.itemSets)) throw new Error('客户端的装备方案接口暂不可用。')
       snapshot.beforeItems = { ...latestItems, itemSets: [] }
       snapshot.itemSetsReplaced = true
-      targetItems.sortrank = 1
       snapshot.attempted.items = true
       await this.save(snapshot)
       await this.replaceItemSets(snapshot, checkSelection)
+
+      if (this.resources.files && snapshot.recommendationFiles) {
+        await checkSelection()
+        snapshot.attempted.files = true
+        await this.save(snapshot)
+        await this.resources.files.apply(snapshot.recommendationFiles, checkSelection)
+      }
 
       if (snapshot.targetSpells) {
         await checkSelection()
@@ -169,11 +204,13 @@ export class ConfigurationManager {
         snapshot.targetPage ? this.request<PerkPage[]>('GET', PAGE_PATH) : Promise.resolve([] as PerkPage[]),
         this.request<ItemSetDocument>('GET', itemPath(summonerId)),
         checkSelection(),
+        snapshot.recommendationFiles && this.resources.files ? this.resources.files.verify(snapshot.recommendationFiles) : Promise.resolve(),
       ])
       const afterPage = afterPages.find((page) => page.id === pageId)
       if (snapshot.targetPage) {
         if (!afterPage || pageFingerprint(afterPage) !== pageFingerprint(snapshot.targetPage)) throw new Error('客户端没有保留预期的符文配置。')
         if (!afterPage.current && !afterPage.isActive) throw new Error('客户端没有切换到助手符文页。')
+        if (afterPage.isTemporary || afterPage.isRecommendationOverride) throw new Error('客户端仍将助手符文页视为临时推荐页。')
       }
       const afterItemSet = afterItems.itemSets.find((set) => set.uid === targetItems.uid)
       if (itemFingerprint(afterItemSet) !== itemFingerprint(targetItems)) throw new Error('客户端没有保留预期的装备方案。')
@@ -282,6 +319,11 @@ export class ConfigurationManager {
     const attempt = async (label: string, operation: () => Promise<void>) => {
       try { await operation() } catch (error) { errors.push(`${label}：${messageOf(error)}`) }
     }
+    if (snapshot.attempted.files && snapshot.recommendationFiles) await attempt('推荐文件恢复失败', async () => {
+      if (!this.resources.files) throw new Error('推荐文件管理器不可用，请重启后恢复')
+      await this.resources.files.restore(snapshot.recommendationFiles!, () => this.assertAccount(snapshot.summonerId))
+      snapshot.attempted.files = false
+    })
     if (snapshot.attempted.spells && snapshot.beforeSpells) await attempt('技能恢复失败', async () => {
       const beforeSpells = snapshot.beforeSpells!
       const phase = await this.request<string>('GET', '/lol-gameflow/v1/gameflow-phase')
@@ -320,6 +362,26 @@ export class ConfigurationManager {
       if (itemFingerprint(restored) !== itemFingerprint(before) || restored?.sortrank !== before?.sortrank) throw new Error('客户端没有保留恢复后的装备方案')
       snapshot.attempted.items = false
     })
+    for (const removed of snapshot.removedPages || []) await attempt('历史符文页恢复失败', async () => {
+      const pages = await this.request<PerkPage[]>('GET', PAGE_PATH)
+      const existing = pages.find((page) => page.id === (removed.restoredId || removed.page.id))
+      if (existing) {
+        if (pageFingerprint(existing) !== pageFingerprint(removed.page)) throw new Error('历史符文页已被修改，已保留该修改')
+        return
+      }
+      await this.assertAccount(snapshot.summonerId)
+      const { id: _id, ...page } = removed.page
+      try {
+        const restored = await this.request<PerkPage>('POST', PAGE_PATH, { ...page, current: false, isActive: false })
+        removed.restoredId = restored?.id
+      } finally {
+        const latest = await this.request<PerkPage[]>('GET', PAGE_PATH)
+        removed.restoredId ||= latest.find((entry) => !pages.some((old) => old.id === entry.id) && pageFingerprint(entry) === pageFingerprint(removed.page))?.id
+        await this.save(snapshot)
+      }
+      const verified = (await this.request<PerkPage[]>('GET', PAGE_PATH)).find((entry) => entry.id === removed.restoredId)
+      if (!verified || pageFingerprint(verified) !== pageFingerprint(removed.page)) throw new Error('客户端没有恢复历史符文页')
+    })
     const targetPage = snapshot.targetPage
     if (targetPage && (snapshot.attempted.page || snapshot.attempted.current)) await attempt('符文恢复失败', async () => {
       const pages = await this.request<PerkPage[]>('GET', PAGE_PATH)
@@ -329,11 +391,12 @@ export class ConfigurationManager {
       if (target && pageFingerprint(target) !== pageFingerprint(targetPage) && (!snapshot.beforePage || pageFingerprint(target) !== pageFingerprint(snapshot.beforePage))) {
         throw new Error('检测到你手动修改了助手符文页，已保留该修改')
       }
-      if (target && snapshot.attempted.current && (target.current || target.isActive) && snapshot.beforeCurrentId && pages.some((page) => page.id === snapshot.beforeCurrentId)) {
+      const originalCurrentId = snapshot.removedPages?.find((entry) => entry.page.id === snapshot.beforeCurrentId)?.restoredId || snapshot.beforeCurrentId
+      if (target && snapshot.attempted.current && (target.current || target.isActive) && originalCurrentId && pages.some((page) => page.id === originalCurrentId)) {
         await this.assertAccount(snapshot.summonerId)
-        await this.request('PUT', '/lol-perks/v1/currentpage', snapshot.beforeCurrentId)
+        await this.request('PUT', '/lol-perks/v1/currentpage', originalCurrentId)
         const verified = await this.request<PerkPage[]>('GET', PAGE_PATH)
-        if (!verified.some((page) => page.id === snapshot.beforeCurrentId && (page.current || page.isActive))) throw new Error('客户端没有恢复原来的当前符文页')
+        if (!verified.some((page) => page.id === originalCurrentId && (page.current || page.isActive))) throw new Error('客户端没有恢复原来的当前符文页')
       }
       if (snapshot.attempted.page && target) {
         await this.assertAccount(snapshot.summonerId)
@@ -373,6 +436,9 @@ function itemPath(id: number) { return `/lol-item-sets/v1/item-sets/${id}/sets` 
 function isEditablePerkPage(page: PerkPage) {
   return page.isEditable !== false && page.isDeletable !== false && !page.isTemporary
 }
+function isManagedPerkPage(page: PerkPage) {
+  return /^Rift\s*·\s*/.test(page.name) && page.isEditable !== false && page.isDeletable !== false
+}
 function runePageName(champion: Champion, plan: BuildPlan) {
   return `Rift · ${champion.name} · ${plan.title || '推荐符文'}`.slice(0, 48)
 }
@@ -384,7 +450,7 @@ function stable(value: unknown): string {
   return JSON.stringify(value)
 }
 function pageFingerprint(page: Omit<PerkPage, 'id'>) { return stable([page.name, page.primaryStyleId, page.subStyleId, page.selectedPerkIds]) }
-function itemFingerprint(set?: ItemSet) { return set ? stable([set.uid, set.title, set.type, set.map, set.mode, set.associatedChampions, set.associatedMaps, set.blocks.map((group) => [group.type, group.items, group.hideIfSummonerSpell, group.showIfSummonerSpell])]) : '' }
+function itemFingerprint(set?: ItemSet) { return set ? stable([set.uid, set.title, set.type, set.map, set.mode, set.sortrank, set.associatedChampions, set.associatedMaps, set.blocks.map((group) => [group.type, group.items, group.hideIfSummonerSpell, group.showIfSummonerSpell])]) : '' }
 export function messageOf(error: unknown) { return error instanceof Error ? error.message : '客户端暂时无法完成操作' }
 
 function validatePlan(plan: BuildPlan) {
@@ -395,7 +461,7 @@ function validatePlan(plan: BuildPlan) {
   if (plan.mode !== 'aram-mayhem' && (!runes || !styles.includes(runes.primaryStyleId) || !styles.includes(runes.secondaryStyleId) || runes.primaryStyleId === runes.secondaryStyleId ||
       runes.primaryRuneIds.length !== 4 || runes.secondaryRuneIds.length !== 2 || runes.statModIds.length !== 3 ||
       ![...runes.primaryRuneIds, ...runes.secondaryRuneIds, ...runes.statModIds].every(validId))) throw new Error('符文方案数据不完整，已取消写入。')
-  if (!plan.itemGroups.length || !plan.itemGroups.every((group) => group.ids.length && group.ids.every(validId))) throw new Error('出装方案数据不完整，已取消写入。')
+  if (!plan.itemGroups.length || ![...plan.itemGroups, ...(plan.purchaseGroups || [])].every((group) => group.ids.length && group.ids.every(validId))) throw new Error('出装方案数据不完整，已取消写入。')
   if (plan.mode !== 'aram-mayhem' && (plan.summonerSpellIds.length !== 2 || !plan.summonerSpellIds.every(validId) || plan.summonerSpellIds[0] === plan.summonerSpellIds[1])) throw new Error('召唤师技能数据不完整，已取消写入。')
 }
 
@@ -405,7 +471,7 @@ export function createItemSet(champion: Champion, plan: BuildPlan, previousUid: 
     title: `Rift · ${champion.name} · ${plan.title}`.slice(0, 75),
     associatedChampions: [champion.key],
     associatedMaps: plan.mode === 'ranked' ? [11] : [12],
-    blocks: plan.itemGroups.map((group) => {
+    blocks: (plan.purchaseGroups || plan.itemGroups).map((group) => {
       const counts = new Map<number, number>()
       for (const id of group.ids) counts.set(id, (counts.get(id) || 0) + 1)
       return { type: group.label, items: [...counts].map(([id, count]) => ({ id: String(id), count })), hideIfSummonerSpell: '', showIfSummonerSpell: '' }

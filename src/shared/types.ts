@@ -65,6 +65,8 @@ export interface BuildPlan {
   cache?: { storedAt: number; stale: boolean; patchMatches: boolean }
   runes?: RuneBuild
   itemGroups: ItemGroup[]
+  /** Shop purchase stages; the compact cards continue to show completed items. */
+  purchaseGroups?: ItemGroup[]
   summonerSpellIds: number[]
   summonerSpells?: Array<{ id: number; name: string; icon?: string }>
   skillOrder: string[]
