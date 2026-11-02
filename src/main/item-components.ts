@@ -1,7 +1,7 @@
 import type { BuildPlan, ItemGroup } from '@shared/types'
 import type { GameCatalog } from './catalog'
 
-/** Four compact shop stages: starters, base parts, upgrades, completed build. */
+/** Three purchase stages leave the fourth shop block for situational equipment. */
 export function purchaseGroups(plan: BuildPlan, catalog: GameCatalog, starters: number[] = []): ItemGroup[] {
   const map = plan.mode === 'ranked' ? '11' : '12'
   const available = (id: number) => {
@@ -12,23 +12,14 @@ export function purchaseGroups(plan: BuildPlan, catalog: GameCatalog, starters: 
   const group = (label: string, ids: number[]): ItemGroup => ({
     label, ids, names: ids.map((id) => catalog.items[id]?.name || String(id)),
   })
-  const targets = [...new Set(plan.itemGroups.flatMap((entry) => entry.ids))]
   const result: ItemGroup[] = []
-  const start = starters.filter(available)
+  const isStarterGroup = (entry: ItemGroup) => entry.label === '出门装' || entry.label === '出门'
+  const start = (starters.length ? starters : plan.itemGroups.filter(isStarterGroup).flatMap((entry) => entry.ids)).filter(available)
   if (start.length) result.push(group('出门装', start))
-  const base = new Set<number>(), intermediate = new Set<number>()
-  const visited = new Set<number>(targets)
-  const visit = (id: number) => {
-    if (visited.has(id)) return
-    visited.add(id)
-    const item = catalog.items[id]
-    if (!item || item.maps?.[map] === false) return
-    for (const part of item.from || []) visit(Number(part))
-    if (available(id)) (item.from?.length ? intermediate : base).add(id)
-  }
-  for (const target of targets) for (const part of catalog.items[target]?.from || []) visit(Number(part))
-  if (base.size) result.push(group('过渡', [...base]))
-  if (intermediate.size) result.push(group('中间套', [...intermediate]))
-  result.push(group('成装', targets))
+  const core = [...new Set(plan.itemGroups.filter((entry) => !isStarterGroup(entry) && entry.label !== '后续成装').flatMap((entry) => entry.ids))]
+  const follow = [...new Set(plan.itemGroups.filter((entry) => entry.label === '后续成装').flatMap((entry) => entry.ids))].filter((id) => !core.includes(id))
+  const hasBoots = plan.itemGroups.some((entry) => entry.label === '鞋子' && entry.ids.length) || core.some((id) => catalog.items[id]?.tags?.includes('Boots'))
+  if (core.length) result.push(group(hasBoots ? '核心装（含鞋）' : '核心装', core))
+  if (follow.length) result.push(group('后续成装', follow))
   return result
 }

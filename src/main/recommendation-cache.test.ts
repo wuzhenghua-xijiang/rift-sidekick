@@ -42,6 +42,20 @@ async function folder() {
 }
 
 describe('persistent recommendation fallback', () => {
+  it('preserves optional equipment across restart and rejects malformed optional blocks', async () => {
+    const path = await folder()
+    const situationalItems = { label: '其它推荐装备', ids: [3102, 3089], names: ['女妖面纱', '灭世者的死亡之帽'] }
+    const purchaseGroups = [{ label: '出门装', ids: [1056, 2003, 2003], names: ['多兰之戒', '生命药水', '生命药水'] }, { label: '核心装（含鞋）', ids: [3006], names: ['鞋子'] }]
+    await new RecommendationCache(path, () => 1_000_000).save(query, [{ ...plan, purchaseGroups, situationalItems }])
+    const cache = new RecommendationCache(path, () => 1_000_000)
+    expect((await cache.fallback(query))?.[0].situationalItems).toEqual(situationalItems)
+    expect((await cache.fallback(query))?.[0].purchaseGroups).toEqual(purchaseGroups)
+    const file = join(path, (await readdir(path))[0])
+    await writeFile(file, JSON.stringify({ ...query, schema: 1, storedAt: 1_000_000, plans: [{ ...plan, situationalItems: { ...situationalItems, ids: ['3102'] } }] }))
+    expect(await cache.fallback(query)).toBeUndefined()
+    await writeFile(file, JSON.stringify({ ...query, schema: 1, storedAt: 1_000_000, plans: [{ ...plan, purchaseGroups: [{ ...purchaseGroups[0], ids: ['1056'] }] }] }))
+    expect(await cache.fallback(query)).toBeUndefined()
+  })
   it('survives restart and keeps original timestamps; old or cross-patch data becomes read only', async () => {
     const path = await folder()
     let now = 1_000_000

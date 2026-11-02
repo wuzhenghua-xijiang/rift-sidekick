@@ -164,6 +164,7 @@ export class PerformanceService {
         this.offlineMisses = !client.connected && !games.length ? this.offlineMisses + 1 : 0
         if (this.offlineMisses >= 2) { await this.restoreNow('游戏已退出，已恢复原性能设置。'); return }
         let restricted = false
+        let priorityChanged = false
         for (const game of games) {
           if (this.journal.games.some((saved) => saved.pid === game.pid && saved.startedAt === game.startedAt)) {
             if (!['AboveNormal', 'High', 'RealTime'].includes(game.priority)) restricted = true
@@ -173,10 +174,12 @@ export class PerformanceService {
             this.journal.games.push(game)
             await this.store.save(this.journal)
             await this.runtime.setGamePriority(game, 'AboveNormal', game.priority)
+            priorityChanged = true
           }
         }
         if (games.length) {
-          const verified = await this.runtime.gameProcesses()
+          // A second OS query is needed only after attempting a priority change.
+          const verified = priorityChanged ? await this.runtime.gameProcesses() : games
           if (restricted || verified.some((game) => !['AboveNormal', 'High', 'RealTime'].includes(game.priority))) this.gameCheck('warning', '游戏优先级未改变或已被重新设置，保持现有设置。')
           else if (verified.length) this.gameCheck('done', '游戏进程已核验为高于正常或更高优先级。')
         }
@@ -184,6 +187,8 @@ export class PerformanceService {
     }).finally(() => { this.observing = false })
   }
   private gameCheck(status: PerformanceCheck['status'], detail: string) {
+    const current = this.state.checks.find((check) => check.id === 'game')
+    if (current?.status === status && current.detail === detail) return
     const checks = this.state.checks.map((check) => check.id === 'game' ? { ...check, status, detail } : check)
     this.publish({ checks, status: checks.some((check) => ['error', 'warning'].includes(check.status)) ? 'partial' : 'ready' })
   }

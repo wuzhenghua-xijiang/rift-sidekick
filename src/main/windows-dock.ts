@@ -57,7 +57,12 @@ export class WindowsDock {
     if (this.suppressed === value) return
     this.suppressed = value
     this.hiddenByDock = false
-    if (value && this.window && !this.window.isDestroyed()) this.window.setAlwaysOnTop(false)
+    if (value) this.stop()
+    else {
+      // The assistant may have moved while hidden. Refresh its bounds on resuming.
+      this.lastBounds = ''
+      this.start()
+    }
   }
 
   attach(window: BrowserWindow) {
@@ -79,7 +84,7 @@ export class WindowsDock {
     }
   }
   start() {
-    if (process.platform !== 'win32' || this.helper || !this.enabled) return
+    if (process.platform !== 'win32' || this.helper || !this.enabled || this.suppressed) return
     const script = WINDOW_SCRIPT.replaceAll('SIDEKICK_PROCESS_ID', String(process.pid))
     this.helper = spawn('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true, stdio: 'pipe' })
     let buffer = ''
@@ -109,7 +114,7 @@ export class WindowsDock {
     if (this.window && !this.window.isDestroyed()) this.window.setAlwaysOnTop(false)
   }
   private scheduleRestart() {
-    if (!this.enabled || this.restartTimer || this.window?.isDestroyed()) return
+    if (!this.enabled || this.suppressed || this.restartTimer || this.window?.isDestroyed()) return
     this.restartTimer = setTimeout(() => { this.restartTimer = undefined; this.helper = undefined; this.start() }, 8_000)
   }
   private move(client: ClientWindow) {

@@ -129,6 +129,20 @@ export class RecommendationCache {
                 !ids(group.ids) ||
                 !strings(group.names),
             ) ||
+            (plan.purchaseGroups !== undefined &&
+              (!Array.isArray(plan.purchaseGroups) ||
+                !plan.purchaseGroups.length ||
+                plan.purchaseGroups.length > 4 ||
+                plan.purchaseGroups.some((group) =>
+                  !group || typeof group.label !== 'string' ||
+                  !ids(group.ids) || !group.ids.length || !strings(group.names)))) ||
+            (plan.situationalItems !== undefined &&
+              (!plan.situationalItems ||
+                typeof plan.situationalItems.label !== 'string' ||
+                !ids(plan.situationalItems.ids) ||
+                !plan.situationalItems.ids.length ||
+                plan.situationalItems.ids.length > 6 ||
+                !strings(plan.situationalItems.names))) ||
             !ids(plan.summonerSpellIds) ||
             !strings(plan.skillOrder) ||
             (plan.runes &&

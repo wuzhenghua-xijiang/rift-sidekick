@@ -11,6 +11,7 @@ const ids = (value: unknown): number[] => Array.isArray(value) ? value.map(Numbe
 const text = (value: unknown) => typeof value === 'string' ? value : ''
 const count = (value: unknown) => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : 0
 const MAX_RECOMMENDATIONS = 10
+const MAX_SITUATIONAL_ITEMS = 6
 const MIN_RUNE_VARIANT_GAMES = 100
 type RuneSample = { entry: Row; build: RuneBuild }
 type Candidate = { core: Row; rune?: RuneSample; runeVariant: boolean; tank: boolean; boot?: number }
@@ -70,6 +71,16 @@ export function buildRecommendations(input: unknown, champion: Champion, positio
   for (const core of cores) for (const boot of bootsFor(core).slice(1)) candidates.push(candidate(core, preferredRune(core), false, boot))
 
   const followOptions = [data.last_items, data.fourth_items, data.fifth_items, data.sixth_items].flatMap(rows).flatMap((entry) => ids(entry.ids)).filter((id) => isFinishedItem(catalog.items[id], mode))
+  const alternativeSamples = new Map<number, number>()
+  for (const entry of [...[data.last_items, data.fourth_items, data.fifth_items, data.sixth_items].flatMap(rows), ...cores]) {
+    for (const id of ids(entry.ids)) {
+      const item = catalog.items[id]
+      if (!item || !isFinishedItem(item, mode) || item.gold?.purchasable === false || item.inStore === false || item.requiredChampion || item.tags?.includes('Boots')) continue
+      // These samples can overlap. Use the largest observed count, never add them.
+      alternativeSamples.set(id, Math.max(alternativeSamples.get(id) || 0, count(entry.play)))
+    }
+  }
+  const alternatives = [...alternativeSamples].sort((a, b) => b[1] - a[1]).map(([id]) => id)
   const nameOf = (id: number) => catalog.items[id]?.name || String(id)
   const order = rows(data.skills).map((entry) => entry.order).find(Array.isArray)
   const skillOrder = Array.isArray(order) ? order.filter((key): key is string => typeof key === 'string' && /^[QWER]$/.test(key)).slice(0, 18) : []
@@ -84,6 +95,13 @@ export function buildRecommendations(input: unknown, champion: Champion, positio
       if (tank && !isTankItem(catalog.items[id])) continue
       if (chosen.includes(id) || catalog.items[id]?.tags?.includes('Boots') || families.some((family) => family.includes(id) && chosen.some((current) => family.includes(current)))) continue
       chosen.push(id); follow.push(id)
+    }
+    const other: number[] = []
+    for (const id of alternatives) {
+      if (chosen.includes(id) || (tank && !isTankItem(catalog.items[id])) ||
+        families.some((family) => family.includes(id) && [...chosen, ...other].some((current) => family.includes(current)))) continue
+      other.push(id)
+      if (other.length === MAX_SITUATIONAL_ITEMS) break
     }
     const different = coreIds.filter((id) => !ids(cores[0].ids).includes(id))
     const runeName = rune?.build.primaryRuneNames[0] || rune?.build.primaryStyleName
@@ -108,6 +126,7 @@ export function buildRecommendations(input: unknown, champion: Champion, positio
       sampleLabel: `${mayhem ? '普通大乱斗参考 · ' : ''}全球全段位样本 · ${statsPatch ? `统计 ${statsPatch}` : '统计版本未提供'}`,
       winRate: rate, winRateLabel: rate === undefined ? undefined : runeVariant ? '符文样本胜率' : '核心装备胜率', games: rate === undefined ? undefined : games,
       runes, itemGroups,
+      situationalItems: other.length ? { label: '其它推荐装备', ids: other, names: other.map(nameOf) } : undefined,
       summonerSpellIds: mayhem ? [] : spells,
       summonerSpells: (mayhem ? [] : spells).map((id) => {
         const spell = Object.values(catalog.spells).find((entry) => Number(entry.key) === id)

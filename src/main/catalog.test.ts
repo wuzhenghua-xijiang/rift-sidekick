@@ -12,6 +12,15 @@ const catalog: GameCatalog = {
 }
 function plan(): BuildPlan & { runes: NonNullable<BuildPlan['runes']> } { return {runes:{primaryStyleId:8100,secondaryStyleId:8200,primaryRuneIds:[8112,8126,8138,8106],secondaryRuneIds:[8226,8210]},itemGroups:[{ids:[1056]}],mode:'ranked',summonerSpellIds:[4,12]} as BuildPlan & { runes: NonNullable<BuildPlan['runes']> } }
 describe('client patch catalog validation',()=>{
+  it.each(['purchaseGroups', 'situationalItems'] as const)('validates %s against the current map and catalog too', (field) => {
+    const group = { label: '装备分组', ids: [1056], names: [] }
+    const value = { ...plan(), mode: 'aram' as const, ...(field === 'purchaseGroups' ? { purchaseGroups: [group] } : { situationalItems: group }) }
+    validateCatalog(value, catalog, false)
+    group.ids = [3040]
+    expect(() => validateCatalog(value, catalog, false)).toThrow('模式')
+    group.ids = [999999]
+    expect(() => validateCatalog(value, catalog, false)).toThrow('装备')
+  })
   it('compares client build versions using the patch line',()=>{expect(patchLine('16.21.700.1234')).toBe('16.21');expect(patchLine('unknown')).toBeUndefined()})
   it('accepts a current catalog and rejects removed items',()=>{validateCatalog(plan(),catalog,true);const value=plan();value.itemGroups[0].ids=[999999];expect(()=>validateCatalog(value,catalog,false)).toThrow('装备')})
   it('rejects two secondary runes from the same slot',()=>{const value=plan();value.runes.secondaryRuneIds=[8226,8275];expect(()=>validateCatalog(value,catalog,false)).toThrow('副系')})

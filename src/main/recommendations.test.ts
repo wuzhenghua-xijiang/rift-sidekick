@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Champion, QueueMode } from '@shared/types'
 import type { GameCatalog, RuneStyle } from './catalog'
 import { buildRecommendations, isFinishedItem } from './recommendations'
-import { buildPlanKey, rankBuildPlans } from '@shared/build-plans'
+import { buildPlanKey, itemSetGroups, rankBuildPlans } from '@shared/build-plans'
 import fizzFixture from './fixtures/fizz-aram-16.21.json'
 
 const champion: Champion = { id: 'Ahri', key: 103, name: '阿狸', title: '', tags: [], icon: '', splash: '' }
@@ -65,14 +65,14 @@ describe('multiple real recommendation samples', () => {
     }
     expect(isFinishedItem(catalog.items[3877], 'ranked')).toBe(true)
   })
-  it('orders compact shop stages and retains all six completed items in the last block', () => {
-    for (const plan of build(sample())) {
-      expect(plan.purchaseGroups?.at(-1)?.ids).toEqual(plan.itemGroups.flatMap((group) => group.ids))
-      expect(plan.purchaseGroups?.at(-1)?.ids).toHaveLength(6)
-      expect(plan.purchaseGroups?.find((group) => group.label === '出门装')).toEqual({ label: '出门装', ids: [1056, 2003, 2003], names: ['多兰之戒', '药水', '药水'] })
-      expect(plan.purchaseGroups?.find((group) => group.label === '过渡')?.ids).toContain(1001)
-      expect(plan.purchaseGroups!.length).toBeLessThanOrEqual(4)
-      expect(plan.purchaseGroups?.some((group) => group.ids.includes(1058))).toBe(true)
+  it.each(['ranked', 'aram', 'aram-mayhem'] as const)('keeps starters first and all six finished items within four shop blocks in %s', (mode) => {
+    for (const plan of build(sample(), mode)) {
+      expect(plan.purchaseGroups?.[0]).toEqual({ label: '出门装', ids: [1056, 2003, 2003], names: ['多兰之戒', '药水', '药水'] })
+      expect(plan.purchaseGroups?.map((group) => group.label)).toEqual(['出门装', '核心装（含鞋）', '后续成装'])
+      expect(plan.purchaseGroups?.[1].ids).toContain(3020)
+      expect(plan.purchaseGroups?.slice(1).flatMap((group) => group.ids)).toEqual(plan.itemGroups.flatMap((group) => group.ids))
+      expect(itemSetGroups(plan).length).toBeLessThanOrEqual(4)
+      if (plan.situationalItems) expect(itemSetGroups(plan).at(-1)?.label).toBe('其它推荐装备')
       expect(plan.itemGroups.flatMap((group) => group.ids)).toHaveLength(6)
     }
   })
@@ -81,6 +81,37 @@ describe('multiple real recommendation samples', () => {
     input.data.core_items = [input.data.core_items[0], { ...input.data.core_items[0], ids: [...input.data.core_items[0].ids].reverse() }]
     input.data.runes = [input.data.runes[0]]
     expect(build(input)).toHaveLength(1)
+  })
+  it('keeps source-backed alternatives separate from the six equipped items', () => {
+    const plans = build(sample())
+    expect(plans[0].situationalItems).toEqual({ label: '其它推荐装备', ids: [6655], names: ['成装6655'] })
+    for (const plan of plans) {
+      const equipped = plan.itemGroups.flatMap((group) => group.ids)
+      const alternatives = plan.situationalItems?.ids || []
+      expect(equipped).toHaveLength(6)
+      expect(alternatives.every((id) => !equipped.includes(id))).toBe(true)
+      expect(new Set(alternatives).size).toBe(alternatives.length)
+    }
+  })
+  it('orders alternatives by observed use, limits the list, and rejects unavailable or non-finished items', () => {
+    const input = sample(), extended = structuredClone(catalog)
+    const extras = Array.from({ length: 9 }, (_, i) => 9000 + i)
+    for (const id of extras) extended.items[id] = { name: `备选${id}`, gold: { total: 3000 }, maps: { '11': true, '12': true } }
+    extended.items[9100] = { gold: { total: 3000, purchasable: false } }
+    extended.items[9101] = { gold: { total: 3000 }, maps: { '11': false, '12': true } }
+    extended.items[9102] = { gold: { total: 3000 }, inStore: false }
+    extended.items[9103] = { gold: { total: 3000 }, requiredChampion: 'Kalista' }
+    input.data.last_items.push(...[...extras, 9100, 9101, 9102, 9103, 3020, 1058, 99999].map((id, i) => ({ ids: [id], play: i + 1 })))
+    const plan = buildRecommendations(input, champion, 'mid', 'ranked', '16.21.1', extended)[0]
+    expect(plan.situationalItems?.ids).toEqual([6655, 9008, 9007, 9006, 9005, 9004])
+    expect(plan.itemGroups.flatMap((group) => group.ids)).toEqual(build(sample())[0].itemGroups.flatMap((group) => group.ids))
+    expect(plan.id).toBe(build(sample())[0].id)
+  })
+  it('omits alternatives when the source has no extra valid equipment', () => {
+    const input = sample()
+    input.data.core_items = [input.data.core_items[0]]
+    input.data.last_items = [3089, 3102].map((id) => ({ ids: [id] }))
+    expect(build(input).every((plan) => plan.situationalItems === undefined)).toBe(true)
   })
   it('deduplicates the complete equipment across different core groups and purchase orders', () => {
     const input = sample()
@@ -173,6 +204,10 @@ describe('patch 16.21 Fizz ARAM provider regression', () => {
     expect(tank.runes?.primaryRuneIds[0]).toBe(8437)
     expect(tank.itemGroups.find((group) => group.label === '鞋子')?.ids).toEqual([3111])
     expect(tank.itemGroups.flatMap((group) => group.ids)).toEqual([3084, 2502, 6664, 3111, 3083, 3075])
+    expect(tank.situationalItems?.ids.length).toBeGreaterThan(0)
+    expect(tank.situationalItems?.ids).not.toContain(3089)
+    expect(tank.situationalItems?.ids).not.toContain(3118)
+    expect(tank.situationalItems?.ids.length).toBeLessThanOrEqual(6)
     expect(tank).toMatchObject({ games: 406, winRate: 234 / 406, winRateLabel: '核心装备胜率' })
     expect(plans.every((plan) => plan.sampleLabel.includes('全球全段位'))).toBe(true)
     expect(plans.some((plan) => plan.runes?.primaryRuneIds[0] === 8128)).toBe(true)

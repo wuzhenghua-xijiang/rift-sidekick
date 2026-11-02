@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BuildPlan } from './types'
-import { buildPlanKey, rankBuildPlans } from './build-plans'
+import { buildPlanKey, itemSetGroups, rankBuildPlans } from './build-plans'
 import type { RuneBuild } from './types'
 
 const plan = (id: string, winRate?: number): BuildPlan => ({
@@ -26,6 +26,26 @@ describe('loadout identity', () => {
       { ...runes, secondaryRuneIds: [8226, 8236] },
       { ...runes, statModIds: [5008, 5001, 5008] },
     ]) expect(buildPlanKey({ runes: changed, itemGroups: items })).not.toBe(key)
+  })
+  it('exports alternatives as a separate last block without changing the build identity', () => {
+    const original = { ...plan('original'), runes, itemGroups: items }
+    const updated = { ...original, situationalItems: { label: '其它推荐装备', ids: [3102], names: ['女妖面纱'] } }
+    expect(buildPlanKey(updated)).toBe(buildPlanKey(original))
+    expect(itemSetGroups(updated)).toEqual([...items, updated.situationalItems])
+    expect(itemSetGroups(original)).toEqual(items)
+    expect(original.itemGroups).toHaveLength(2)
+  })
+  it('uses purchase stages for the shop and preserves starter quantities without changing card items or identity', () => {
+    const original = { ...plan('staged'), runes, itemGroups: items }
+    const purchaseGroups = [
+      { label: '出门装', ids: [1056, 2003, 2003], names: ['多兰之戒', '生命药水', '生命药水'] },
+      { label: '核心装（含鞋）', ids: [3100, 3157, 3089, 3020], names: [] },
+    ]
+    const updated = { ...original, purchaseGroups, situationalItems: { label: '其它推荐装备', ids: [3102], names: [] } }
+    expect(itemSetGroups(updated)).toEqual([...purchaseGroups, updated.situationalItems])
+    expect(itemSetGroups(updated)[0].ids).toEqual([1056, 2003, 2003])
+    expect(buildPlanKey(updated)).toBe(buildPlanKey(original))
+    expect(updated.itemGroups).toBe(items)
   })
 })
 

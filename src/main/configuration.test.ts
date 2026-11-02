@@ -98,6 +98,33 @@ function harness(resources: ConstructorParameters<typeof ConfigurationManager>[3
 }
 
 describe('LCU configuration transaction', () => {
+  it.each(['ranked', 'aram', 'aram-mayhem'] as const)('writes and reads back four shop blocks with starters first in %s', async (mode) => {
+    const catalog = { items: Object.fromEntries([1056, 2003, 3118, 4645, 3157, 3020, 3089, 3135, 3102, 6655].map((id) => [id, { name: String(id) }])), styles: [], spells: {} }
+    const { db, manager } = harness({ catalog: async () => catalog })
+    const situationalItems = { label: '其它推荐装备', ids: [3102, 6655], names: ['女妖面纱', '卢登的回声'] }
+    db.queue = mode === 'ranked' ? { id: 420, mapId: 11, gameMode: 'CLASSIC' } : mode === 'aram' ? { id: 450, mapId: 12, gameMode: 'ARAM' } : { id: 2400, mapId: 12, gameMode: 'KIWI' }
+    const base = { ...plan, mode, runes: mode === 'aram-mayhem' ? undefined : plan.runes,
+      itemGroups: [{ label: '核心成装', ids: [3118, 4645, 3157], names: [] }, { label: '鞋子', ids: [3020], names: [] }, { label: '后续成装', ids: [3089, 3135], names: [] }],
+      purchaseGroups: [{ label: '出门装', ids: [1056, 2003, 2003], names: [] }],
+      summonerSpellIds: mode === 'aram-mayhem' ? [] : mode === 'aram' ? [4, 32] : [4, 14] }
+    await manager.initialize()
+    expect((await manager.apply(champion, { ...base, situationalItems }, true)).ok).toBe(true)
+    const blocks = db.items.itemSets[0].blocks
+    expect(blocks).toMatchObject([
+      { type: '出门装', items: [{ id: '1056', count: 1 }, { id: '2003', count: 2 }] },
+      { type: '核心装（含鞋）', items: [3118, 4645, 3157, 3020].map((id) => ({ id: String(id), count: 1 })) },
+      { type: '后续成装', items: [3089, 3135].map((id) => ({ id: String(id), count: 1 })) },
+      { type: '其它推荐装备', items: [{ id: '3102', count: 1 }, { id: '6655', count: 1 }] },
+    ])
+    expect(base.purchaseGroups).toHaveLength(1)
+    expect(plan.itemGroups).toHaveLength(2)
+  })
+  it('rejects malformed alternative equipment before writing any configuration', async () => {
+    const { db, manager } = harness()
+    await manager.initialize()
+    await expect(manager.apply(champion, { ...plan, situationalItems: { label: '其它推荐装备', ids: [NaN], names: ['无效装备'] } }, true)).rejects.toThrow('出装方案数据不完整')
+    expect(db.writes).toEqual([])
+  })
   it('applies and verifies ARAM runes, spells and map-specific equipment together', async () => {
     const { db, manager, store } = harness()
     db.queue = { id: 450, mapId: 12, gameMode: 'ARAM' }
@@ -436,7 +463,7 @@ describe('LCU configuration transaction', () => {
     expect(db.pages.find((page) => page.id === 2)?.name).toBe('Rift · 旧页一')
     expect(db.itemWrites).toHaveLength(0)
   })
-  it('rebuilds shop components for legacy cached plans while preserving compact finished equipment', async () => {
+  it('rebuilds compact shop groups for legacy cached plans without losing finished equipment', async () => {
     const catalog = { items: {
       3118: { name: '核心', from: ['3108'] }, 3108: { name: '中件', from: ['1052', '1052'] }, 1052: { name: '散件' },
     }, styles: [], spells: {} }
@@ -444,9 +471,7 @@ describe('LCU configuration transaction', () => {
     await manager.initialize()
     await manager.apply(champion, plan, false)
     expect(db.items.itemSets[0]).toMatchObject({ sortrank: 0 })
-    expect(db.items.itemSets[0].blocks.find((block) => block.type === '过渡')?.items).toEqual([{ id: '1052', count: 1 }])
-    expect(db.items.itemSets[0].blocks.find((block) => block.type === '中间套')?.items).toEqual([{ id: '3108', count: 1 }])
-    expect(db.items.itemSets[0].blocks.at(-1)?.type).toBe('成装')
+    expect(db.items.itemSets[0].blocks).toMatchObject([{ type: '核心装', items: [3118, 4645, 3157].map((id) => ({ id: String(id), count: 1 })) }])
     expect(plan.itemGroups).toHaveLength(2)
     expect(plan.purchaseGroups).toBeUndefined()
   })

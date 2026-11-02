@@ -13,8 +13,9 @@ function harness(saved?: PerformanceJournal) {
     inspect: vi.fn(async () => ({ powerScheme: power, schemes: [balanced, HIGH_PERFORMANCE], cpuPercent: 12, memoryPercent: 45, freeMemoryGb: 8.8 })),
     powerScheme: vi.fn(async () => power), setPowerScheme: vi.fn(async (id) => { power = id }),
     gameProcesses: vi.fn().mockResolvedValue([]), setGamePriority: vi.fn().mockResolvedValue(undefined), focus: vi.fn() }
-  const service = new PerformanceService(vi.fn(), runtime, store)
-  return { service, runtime, store, journal: () => journal, power: () => power, changePower: (id: string) => { power = id } }
+  const changed = vi.fn()
+  const service = new PerformanceService(changed, runtime, store)
+  return { service, runtime, store, changed, journal: () => journal, power: () => power, changePower: (id: string) => { power = id } }
 }
 describe('pre-launch optimization and recovery', () => {
   it('never optimizes from champion select or gameplay polling', async () => {
@@ -125,5 +126,32 @@ describe('pre-launch optimization and recovery', () => {
     expect(h.journal()?.games[0]).toEqual(game)
     await h.service.restore()
     expect(h.runtime.setGamePriority).toHaveBeenLastCalledWith(game, 'Normal', 'AboveNormal')
+  })
+  it('uses one process query when priority is already sufficient', async () => {
+    const h = harness(); await h.service.initialize(true); await h.service.prepare()
+    vi.mocked(h.runtime.gameProcesses).mockResolvedValue([{ pid: 42, startedAt: '123456', priority: 'AboveNormal' }])
+    h.service.updateClient({ ...client, phase: 'InProgress' })
+    await vi.waitFor(() => expect(h.service.state.checks.find((check) => check.id === 'game')?.status).toBe('done'))
+    expect(h.runtime.gameProcesses).toHaveBeenCalledOnce()
+    expect(h.runtime.setGamePriority).not.toHaveBeenCalled()
+  })
+  it('verifies a changed priority, then avoids duplicate queries and notifications on stable checks', async () => {
+    const h = harness(); await h.service.initialize(true); await h.service.prepare()
+    let now = 30_000
+    let game = { pid: 42, startedAt: '123456', priority: 'Normal' }
+    h.runtime.now = () => now
+    vi.mocked(h.runtime.gameProcesses).mockImplementation(async () => [{ ...game }])
+    vi.mocked(h.runtime.setGamePriority).mockImplementation(async (_game, priority) => { game = { ...game, priority } })
+    h.service.updateClient({ ...client, phase: 'InProgress' })
+    await vi.waitFor(() => expect(h.service.state.checks.find((check) => check.id === 'game')?.status).toBe('done'))
+    expect(h.runtime.gameProcesses).toHaveBeenCalledTimes(2)
+    const notifications = h.changed.mock.calls.length
+    now += 8_000
+    h.service.updateClient({ ...client, phase: 'InProgress' })
+    // Restoration queues behind the in-flight observation, so both queries have settled.
+    await h.service.restore()
+    expect(h.runtime.gameProcesses).toHaveBeenCalledTimes(3)
+    expect(h.changed).toHaveBeenCalledTimes(notifications + 2) // Only restoring and restored.
+    expect(h.runtime.setGamePriority).toHaveBeenLastCalledWith(expect.objectContaining({ pid: 42 }), 'Normal', 'AboveNormal')
   })
 })

@@ -67,6 +67,7 @@ export interface BuildPlan {
   itemGroups: ItemGroup[]
   /** Shop purchase stages; the compact cards continue to show completed items. */
   purchaseGroups?: ItemGroup[]
+  situationalItems?: ItemGroup
   summonerSpellIds: number[]
   summonerSpells?: Array<{ id: number; name: string; icon?: string }>
   skillOrder: string[]

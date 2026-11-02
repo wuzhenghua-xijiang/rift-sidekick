@@ -1,5 +1,11 @@
 import type { BuildPlan, RuneBuild } from './types'
 
+/** Keep purchase stages and alternatives separate from the six-item build identity. */
+export function itemSetGroups(plan: Pick<BuildPlan, 'itemGroups' | 'purchaseGroups' | 'situationalItems'>) {
+  const groups = plan.purchaseGroups || plan.itemGroups
+  return plan.situationalItems ? [...groups, plan.situationalItems] : groups
+}
+
 export function runeBuildKey(runes?: RuneBuild): string {
   return JSON.stringify(runes ? [runes.primaryStyleId, runes.primaryRuneIds, runes.secondaryStyleId,
     [...runes.secondaryRuneIds].sort((a, b) => a - b), runes.statModIds] : null)

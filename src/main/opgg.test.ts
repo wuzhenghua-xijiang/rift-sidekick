@@ -49,6 +49,8 @@ describe('full recommendation transport and fallback', () => {
     expect(String(fetcher.mock.calls[1][0])).toBe('https://mcp-api.op.gg/mcp')
     const request = JSON.parse(String(fetcher.mock.calls[1][1]?.body))
     expect(request.params.arguments.desired_output_fields).toContain('data.rune_pages')
+    expect(request.params.arguments.desired_output_fields).toContain('data.starter_items.{ids[]}')
+    expect(request.params.arguments.desired_output_fields).toContain('data.last_items[].{ids[],play}')
   })
   it('honors provider rate limiting without retrying or bypassing it through the fallback', async () => {
     vi.resetModules()

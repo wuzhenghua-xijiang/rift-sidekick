@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { setTimeout as pause } from 'node:timers/promises'
+import { itemSetGroups } from '@shared/build-plans'
 import type { ApplyResult, BuildPlan, Champion } from '@shared/types'
 import { readSelection, type ChampSelectSession, type GameflowSession } from './selection'
 import type { GameCatalog } from './catalog'
@@ -489,7 +490,7 @@ function validatePlan(plan: BuildPlan) {
   if (plan.mode !== 'aram-mayhem' && (!runes || !styles.includes(runes.primaryStyleId) || !styles.includes(runes.secondaryStyleId) || runes.primaryStyleId === runes.secondaryStyleId ||
       runes.primaryRuneIds.length !== 4 || runes.secondaryRuneIds.length !== 2 || runes.statModIds.length !== 3 ||
       ![...runes.primaryRuneIds, ...runes.secondaryRuneIds, ...runes.statModIds].every(validId))) throw new Error('符文方案数据不完整，已取消写入。')
-  if (!plan.itemGroups.length || ![...plan.itemGroups, ...(plan.purchaseGroups || [])].every((group) => group.ids.length && group.ids.every(validId))) throw new Error('出装方案数据不完整，已取消写入。')
+  if (!plan.itemGroups.length || ![...plan.itemGroups, ...(plan.purchaseGroups || []), ...(plan.situationalItems ? [plan.situationalItems] : [])].every((group) => group.ids.length && group.ids.every(validId))) throw new Error('出装方案数据不完整，已取消写入。')
   if (plan.mode !== 'aram-mayhem' && (plan.summonerSpellIds.length !== 2 || !plan.summonerSpellIds.every(validId) || plan.summonerSpellIds[0] === plan.summonerSpellIds[1])) throw new Error('召唤师技能数据不完整，已取消写入。')
 }
 
@@ -499,7 +500,7 @@ export function createItemSet(champion: Champion, plan: BuildPlan, previousUid: 
     title: `Rift · ${champion.name} · ${plan.title}`.slice(0, 75),
     associatedChampions: [champion.key],
     associatedMaps: plan.mode === 'ranked' ? [11] : [12],
-    blocks: (plan.purchaseGroups || plan.itemGroups).map((group) => {
+    blocks: itemSetGroups(plan).map((group) => {
       const counts = new Map<number, number>()
       for (const id of group.ids) counts.set(id, (counts.get(id) || 0) + 1)
       return { type: group.label, items: [...counts].map(([id, count]) => ({ id: String(id), count })), hideIfSummonerSpell: '', showIfSummonerSpell: '' }

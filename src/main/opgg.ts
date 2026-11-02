@@ -7,7 +7,7 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 const OUTPUT_FIELDS = [
   'data.starter_items.{ids[]}',
   'data.core_items.{ids[],play,win}', 'data.boots.{ids[]}',
-  'data.last_items[].{ids[]}', 'data.fourth_items[].{ids[]}', 'data.fifth_items[].{ids[]}', 'data.sixth_items[].{ids[]}',
+  'data.last_items[].{ids[],play}', 'data.fourth_items[].{ids[],play}', 'data.fifth_items[].{ids[],play}', 'data.sixth_items[].{ids[],play}',
   'data.summoner_spells.{ids[]}',
   'data.runes.{id,play,win,primary_page_id,primary_rune_ids[],secondary_page_id,secondary_rune_ids[],stat_mod_ids[]}',
   'data.rune_pages',
