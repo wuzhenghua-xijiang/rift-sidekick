@@ -14,38 +14,23 @@ const { COMBAT_LINES, COMBAT_TAUNT_STYLES, combatLines, combatPreferences } = aw
   `data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`
 )
 
-export const personas = {
-  classic: {
-    speaker: 'Dylan',
-    voice: '亲切自然的年轻男声，像熟人开黑聊天，普通话，口语短促，重音和停顿自然，有现场感，不要机械朗读或新闻播音腔。',
-    praise: '真心兴奋地夸朋友这一波打得漂亮，情绪明亮，有惊喜和笑意，节奏有起伏。',
-    taunt: '带笑意地接梗调侃，幽默互损，收尾像招呼朋友下波再战。',
-  },
-  grumpy: {
-    speaker: 'Uncle_fu',
-    voice: '低沉有力、略带沙哑的成年老哥男声，普通话，像开黑时拍桌说话，急脾气但亲切，重音鲜明，口语有劲，不要平淡播音。',
-    praise: '直爽热烈地大声叫好，像嘴硬老哥忍不住兴奋地夸兄弟，惊喜、豪爽、带笑意，夸赞要有爆发力，不要生气责骂。',
-    taunt: '嘴硬急躁、拍桌吐槽，带夸张的不满和开玩笑的气势，短句有冲劲，最后鼓劲催战。',
-  },
-  teen: {
-    speaker: 'Dylan',
-    voice: '清亮年轻的少年男声，普通话，热血中二，像和朋友一起打游戏的少年，有少年气、自然换气和鲜明重音，不要成熟播音腔。',
-    praise: '兴奋、惊喜、崇拜地为朋友欢呼，像高光瞬间燃起来，音调起伏鲜明，热情有冲劲。',
-    taunt: '嘴硬不服输，憋着一口气又热血激昂，用中二少年争着抢回高光的语气说，收尾坚定有力。',
-  },
-  sweet: {
-    speaker: 'Vivian',
-    voice: '明亮甜美的年轻女生声音，普通话，像熟悉的女生朋友开黑聊天，俏皮、轻盈、有笑意，语调活泼自然，不要机械朗读，不要尖叫。',
-    praise: '开心、惊喜地夸朋友，元气满满，甜甜地欢呼，轻快有笑意，像看到漂亮操作忍不住叫好。',
-    taunt: '软萌里带一点奶凶，俏皮地噘嘴吐槽，尾音有自然起伏，甜而有劲，最后元气地鼓劲。',
-  },
-  taiwan: {
-    speaker: 'Serena',
-    voice: '成年年轻女生，台湾国语口音，柔软甜润的女中高音，轻柔软嗲，带一点自然气声和亲密笑意。像台湾女生和熟悉的朋友轻声聊天，咬字清楚、轻松连贯、不过度卷舌、不儿化，句尾轻轻上扬后柔和落下；语速中等偏慢，有自然换气，不要大陆播音腔，不要尖叫，不要幼儿腔，不要机械朗读。',
-    praise: '带着惊喜和欣赏，软软甜甜地夸朋友，温柔撒娇、有笑意，像忍不住说你好厉害喔，自然读出欸、耶、啦、嘛等台湾口语，尾音轻柔，不夸张拖长。',
-    taunt: '台湾女生温柔碎念，软嗲里带一点佯装委屈和俏皮撒娇，像噘嘴小声抱怨后又舍不得凶朋友，收尾温柔鼓励；语气亲近、有起伏，不生气吼叫，不夸张拖长尾音。',
-  },
+export const release = JSON.parse(await readFile(new URL('combat-voice-release.json', import.meta.url), 'utf8'))
+const direction = {
+  classic: '沿用参考音频中同一位男生的声线，像熟人开黑时随口聊天，音量放松，句子连贯。',
+  grumpy: '沿用参考音频中同一位直爽老哥的声线，像熟人开黑时快嘴接话，带劲但保持正常聊天音量。',
+  teen: '沿用参考音频中同一位年轻男生的声线，年轻好胜，像熟人开黑时轻快接话，句子连贯。',
+  sweet: '沿用参考音频中同一位年轻女生的清甜声线，轻盈亲近，像熟人开黑时带笑聊天，句子连贯，尾音自然短收。',
+  taiwan: '沿用參考音頻中同一位年輕台灣女生的聲線和口音，保持相近的音高、音量和輕巧語感。',
 }
+export const personas = Object.fromEntries(Object.entries(release.profiles).map(([style, profile]) => [style, {
+  ...profile,
+  praise: direction[style] + (style === 'taiwan'
+    ? '看到熟人打得不錯，帶一點笑意，輕鬆順口夸一句，句子連貫，尾音自然短收。'
+    : '看到朋友打得不错，有一点惊喜和笑意，顺口夸一句。'),
+  taunt: direction[style] + (style === 'taiwan'
+    ? '朋友又陣亡了，有點無奈又覺得好笑，笑著吐槽一句，包袱清楚，尾音自然短收。'
+    : '朋友又阵亡了，有点无奈又觉得好笑，气笑着直接吐槽一句，重音落在笑点，说完就收。'),
+}]))
 
 export function clipName(style, text) {
   return `${style}-${createHash('sha256').update(text).digest('hex').slice(0, 24)}.mp3`
@@ -59,7 +44,8 @@ export function voiceCatalog() {
     const persona = personas[style]
     return texts.map((text) => ({
       style, kind, text, file: clipName(style, text), speaker: persona.speaker,
-      instruction: `${persona.voice}${kind === 'rough' ? persona.taunt : persona.praise}`,
+      instruction: kind === 'rough' ? persona.taunt : persona.praise,
+      referenceFile: persona.referenceFile, referenceSha256: persona.referenceSha256,
     }))
   }))
   // Make a sample of every persona first, then generate one clip at a time.

@@ -28,8 +28,8 @@ try {
   $voice = $voices[0].VoiceInfo.Name
   $synth.SelectVoice($voice)
   $synth.Volume = [int]$data.volume
-  $synth.Rate = if ($data.style -eq 'taiwan') { 0 } elseif ($data.style -eq 'sweet') { 1 } elseif ($data.style -eq 'grumpy') { 3 } else { 2 }
-  $bytes = [System.Text.Encoding]::UTF8.GetBytes($voice + ':' + $data.style + ':' + $data.volume + ':' + $data.text)
+  $synth.Rate = if ($data.style -eq 'grumpy' -or $data.style -eq 'teen') { 3 } else { 2 }
+  $bytes = [System.Text.Encoding]::UTF8.GetBytes($voice + ':' + $synth.Rate + ':' + $data.style + ':' + $data.volume + ':' + $data.text)
   $hash = [System.Security.Cryptography.SHA256]::Create()
   try { $key = [BitConverter]::ToString($hash.ComputeHash($bytes)).Replace('-', '').ToLowerInvariant() } finally { $hash.Dispose() }
   [System.IO.Directory]::CreateDirectory([string]$data.cache) | Out-Null

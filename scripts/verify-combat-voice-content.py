@@ -22,6 +22,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--model', default='mlx-community/whisper-small-asr-fp16')
     parser.add_argument('--limit', type=int)
+    parser.add_argument('--files', nargs='+', help='Screen only the specified filenames')
     args = parser.parse_args()
     from mlx_audio.stt.utils import load_model
     from pypinyin import lazy_pinyin
@@ -30,6 +31,8 @@ def main():
     clips = json.loads((PACK / 'manifest.json').read_text())['clips']
     checked = 0
     for clip in clips:
+        if args.files and clip['file'] not in args.files:
+            continue
         previous = results.get(clip['file'])
         if previous and previous['sha256'] == clip['sha256'] and previous['model'] == args.model:
             continue
@@ -54,9 +57,11 @@ def main():
         temporary.write_text(json.dumps(results, ensure_ascii=False, indent=2) + '\n')
         temporary.replace(REPORT)
         checked += 1
-        print(f'{len(results)}/{len(clips)} {clip["style"]}/{clip["kind"]} {score:.2f} {time.monotonic()-started:.1f}s: {actual}', flush=True)
-    flags = [r for r in results.values() if r['phoneticSimilarity'] < 0.7 or r['duration'] > 10]
-    print(json.dumps({'screened': len(results), 'flags': flags}, ensure_ascii=False), flush=True)
+        screened = sum(c['file'] in results and results[c['file']]['sha256'] == c['sha256'] and results[c['file']]['model'] == args.model for c in clips)
+        print(f'{screened}/{len(clips)} {clip["style"]}/{clip["kind"]} {score:.2f} {time.monotonic()-started:.1f}s: {actual}', flush=True)
+    current = [results[c['file']] for c in clips if c['file'] in results and results[c['file']]['sha256'] == c['sha256'] and results[c['file']]['model'] == args.model]
+    flags = [r for r in current if r['phoneticSimilarity'] < 0.75 or r['duration'] > 7]
+    print(json.dumps({'screened': len(current), 'expected': len(clips), 'flags': flags}, ensure_ascii=False), flush=True)
 
 
 if __name__ == '__main__':

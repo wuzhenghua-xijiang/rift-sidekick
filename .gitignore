@@ -8,4 +8,6 @@ release/
 .playwright-cli/
 output/implementation-baseline/
 output/voice-generation/
+output/voice-optimization/
+scripts/__pycache__/
 output/rift-sidekick-five-designs.zip

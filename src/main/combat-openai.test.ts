@@ -40,6 +40,14 @@ describe('optional OpenAI combat recognition', () => {
   ])('falls back on unsupported or invalid AI conclusions: %j', async (decision) => {
     expect(await fixture(answer(decision)).invoke()).toBeUndefined()
   })
+  it('keeps generated reactions short while preserving longer player-authored lines', async () => {
+    const text = '这是玩家保留的完整专属台词'.repeat(3)
+    const generated = fixture(answer({ ...result, text }))
+    expect(await generated.invoke()).toBeUndefined()
+    expect(generated.judge.state.message).toContain('台词过长')
+    const exclusive = fixture(answer({ ...result, text }))
+    expect((await exclusive.invoke(combatPreferences({ customLines: { clutch: [text] } })))?.text).toBe(text)
+  })
   it('stays quiet for low confidence, skipped or refused conclusions', async () => {
     expect(await fixture(answer({ ...result, confidence: 0.5 })).invoke()).toBeNull()
     expect(await fixture(answer({ ...result, kind: 'skip' })).invoke()).toBeNull()

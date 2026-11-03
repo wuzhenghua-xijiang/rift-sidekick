@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "model": "VoxCPM2",
+  "sourceModel": "mlx-community/VoxCPM2-8bit",
+  "modelRevision": "d52725898a0675703f7f9ddc5a4d1a3cdbb99032",
+  "inferenceTimesteps": 20,
+  "cfgValue": 2.0,
+  "profiles": {
+    "classic": {
+      "speaker": "classic-natural-v1",
+      "referenceFile": "combat-voice-references/classic.wav",
+      "referenceSha256": "ebdc1d8e12d84a65e218c08540f2340d261d3393eff91d8339865834c9e3c6d8",
+      "text": "可以啊，这波打得真不错。",
+      "seed": 29100,
+      "synthesisInstruction": "二十五岁的成年男生，普通话，干净的自然中音，声音放松，像熟悉的朋友在语音里聊天。朋友一起打游戏时随口接话，正常聊天音量，句子连起来说，只在意思需要时自然停一下。看到朋友打得不错，有一点惊喜和笑意，顺口夸一句。",
+      "sourceSet": "output/voice-optimization/natural-v2/voxcpm",
+      "label": "经典搭子"
+    },
+    "grumpy": {
+      "speaker": "grumpy-natural-v1",
+      "referenceFile": "combat-voice-references/grumpy.wav",
+      "referenceSha256": "9098d3a5d4dcacabfa9c02de36b94edf18ee0516a68ab89749c575afba80fb1f",
+      "text": "我靠，可以啊，这波真漂亮。",
+      "seed": 29200,
+      "synthesisInstruction": "二十八岁的成年男生，普通话，中音稍微有一点沙，直爽急脾气，说话利落，像开黑时嘴上不饶人的朋友。朋友一起打游戏时随口接话，正常聊天音量，句子连起来说，只在意思需要时自然停一下。看到朋友打得不错，有一点惊喜和笑意，顺口夸一句。",
+      "sourceSet": "output/voice-optimization/natural-v2/voxcpm",
+      "label": "暴躁老哥"
+    },
+    "teen": {
+      "speaker": "teen-natural-v1",
+      "referenceFile": "combat-voice-references/teen.wav",
+      "referenceSha256": "85512b678384564505b8b6f5d5d8196642fa9c9352710eee09b7136a60f3d01c",
+      "text": "可以啊，这波有点帅，我服了。",
+      "seed": 29300,
+      "synthesisInstruction": "十九岁的成年男生，普通话，声线轻薄清亮，年轻有活力，嘴硬好胜，像刚放学就上线的熟人。朋友一起打游戏时随口接话，正常聊天音量，句子连起来说，只在意思需要时自然停一下。看到朋友打得不错，有一点惊喜和笑意，顺口夸一句。",
+      "sourceSet": "output/voice-optimization/natural-v2/voxcpm",
+      "label": "愤青少年"
+    },
+    "sweet": {
+      "speaker": "sweet-natural-v1",
+      "referenceFile": "combat-voice-references/sweet.wav",
+      "referenceSha256": "eb023e3a51895ced1ad2bf5373c98229bef274d5e85d24c4a26665228d2ab8cb",
+      "text": "欸，我有看到。你这波打得真不错啊，刚才我还以为你要倒了呢，结果人头拿到了，人也还站着。",
+      "seed": 29420,
+      "synthesisInstruction": "十九岁的成年女生，普通话，清亮轻盈的女中高音，声线纤细而有弹性，说话带一点活力和亲近笑意，像年轻女生跟熟人开黑聊天。朋友一起打游戏时随口接话，正常聊天音量，句子连起来说，只在意思需要时自然停一下。",
+      "sourceSet": "output/voice-optimization/female-v4",
+      "label": "软萌甜妹"
+    },
+    "taiwan": {
+      "speaker": "taiwan-natural-v1",
+      "referenceFile": "combat-voice-references/taiwan.wav",
+      "referenceSha256": "2394d83aced5a0a627158ea68aec6ba8aca953ab9844dd71993f9a1bff4bac3a",
+      "text": "又黑屏喔，你跟泉水的感情比跟我还好欸。",
+      "seed": 29510,
+      "synthesisInstruction": "二十歲的成年台灣女大學生，母語是台灣國語。甜軟清亮的女中高音，聲線輕巧，講話帶一點活力和親近笑意，台北年輕女生的日常聊天口音，連貫俏皮。朋友一起打游戏时随口接话，正常聊天音量，句子连起来说，只在意思需要时自然停一下。朋友又阵亡了，有点无奈又觉得好笑，笑着吐槽一句。",
+      "sourceSet": "output/voice-optimization/taiwan-v5",
+      "label": "台湾软妹"
+    }
+  },
+  "approvedTakes": [
+    {
+      "style": "taiwan",
+      "text": "欸，这波打得漂亮耶，真的有帅到。",
+      "file": "combat-voice-references/taiwan-approved-praise.wav",
+      "sourceSha256": "9a54e304b2b3c07af89ac8f34bd367cf460a54736aa38bd9d30c461868dbf3d9",
+      "synthesisInstruction": "沿用參考音頻中同一位年輕台灣女生的聲線和口音，保持相近的音高、音量和輕巧語感。看到熟人打得不錯，帶一點笑意，輕鬆順口夸一句，句子連貫，尾音自然短收。",
+      "actualReferenceSha256": "2394d83aced5a0a627158ea68aec6ba8aca953ab9844dd71993f9a1bff4bac3a",
+      "seed": 29500
+    },
+    {
+      "style": "taiwan",
+      "text": "又黑屏喔，你跟泉水的感情比跟我还好欸。",
+      "file": "combat-voice-references/taiwan-approved-taunt.wav",
+      "sourceSha256": "2394d83aced5a0a627158ea68aec6ba8aca953ab9844dd71993f9a1bff4bac3a",
+      "synthesisInstruction": "二十歲的成年台灣女大學生，母語是台灣國語。甜軟清亮的女中高音，聲線輕巧，講話帶一點活力和親近笑意，台北年輕女生的日常聊天口音，連貫俏皮。朋友一起打游戏时随口接话，正常聊天音量，句子连起来说，只在意思需要时自然停一下。朋友又阵亡了，有点无奈又觉得好笑，笑着吐槽一句。",
+      "actualReferenceSha256": "23481daf931e030d4868f868a21e6eab321d9a26a641cc7cc016dfc5e92d5dc1",
+      "seed": 29510
+    }
+  ]
+}

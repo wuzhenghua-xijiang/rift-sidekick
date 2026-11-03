@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "sampleRate": 48000,
+  "bitrate": 96000,
+  "preserveNaturalTiming": true,
+  "maximumDuration": 7,
+  "profiles": {
+    "classic": { "minimumCharactersPerSecond": 3.2, "maximumCharactersPerSecond": 8.5 },
+    "grumpy": { "minimumCharactersPerSecond": 3.2, "maximumCharactersPerSecond": 8.5 },
+    "teen": { "minimumCharactersPerSecond": 3.2, "maximumCharactersPerSecond": 8.5 },
+    "sweet": { "minimumCharactersPerSecond": 3.2, "maximumCharactersPerSecond": 8.5 },
+    "taiwan": { "minimumCharactersPerSecond": 3.2, "maximumCharactersPerSecond": 8.5 }
+  }
+}

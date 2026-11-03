@@ -40,12 +40,15 @@ SOFTWARE.
 Bundled emotional combat speech
 
 The files under resources/combat-voices/ contain original project lines
-synthesized with Qwen3-TTS-12Hz-1.7B-CustomVoice by the Alibaba Qwen team.
-Source model: https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice
+synthesized with VoxCPM2 by OpenBMB, using project-created synthetic voice
+references retained in scripts/combat-voice-references/ for reproducibility.
+Source model: https://huggingface.co/openbmb/VoxCPM2
 Model/code license: Apache License 2.0
-Generation source: https://huggingface.co/spaces/Qwen/Qwen3-TTS
+Generation source: https://github.com/OpenBMB/VoxCPM
 Apple Silicon development generation also uses the Apache-2.0 MLX conversion:
-https://huggingface.co/mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-4bit
-The manifest records the text, speaker, instruction and SHA-256 of each clip.
+https://huggingface.co/mlx-community/VoxCPM2-8bit
+The manifest records the pinned model revision, text, synthetic reference
+hash, actual instruction, original timing and SHA-256 of each clip.
 Only generated compressed audio is distributed; model weights and the
-development synthesis environment are not included in the application.
+reference WAVs and development synthesis environment are not included in the
+application.
