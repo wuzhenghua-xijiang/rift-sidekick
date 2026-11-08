@@ -46,9 +46,13 @@ jobs:
           $hash = (Get-FileHash "release/$installer" -Algorithm SHA256).Hash.ToLower()
           if ((Get-Content release/SHA256SUMS.txt -Raw).Trim() -cne "$hash  $installer") { throw 'Local installer does not match SHA256SUMS.txt.' }
       - name: Sign the local installer update manifest
-        run: node scripts/sign-update.js
+        shell: pwsh
+        run: |
+          $env:GITHUB_REF_NAME = $env:RELEASE_TAG
+          node scripts/sign-update.js
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         env:
-          GITHUB_REF_NAME: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ inputs.tag }}
           RIFT_UPDATE_SIGNING_KEY: ${{ secrets.RIFT_UPDATE_SIGNING_KEY }}
       - name: Publish the verified local build
         shell: pwsh
