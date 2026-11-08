@@ -30,6 +30,10 @@ export function configurationStatus({ state, championKey, mode, position, planId
     canApply: true, caption: '配置未完成', hint: currentResult.message, tone: 'warning', applied: false, buttonLabel: '重试配置',
   }
   const applied = Boolean(currentResult?.ok && currentResult.target?.planId === planId && planId)
+  if (applied && currentResult?.chat?.status === 'failed') return {
+    canApply: true, applied: true, tone: 'warning', caption: '已配置 · 聊天未确认',
+    hint: currentResult.chat.message || '聊天提示未获确认，配置已保留。', buttonLabel: '重新应用',
+  }
   return {
     canApply: true, applied, tone: applied ? 'success' : 'ready',
     caption: applied ? '本局配置已就绪' : currentResult?.ok ? '已选择其他方案' : result?.ok && !result.target ? '已恢复原配置' : '本局将自动配置',

@@ -55,7 +55,8 @@ export function readSelection(session: ChampSelectSession, flow: GameflowSession
   // Legacy/co-op drafts may omit pick history once everyone has finalized.
   // A pick intent alone is never enough, even during the final countdown.
   const finalized = ['FINALIZATION', 'GAME_STARTING'].includes(session.timer?.phase || '')
-  const championLocked = Boolean(championId && (completed?.championId === championId || (selectedId && finalized) || ((mode.mode === 'aram' || mode.mode === 'aram-mayhem') && !actions.length && selectedId)))
+  const randomSelection = mode.mode === 'aram' || mode.mode === 'aram-mayhem'
+  const championLocked = Boolean(championId && (completed?.championId === championId || (selectedId && finalized) || (randomSelection && selectedId)))
   return {
     connected: true,
     phase: 'ChampSelect',
@@ -70,7 +71,7 @@ export function readSelection(session: ChampSelectSession, flow: GameflowSession
       championId: member.championId || member.championPickIntent!, position: normalizePosition(member.assignedPosition),
       locked: Boolean(member.championId && (finalized ||
         (session.actions || []).flat().some((action) => typeof member.cellId === 'number' && action.type === 'pick' && action.completed && action.actorCellId === member.cellId && action.championId === member.championId) ||
-        ((mode.mode === 'aram' || mode.mode === 'aram-mayhem') && !(session.actions || []).flat().some((action) => action.type === 'pick' && action.actorCellId === member.cellId)))),
+        randomSelection)),
     })),
     bannedChampionIds: [...new Set([
       ...(session.bans?.myTeamBans || []), ...(session.bans?.theirTeamBans || []),

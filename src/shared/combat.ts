@@ -9,7 +9,7 @@ export interface CombatPreferences {
 }
 
 export const DEFAULT_COMBAT_PREFERENCES: Readonly<CombatPreferences> = {
-  mode: 'rules', tauntStyle: 'classic', enabled: true, praise: true, taunt: true, volume: 65, customLines: {},
+  mode: 'rules', tauntStyle: 'taiwan', enabled: true, praise: true, taunt: true, volume: 65, customLines: {},
 }
 export const COMBAT_VOLUME_DEFAULT_VERSION = 1
 

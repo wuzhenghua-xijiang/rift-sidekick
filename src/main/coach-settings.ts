@@ -33,7 +33,7 @@ export class CoachSettingsStore {
     try {
       const raw = JSON.parse(await readFile(this.file, 'utf8'))
       const apiKey = raw.encryptedKey && this.canEncrypt() ? this.secrets.decryptString(Buffer.from(raw.encryptedKey, 'base64')) : ''
-      this.credentials = this.resolve({ baseUrl: raw.baseUrl, model: raw.model, autoAnalyze: raw.autoAnalyze === true, apiKey, coachPrompt: raw.coachPrompt, combatPrompt: raw.combatPrompt }, false)
+      this.credentials = this.resolve({ baseUrl: raw.baseUrl, model: raw.model, autoAnalyze: typeof raw.autoAnalyze === 'boolean' ? raw.autoAnalyze : DEFAULT_COACH_SETTINGS.autoAnalyze, apiKey, coachPrompt: raw.coachPrompt, combatPrompt: raw.combatPrompt }, false)
     } catch { /* First launch, unreadable keychain or invalid settings: request configuration again. */ }
   }
   resolve(value: CoachSettingsInput, requireModel = true): CoachCredentials {

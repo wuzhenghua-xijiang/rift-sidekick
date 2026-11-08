@@ -108,7 +108,7 @@ export interface AppState {
   dock: boolean
   canRestore: boolean
   recoveryNeeded: boolean
-  lastConfig?: { ok: boolean; busy?: boolean; message: string; at: number; target?: ConfigurationTarget }
+  lastConfig?: ApplyResult & { busy?: boolean; at: number; target?: ConfigurationTarget }
 }
 
 export interface ConfigurationTarget {
@@ -131,6 +131,12 @@ export interface ApplyResult {
   ok: boolean
   message: string
   summary?: string[]
+  chat?: ConfigurationChatResult
+}
+
+export interface ConfigurationChatResult {
+  status: 'sent' | 'skipped' | 'failed'
+  message?: string
 }
 
 export interface HonorResult extends ApplyResult { retryable: boolean }

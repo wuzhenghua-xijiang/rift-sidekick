@@ -95,7 +95,7 @@ export const DEFAULT_COACH_PROMPT = `你是「峡谷 AI 教练」，专注英雄
 双方五人均锁定后，停止选人和 Ban 建议，比较双方赢法与短板，给出标明「仅按阵容估计」的粗粒度胜率倾向和一句贴合阵容的轻吐槽。大乱斗按该模式评价，海克斯资料不足时只点评已知组合。用简短、具体的中文，遵循系统规定的 JSON 格式。`
 
 export const DEFAULT_COACH_SETTINGS: CoachSettings = {
-  baseUrl: 'https://api.openai.com/v1', model: '', hasApiKey: false, autoAnalyze: false,
+  baseUrl: 'https://api.openai.com/v1', model: '', hasApiKey: false, autoAnalyze: true,
   coachPrompt: DEFAULT_COACH_PROMPT,
 }
 export const COACH_POSITIONS: Record<Position, string> = { top: '上路', jungle: '打野', mid: '中路', adc: '下路', support: '辅助' }

@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { setTimeout as pause } from 'node:timers/promises'
 import { itemSetGroups } from '@shared/build-plans'
-import type { ApplyResult, BuildPlan, Champion } from '@shared/types'
+import type { ApplyResult, BuildPlan, Champion, ConfigurationChatResult } from '@shared/types'
 import { readSelection, type ChampSelectSession, type GameflowSession } from './selection'
 import type { GameCatalog } from './catalog'
 import { purchaseGroups } from './item-components'
 import type { RecommendationFiles, RecommendationFileSnapshot } from './recommendation-files'
+import type { AppliedConfiguration } from './configuration-chat'
 
 export type LcuRequest = <T = unknown>(method: string, path: string, body?: unknown) => Promise<T>
 export interface PerkPage {
@@ -75,7 +76,11 @@ export class ConfigurationManager {
     private readonly request: LcuRequest,
     private readonly store: JournalStore,
     private readonly retryPause: (milliseconds: number) => Promise<void> = pause,
-    private readonly resources: { catalog?: (patch: string) => Promise<GameCatalog>; files?: Pick<RecommendationFiles, 'prepare' | 'apply' | 'verify' | 'restore'> } = {},
+    private readonly resources: {
+      catalog?: (patch: string) => Promise<GameCatalog>
+      files?: Pick<RecommendationFiles, 'prepare' | 'apply' | 'verify' | 'restore'>
+      announce?: (applied: AppliedConfiguration, guard: () => boolean) => Promise<ConfigurationChatResult>
+    } = {},
   ) {}
 
   async initialize() {
@@ -96,7 +101,7 @@ export class ConfigurationManager {
       validatePlan(plan)
       if (this.resources.catalog) {
         const catalog = await this.resources.catalog(plan.patch)
-        const starters = plan.purchaseGroups?.find((group) => group.label === '出门装')?.ids || []
+        const starters = plan.purchaseGroups?.find((group) => ['初始装', '出门装', '出门'].includes(group.label))?.ids || []
         plan = { ...plan, purchaseGroups: purchaseGroups(plan, catalog, starters) }
       }
       const runes = plan.runes
@@ -181,6 +186,16 @@ export class ConfigurationManager {
         await this.save(snapshot)
         await checkSelection()
         await this.request('PUT', '/lol-perks/v1/currentpage', pageId)
+        // Selection can lag behind a successful write while the client rebuilds its page list.
+        for (let attempt = 0; attempt < 3; attempt++) {
+          await checkSelection()
+          const current = await this.request<PerkPage>('GET', '/lol-perks/v1/currentpage')
+          if (current?.id === pageId && pageFingerprint(current) === pageFingerprint(snapshot.targetPage)) break
+          if (attempt === 2) throw new Error('客户端没有切换到助手符文页。')
+          await this.retryPause(200 * (attempt + 1))
+          await checkSelection()
+          await this.request('PUT', '/lol-perks/v1/currentpage', pageId)
+        }
       }
 
       await checkSelection()
@@ -235,7 +250,11 @@ export class ConfigurationManager {
       if (pageId) this.journal.managedPages[summonerId] = pageId
       this.journal.managedItems[managedKey] = targetItems.uid
       await this.save(snapshot)
-      return { ok: true, message: `已配好${runes ? '符文、' : ''}装备方案${applySpells ? '和召唤师技能' : ''}。旧装备方案已清空，游戏内按 P → 物品套装，当前仅保留「${targetItems.title}」。`, summary: [plan.title, ...(snapshot.targetPage ? [String(snapshot.targetPage.name)] : []), targetItems.title] }
+      let chat: ConfigurationChatResult | undefined
+      try {
+        chat = await this.resources.announce?.({ champion, plan, summonerId, ...afterSelection }, guard)
+      } catch { chat = { status: 'failed', message: '聊天提示未获确认，配置已保留。' } }
+      return { ok: true, chat, message: `已配好${runes ? '符文、' : ''}装备方案${applySpells ? '和召唤师技能' : ''}。旧装备方案已清空，游戏内按 P → 物品套装，当前仅保留「${targetItems.title}」。${chat?.status === 'failed' ? ` ${chat.message}` : ''}`, summary: [plan.title, ...(snapshot.targetPage ? [String(snapshot.targetPage.name)] : []), targetItems.title] }
     } catch (error) {
       if (snapshot && Object.values(snapshot.attempted).some(Boolean)) {
         const errors = await this.compensate(snapshot)

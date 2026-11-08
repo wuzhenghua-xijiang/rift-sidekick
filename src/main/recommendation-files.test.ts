@@ -33,6 +33,26 @@ async function harness(tencent = true) {
 }
 
 describe('game recommendation files', () => {
+  it.each([[11, 'SR'], [12, 'HA']] as const)('accepts the real client export map %s / %s and can recover it', async (map, exportedMap) => {
+    const { specific, service } = await harness()
+    const scoped = { ...target, associatedMaps: [map] }
+    const snapshot = await service.prepare(champion, plan, scoped)
+    const file = join(specific, 'RIOT_ItemSet_1.json')
+    const exported = JSON.stringify({ ...scoped, map: exportedMap, sortrank: 9999 })
+    await writeFile(file, exported)
+    await service.apply(snapshot, async () => undefined)
+    expect(JSON.parse(await readFile(file, 'utf8'))).toMatchObject({ blocks: target.blocks, champion: 'Ahri', sortrank: 0 })
+    // LCU can export it again after successful application as well.
+    await writeFile(file, exported)
+    await service.restore(snapshot, async () => undefined)
+    await expect(readFile(file)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+  it('rejects an exported map that disagrees with the set association', async () => {
+    const { specific, service } = await harness()
+    const snapshot = await service.prepare(champion, plan, { ...target, associatedMaps: [12] })
+    await writeFile(join(specific, 'RIOT_ItemSet_1.json'), JSON.stringify({ ...target, associatedMaps: [12], map: 'SR', sortrank: 9999 }))
+    await expect(service.apply(snapshot, async () => undefined)).rejects.toThrow('其他程序修改')
+  })
   it.each([true, false])('writes one champion recommendation and backs up old generated files (Tencent=%s)', async (tencent) => {
     const { global, specific, service, wegame } = await harness(tencent)
     await writeFile(join(global, 'wegame.json'), wegame)

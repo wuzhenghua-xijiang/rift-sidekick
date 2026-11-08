@@ -11,7 +11,7 @@ export interface MatchmakingState {
 }
 
 export const DEFAULT_MATCHMAKING_PREFERENCES: MatchmakingPreferences = {
-  autoAccept: false,
+  autoAccept: true,
   autoPick: false,
   championId: null,
 }

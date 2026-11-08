@@ -59,6 +59,11 @@ describe('configuration availability', () => {
     expect(get({ client: { ...state.client, sessionId: 'game-1' }, lastConfig })).toMatchObject({ canApply: true, tone: 'warning', hint: lastConfig.message, buttonLabel: '重试配置' })
     expect(get({ client: { ...state.client, sessionId: 'game-2' }, lastConfig }).tone).toBe('ready')
   })
+  it('shows an unconfirmed chat message without marking the verified loadout as failed', () => {
+    const lastConfig = { ok: true, message: '已配置', at: 1, chat: { status: 'failed' as const, message: '聊天暂不可用' },
+      target: { championId: 103, mode: 'ranked' as const, position: 'mid' as const, planId: 'plan-1' } }
+    expect(get({ lastConfig }, { planId: 'plan-1' })).toMatchObject({ canApply: true, applied: true, tone: 'warning', caption: '已配置 · 聊天未确认', hint: '聊天暂不可用' })
+  })
   it('describes undo without implying another automatic write is pending', () => {
     expect(get({ lastConfig: { ok: false, busy: true, message: '正在恢复原配置…', at: 1 } }, { busy: true })).toMatchObject({ caption: '正在恢复原配置…', canApply: false })
     expect(get({ lastConfig: { ok: true, message: '已恢复', at: 2 } })).toMatchObject({ caption: '已恢复原配置', hint: '需要时可重新应用本局方案', applied: false })

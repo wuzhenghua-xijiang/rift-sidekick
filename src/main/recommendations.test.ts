@@ -67,10 +67,10 @@ describe('multiple real recommendation samples', () => {
   })
   it.each(['ranked', 'aram', 'aram-mayhem'] as const)('keeps starters first and all six finished items within four shop blocks in %s', (mode) => {
     for (const plan of build(sample(), mode)) {
-      expect(plan.purchaseGroups?.[0]).toEqual({ label: '出门装', ids: [1056, 2003, 2003], names: ['多兰之戒', '药水', '药水'] })
-      expect(plan.purchaseGroups?.map((group) => group.label)).toEqual(['出门装', '核心装（含鞋）', '后续成装'])
-      expect(plan.purchaseGroups?.[1].ids).toContain(3020)
-      expect(plan.purchaseGroups?.slice(1).flatMap((group) => group.ids)).toEqual(plan.itemGroups.flatMap((group) => group.ids))
+      expect(plan.purchaseGroups?.[0]).toEqual({ label: '初始装', ids: [1056, 2003, 2003], names: ['多兰之戒', '药水', '药水'] })
+      expect(plan.purchaseGroups?.map((group) => group.label)).toEqual(expect.arrayContaining(['初始装', '成装']))
+      expect(plan.purchaseGroups?.at(-1)?.label).toBe('成装')
+      expect(plan.purchaseGroups?.at(-1)?.ids).toEqual(plan.itemGroups.flatMap((group) => group.ids))
       expect(itemSetGroups(plan).length).toBeLessThanOrEqual(4)
       if (plan.situationalItems) expect(itemSetGroups(plan).at(-1)?.label).toBe('其它推荐装备')
       expect(plan.itemGroups.flatMap((group) => group.ids)).toHaveLength(6)

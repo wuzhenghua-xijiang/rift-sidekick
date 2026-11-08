@@ -41,6 +41,7 @@ function harness() {
 describe('automatic ready checks', () => {
   it('does not read or mutate LCU while both switches are off', async () => {
     const h = harness()
+    h.service.configure({ autoAccept: false, autoPick: false, championId: null })
     await h.service.updateClient(h.client)
     await h.select()
     expect(h.request).not.toHaveBeenCalled()

@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "Single click selects; double click applies once; footer has no apply button",
+    "Application eligibility uses the clicked plan; stale cache is blocked",
+    "Repeated Enter cannot start overlapping writes",
+    "Eight champion changes preserve rendered content",
+    "430/390 dock, lobby and login render without exceptions or overflow"
+  ],
+  "errors": []
+}

@@ -29,6 +29,17 @@ function harness() {
 }
 
 describe('LCU game context during loading and in-game polling', () => {
+  it('keeps the connected dock during a temporary draft metadata failure and blocks stale hero writes', async () => {
+    const { lcu, current } = harness()
+    const selected = await lcu.currentClientState()
+    current.unavailable = true
+    expect(await lcu.currentClientState(selected)).toMatchObject({ connected: true, phase: 'ChampSelect', mode: 'ranked', championId: null, championLocked: false })
+    current.unavailable = false
+    expect(await lcu.currentClientState(selected)).toMatchObject({ connected: true, championId: 103, championLocked: true })
+    current.disconnected = true
+    expect(await lcu.currentClientState(selected)).toMatchObject({ connected: false, phase: 'ClientOffline' })
+  })
+
   it('retains the selected co-op mode and game identity when session metadata is temporarily absent', async () => {
     const { lcu, current } = harness()
     let client = await lcu.currentClientState()

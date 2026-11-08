@@ -138,6 +138,7 @@ export default function App() {
   const [browsingGuide, setBrowsingGuide] = useState(false)
   const [footerTarget, setFooterTarget] = useState<HTMLElement | null>(null)
   const [applyBusy, setApplyBusy] = useState(false)
+  const applyInFlight = useRef(false)
   const [toast, setToast] = useState<ApplyResult | null>(null)
   const requestId = useRef(0)
   const modalRef = useRef<HTMLElement>(null)
@@ -201,7 +202,6 @@ export default function App() {
     loading,
     busy,
   })
-  const canApply = action.canApply
   const appliedPlanId =
     state.lastConfig?.ok &&
     matchesConfiguration(state.lastConfig.target, client, position)
@@ -390,13 +390,17 @@ export default function App() {
         window.rift.selectPosition({ championId: champion.id, position: next }),
       )
   }
-  async function choosePlan(next: BuildPlan) {
-    if (!champion || busy) return
+  async function choosePlan(next: BuildPlan, apply = false) {
+    if (!champion || busy || applyInFlight.current) return
+    const shouldApply = apply && configurationStatus({
+      state, championKey: champion.key, mode: next.mode, position: next.position,
+      planId: next.id, hasPlan: true, planCache: next.cache, loading, busy,
+    }).canApply
     setSelectedPlan(next.id)
-    if (canApply) setApplyBusy(true)
+    if (shouldApply) { applyInFlight.current = true; setApplyBusy(true) }
     try {
       await window.rift.selectPlan({ championId: champion.id, planId: next.id })
-      if (canApply) {
+      if (shouldApply) {
         const result = await window.rift.applyConfig({
           championId: champion.id,
           planId: next.id,
@@ -406,22 +410,7 @@ export default function App() {
     } catch (reason) {
       report(reason)
     } finally {
-      setApplyBusy(false)
-    }
-  }
-  async function applySelected() {
-    if (!champion || !plan || !canApply) return
-    setApplyBusy(true)
-    try {
-      const result = await window.rift.applyConfig({
-        championId: champion.id,
-        planId: plan.id,
-      })
-      if (!result.ok) setToast(result)
-    } catch (reason) {
-      report(reason)
-    } finally {
-      setApplyBusy(false)
+      if (shouldApply) { applyInFlight.current = false; setApplyBusy(false) }
     }
   }
   async function restore() {
@@ -827,6 +816,13 @@ export default function App() {
                                 aria-pressed={plan.id === entry.id}
                                 className={`od-plan ${plan.id === entry.id ? 'selected' : ''} ${appliedPlanId === entry.id ? 'applied' : ''}`}
                                 onClick={() => void choosePlan(entry)}
+                                onDoubleClick={() => void choosePlan(entry, true)}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter') {
+                                    event.preventDefault()
+                                    void choosePlan(entry, true)
+                                  }
+                                }}
                               >
                                 <div className="od-plan-top">
                                   <strong title={entry.title}>
@@ -908,7 +904,7 @@ export default function App() {
                             {plan.runes && <BuildRunes runes={plan.runes} />}
                             {plan.notice && <p>{plan.notice}</p>}
                             <p>
-                              优先使用该英雄、分路与模式的已存偏好；没有偏好时使用首套方案。选人锁定后，点击其他方案会立即应用并保存偏好。
+                              优先使用该英雄、分路与模式的已存偏好；没有偏好时使用首套方案。单击选择并保存偏好，选人锁定后双击方案即可应用符文与装备。
                             </p>
                             <p>
                               方案按来源样本胜率排序；胜率对应核心装备或符文样本，不代表整套配置胜率。统计来自
@@ -1399,25 +1395,13 @@ export default function App() {
                       <RotateCcw size={15} />
                     </button>
                   )}
-                  {state.recoveryNeeded ? (
+                  {state.recoveryNeeded && (
                     <button
                       className="od-primary"
                       disabled={!state.canRestore || busy || !client.connected}
                       onClick={() => void restore()}
                     >
                       恢复配置
-                    </button>
-                  ) : (
-                    <button
-                      className="od-primary"
-                      aria-label={action.buttonLabel}
-                      onClick={() => void applySelected()}
-                      disabled={!canApply}
-                    >
-                      {action.buttonLabel === '应用方案'
-                        ? '应用'
-                        : action.buttonLabel}
-                      <ArrowUpRight size={16} />
                     </button>
                   )}
                 </div>

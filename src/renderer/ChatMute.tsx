@@ -5,7 +5,7 @@ import type { ApplyResult } from '@shared/types'
 
 export function ChatMuteControl({ state, notify, compact = false }: { state?: ChatMuteState; notify(result: ApplyResult): void; compact?: boolean }) {
   const [busy, setBusy] = useState(false)
-  const enabled = state?.enabled ?? false
+  const enabled = state?.enabled ?? true
   async function save(next: boolean) {
     if (busy) return
     setBusy(true)

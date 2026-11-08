@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>本机修复验收 · 同尺寸对照</title>
+<style>
+body{margin:0;padding:24px;background:#efede6;color:#1b1b1c;font:14px/1.6 "Microsoft YaHei UI",sans-serif}h1{font-size:22px}nav{display:flex;gap:8px}button{font:inherit;padding:6px 16px;border:1px solid #1b1b1c;background:transparent;cursor:pointer}button[aria-pressed=true]{background:#f95a2c}main{display:flex;gap:24px;overflow:auto;margin-top:18px}figure{margin:0;flex:none}figcaption{font-weight:700;margin-bottom:8px}img{display:block;border:1px solid #1b1b1c;box-sizing:content-box}p{max-width:900px}
+</style>
+<h1>街头暴走 · 同尺寸对照</h1>
+<p>已确认设计稿与当前正式组件。当前截图使用验收数据；实际客户端验证另行记录。按用户要求，备战底栏移除“应用”，单击选择、双击应用；其他视觉结构沿用原稿。</p>
+<nav></nav><main><figure><figcaption>已确认设计稿</figcaption><img id="design" alt="已确认设计稿"></figure><figure><figcaption>当前正式组件</figcaption><img id="actual" alt="当前正式组件"></figure></main>
+<script>
+const cases=[['430 小窗','../overdrive-all-pages/ready.png','ready-430.png',430],['390 小窗','../overdrive-all-pages/ready-minimum.png','ready-390.png',390],['大厅','../overdrive-v2/lobby.png','lobby-430.png',430],['登录','../overdrive-v2/login.png','login-1100.png',1100]];
+function show(i){document.querySelectorAll('button').forEach((b,j)=>b.setAttribute('aria-pressed',String(i===j)));const [,reference,current,width]=cases[i];document.querySelector('#design').src=reference;document.querySelector('#actual').src=current;document.querySelectorAll('img').forEach(img=>img.style.width=width+'px')}
+cases.forEach(([name],i)=>{const b=document.createElement('button');b.textContent=name;b.onclick=()=>show(i);document.querySelector('nav').append(b)});show(0)
+</script>
+</html>

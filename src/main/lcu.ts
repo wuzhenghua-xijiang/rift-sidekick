@@ -33,8 +33,9 @@ export class LcuService {
       position: null, mode: previous?.mode || 'ranked',
     }
     if (this.platform !== 'win32') return { ...offline, message: '当前为界面预览；客户端连接与吸附需在 Windows 上使用。' }
+    let phase: string | undefined
     try {
-      const phase = await this.request<string>('GET', '/lol-gameflow/v1/gameflow-phase')
+      phase = await this.request<string>('GET', '/lol-gameflow/v1/gameflow-phase')
       if (phase !== 'ChampSelect') {
         let flow: GameflowSession = {}
         if (isPlaying(phase) || isPostGame(phase) || phase === 'Lobby' || phase === 'Matchmaking') {
@@ -76,6 +77,11 @@ export class LcuService {
       this.gameContext = next
       return next
     } catch (error) {
+      // A reachable gameflow endpoint means the client is still connected.
+      // Draft metadata can briefly disappear during rerolls and phase changes;
+      // keep the dock surface stable while blocking writes until it is readable.
+      if (phase) return { ...offline, connected: true, phase, mode: previous?.mode || 'other', modeLabel: previous?.modeLabel,
+        message: '客户端资料正在刷新，稍后自动重试。' }
       this.credentials = undefined
       return { ...offline, message: error instanceof Error ? error.message : '客户端连接暂时中断，正在重连。' }
     }

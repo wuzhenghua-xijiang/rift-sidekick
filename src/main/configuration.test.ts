@@ -98,8 +98,59 @@ function harness(resources: ConstructorParameters<typeof ConfigurationManager>[3
 }
 
 describe('LCU configuration transaction', () => {
+  it('announces once only after the configuration journal is committed', async () => {
+    const statuses: unknown[] = []
+    const announce = vi.fn(async () => { statuses.push(store.journal?.snapshot?.status); return { status: 'sent' as const } })
+    const { manager, store } = harness({ announce })
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, true)).resolves.toMatchObject({ ok: true })
+    expect(announce).toHaveBeenCalledOnce()
+    expect(statuses).toEqual(['applied'])
+    expect(announce.mock.calls[0]).toEqual([
+      expect.objectContaining({ champion, plan, summonerId: 99, state: expect.objectContaining({ sessionId: '1234' }) }),
+      expect.any(Function),
+    ])
+  })
+
+  it('keeps a successful configuration when chat is unavailable', async () => {
+    const announce = vi.fn(async () => { throw new Error('Chat offline') })
+    const { manager, db, store } = harness({ announce })
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, true)).resolves.toMatchObject({ ok: true })
+    expect(store.journal?.snapshot?.status).toBe('applied')
+    expect(db.items.itemSets).toHaveLength(1)
+    expect(db.items.itemSets[0].title).toContain('阿狸')
+    expect(manager.recoveryNeeded).toBe(false)
+    expect(announce).toHaveBeenCalledOnce()
+  })
+
+  it('does not announce a failed equipment write', async () => {
+    const announce = vi.fn(async () => ({ status: 'sent' as const }))
+    const { manager, db } = harness({ announce })
+    db.dropItemRegistration = true
+    await manager.initialize()
+    await expect(manager.apply(champion, plan, true)).rejects.toThrow()
+    expect(announce).not.toHaveBeenCalled()
+  })
+
+  it('retries rune activation when the client temporarily keeps the old current page', async () => {
+    const { db, manager, request, retryPause } = harness()
+    await manager.initialize()
+    let delayed = true
+    db.beforeRequest = async (method, path) => {
+      if (method === 'GET' && path === '/lol-perks/v1/currentpage' && delayed) {
+        delayed = false
+        db.pages.forEach((page) => { page.current = page.id === 1 })
+      }
+    }
+    expect((await manager.apply(champion, plan, false)).ok).toBe(true)
+    expect(retryPause).toHaveBeenCalledWith(200)
+    expect((await request<PerkPage>('GET', '/lol-perks/v1/currentpage')).name).toContain('Rift ·')
+  })
   it.each(['ranked', 'aram', 'aram-mayhem'] as const)('writes and reads back four shop blocks with starters first in %s', async (mode) => {
     const catalog = { items: Object.fromEntries([1056, 2003, 3118, 4645, 3157, 3020, 3089, 3135, 3102, 6655].map((id) => [id, { name: String(id) }])), styles: [], spells: {} }
+    Object.assign(catalog.items[3118], { from: ['1052'] })
+    catalog.items[1052] = { name: '增幅典籍' }
     const { db, manager } = harness({ catalog: async () => catalog })
     const situationalItems = { label: '其它推荐装备', ids: [3102, 6655], names: ['女妖面纱', '卢登的回声'] }
     db.queue = mode === 'ranked' ? { id: 420, mapId: 11, gameMode: 'CLASSIC' } : mode === 'aram' ? { id: 450, mapId: 12, gameMode: 'ARAM' } : { id: 2400, mapId: 12, gameMode: 'KIWI' }
@@ -111,9 +162,9 @@ describe('LCU configuration transaction', () => {
     expect((await manager.apply(champion, { ...base, situationalItems }, true)).ok).toBe(true)
     const blocks = db.items.itemSets[0].blocks
     expect(blocks).toMatchObject([
-      { type: '出门装', items: [{ id: '1056', count: 1 }, { id: '2003', count: 2 }] },
-      { type: '核心装（含鞋）', items: [3118, 4645, 3157, 3020].map((id) => ({ id: String(id), count: 1 })) },
-      { type: '后续成装', items: [3089, 3135].map((id) => ({ id: String(id), count: 1 })) },
+      { type: '初始装', items: [{ id: '1056', count: 1 }, { id: '2003', count: 2 }] },
+      { type: '中间装', items: [{ id: '1052', count: 1 }] },
+      { type: '成装', items: [3118, 4645, 3157, 3020, 3089, 3135].map((id) => ({ id: String(id), count: 1 })) },
       { type: '其它推荐装备', items: [{ id: '3102', count: 1 }, { id: '6655', count: 1 }] },
     ])
     expect(base.purchaseGroups).toHaveLength(1)
@@ -471,7 +522,10 @@ describe('LCU configuration transaction', () => {
     await manager.initialize()
     await manager.apply(champion, plan, false)
     expect(db.items.itemSets[0]).toMatchObject({ sortrank: 0 })
-    expect(db.items.itemSets[0].blocks).toMatchObject([{ type: '核心装', items: [3118, 4645, 3157].map((id) => ({ id: String(id), count: 1 })) }])
+    expect(db.items.itemSets[0].blocks).toMatchObject([
+      { type: '中间装', items: [{ id: '3108', count: 1 }] },
+      { type: '成装', items: [3118, 4645, 3157].map((id) => ({ id: String(id), count: 1 })) },
+    ])
     expect(plan.itemGroups).toHaveLength(2)
     expect(plan.purchaseGroups).toBeUndefined()
   })

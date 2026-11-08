@@ -1,0 +1,77 @@
+name: Publish local Windows build
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version tag matching package.json (for example v0.2.13)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: local-windows-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and download the local build
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          $version = node -p "require('./package.json').version"
+          if ($version -notmatch '^\d+\.\d+\.\d+$' -or $env:RELEASE_TAG -cne "v$version") { throw 'Release tag must match package.json.' }
+          $stagingTag = "local-v$version"
+          $commit = git rev-parse HEAD
+          $draft = gh release view $stagingTag --repo $env:GITHUB_REPOSITORY --json isDraft,targetCommitish | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or -not $draft.isDraft -or $draft.targetCommitish -cne $commit) { throw 'Local draft must target this exact source commit.' }
+          New-Item -ItemType Directory -Path release -Force | Out-Null
+          $installer = "Rift-Sidekick-Setup-$version-x64.exe"
+          foreach ($asset in @($installer, "$installer.blockmap", 'latest.yml', 'SHA256SUMS.txt')) {
+            gh release download $stagingTag --repo $env:GITHUB_REPOSITORY --dir release --pattern $asset
+            if ($LASTEXITCODE -ne 0) { throw "Cannot download local asset $asset." }
+          }
+          $hash = (Get-FileHash "release/$installer" -Algorithm SHA256).Hash.ToLower()
+          if ((Get-Content release/SHA256SUMS.txt -Raw).Trim() -cne "$hash  $installer") { throw 'Local installer does not match SHA256SUMS.txt.' }
+      - name: Sign the local installer update manifest
+        run: node scripts/sign-update.js
+        env:
+          GITHUB_REF_NAME: ${{ inputs.tag }}
+          RIFT_UPDATE_SIGNING_KEY: ${{ secrets.RIFT_UPDATE_SIGNING_KEY }}
+      - name: Publish the verified local build
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          $version = node -p "require('./package.json').version"
+          if ($env:RELEASE_TAG -cne "v$version") { throw 'Release tag changed.' }
+          $stagingTag = "local-v$version"
+          $commit = git rev-parse HEAD
+          gh release upload $stagingTag release/update-manifest.json --repo $env:GITHUB_REPOSITORY --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot upload signed update manifest.' }
+          $release = gh release view $stagingTag --repo $env:GITHUB_REPOSITORY --json assets,isDraft,targetCommitish | ConvertFrom-Json
+          $expected = @("Rift-Sidekick-Setup-$version-x64.exe", "Rift-Sidekick-Setup-$version-x64.exe.blockmap", 'latest.yml', 'SHA256SUMS.txt', 'update-manifest.json') | Sort-Object
+          $actual = @($release.assets | ForEach-Object { $_.name }) | Sort-Object
+          if (-not $release.isDraft -or $release.targetCommitish -cne $commit -or (Compare-Object $expected $actual)) { throw 'Draft assets or source commit changed.' }
+          gh release edit $stagingTag --repo $env:GITHUB_REPOSITORY --tag $env:RELEASE_TAG --target $commit --draft=false --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot publish the local release.' }
+          # A tag created with the workflow token does not trigger a second build.
+          $stagingRef = gh api "repos/$env:GITHUB_REPOSITORY/git/ref/tags/$stagingTag" 2>$null | ConvertFrom-Json
+          if ($LASTEXITCODE -eq 0 -and $stagingRef.object.type -eq 'commit' -and $stagingRef.object.sha -ceq $commit) {
+            gh api --method DELETE "repos/$env:GITHUB_REPOSITORY/git/refs/tags/$stagingTag"
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot remove the temporary local-build tag.' }
+          }
+          exit 0

@@ -85,13 +85,13 @@ describe('background combat reactions', () => {
     f.kill(); await f.step(1)
     f.service.updateClient({ ...playing, connected: false }); f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
     await f.step(3); expect(f.voice.speak).not.toHaveBeenCalled()
-    f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledWith('这是我的专属夸夸。', 65, 'classic'); f.service.dispose()
+    f.kill(); await f.step(3); expect(f.voice.speak).toHaveBeenCalledWith('这是我的专属夸夸。', 65, 'taiwan'); f.service.dispose()
   })
   it('uses AI conclusions when valid and falls back to rules when AI fails', async () => {
     const ai: CombatJudge = { state: { configured: true, baseUrl: 'https://example.test/v1', model: 'test', prompt: DEFAULT_COMBAT_PROMPT }, judge: vi.fn(async (_e: CombatEvidence) => ({ kind: 'clutch' as const, text: 'AI 专属夸夸。' })) }
     const f = harness(ai); f.service.configure({ mode: 'openai' }); f.service.updateClient(playing); await vi.advanceTimersByTimeAsync(0)
     f.kill(); await f.step(3)
-    expect(f.voice.speak).toHaveBeenCalledWith('AI 专属夸夸。', 65, 'classic'); expect(f.service.state.lastReaction?.source).toBe('openai')
+    expect(f.voice.speak).toHaveBeenCalledWith('AI 专属夸夸。', 65, 'taiwan'); expect(f.service.state.lastReaction?.source).toBe('openai')
     vi.mocked(ai.judge).mockResolvedValueOnce(undefined)
     await f.step(20); f.kill(); await f.step(3)
     expect(f.voice.speak).toHaveBeenCalledTimes(2); expect(f.service.state.lastReaction?.source).toBe('rules'); f.service.dispose()
@@ -130,7 +130,7 @@ describe('background combat reactions', () => {
     const f = harness()
     f.service.configure({ volume: 2 })
     expect(await f.service.preview('praise')).toMatchObject({ ok: true })
-    expect(f.voice.speak).toHaveBeenCalledWith(expect.any(String), 2, 'classic')
+    expect(f.voice.speak).toHaveBeenCalledWith(expect.any(String), 2, 'taiwan')
     f.voice.speak.mockRejectedValueOnce(new Error('未检测到可用的中文语音，请安装后重试。'))
     expect(await f.service.preview('praise')).toMatchObject({ ok: false, message: expect.stringContaining('中文语音') })
     expect(f.service.state.status).toBe('error')
@@ -176,7 +176,7 @@ describe('background combat reactions', () => {
       expect(lines).toHaveLength(10)
       expect(lines).not.toEqual(combatLines(combatPreferences({ tauntStyle: 'classic' }), kind))
     }
-    expect(combatPreferences({ tauntStyle: 'unknown' }).tauntStyle).toBe('classic')
+    expect(combatPreferences({ tauntStyle: 'unknown' }).tauntStyle).toBe('taiwan')
   })
   it('drops a late AI response after death, mode changes or disabling', async () => {
     let finish!: (value: { kind: 'clutch'; text: string }) => void

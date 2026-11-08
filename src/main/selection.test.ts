@@ -3,6 +3,14 @@ import { detectMode, readSelection } from './selection'
 import { dockBounds } from './dock-bounds'
 
 describe('mode and locked champion detection', () => {
+  it.each([450, 2400])('keeps a rerolled hero locked despite stale pick actions in queue %s', (id) => {
+    const state = readSelection({ localPlayerCellId: 0, timer: { phase: 'BAN_PICK' },
+      myTeam: [{ cellId: 0, championId: 115 }],
+      actions: [[{ actorCellId: 0, type: 'pick', championId: 103, completed: true }]],
+    }, { gameData: { queue: { id } } })
+    expect(state).toMatchObject({ championId: 115, championLocked: true })
+    expect(state.allies?.[0].locked).toBe(true)
+  })
   it('distinguishes preselection from completed pick actions', () => {
     const session = { localPlayerCellId: 0, myTeam: [{ cellId: 0, championId: 103, assignedPosition: 'middle' }], actions: [[{ actorCellId: 0, championId: 103, type: 'pick', completed: false }]] }
     const flow = { gameData: { queue: { gameMode: 'CLASSIC', mapId: 11, id: 420 } } }

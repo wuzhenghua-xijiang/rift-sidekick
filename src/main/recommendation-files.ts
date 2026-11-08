@@ -113,7 +113,7 @@ export class RecommendationFiles {
         if (current === entry.before) continue
         // Reverting the LCU collection can delete its export even after our
         // normalized file was applied. Existing manual content still conflicts.
-        const clientExport = /^RIOT_ItemSet_\d+\.json$/i.test(basename(entry.path)) && (current === undefined || !snapshot.applied && matchesExport(current, entry.after))
+        const clientExport = /^RIOT_ItemSet_\d+\.json$/i.test(basename(entry.path)) && (current === undefined || matchesExport(current, entry.after))
         if (current !== entry.after && (entry.exported === undefined || current !== entry.exported) && !clientExport) throw new Error('推荐文件已被手动修改，已保留该修改')
         await guard()
         if (entry.before === undefined) await unlink(path)
@@ -160,7 +160,11 @@ function matchesExport(current?: string, expected?: string): boolean {
   if (current === undefined || expected === undefined) return false
   try {
     const a = JSON.parse(current), b = JSON.parse(expected)
-    return ['uid', 'title', 'associatedChampions', 'associatedMaps', 'blocks', 'map', 'mode', 'type', 'preferredItemSlots', 'startedFrom'].every((field) => isDeepStrictEqual(a[field], b[field]))
+    // The real client exports a map-scoped "any" set as HA/SR and assigns
+    // sortrank 9999. These changes do not alter its equipment or applicability.
+    const exportMap = (set: Record<string, unknown>) => set.map === 'any' && Array.isArray(set.associatedMaps) && set.associatedMaps.length === 1
+      ? ({ 11: 'SR', 12: 'HA' } as Record<number, string>)[Number(set.associatedMaps[0])] || set.map : set.map
+    return exportMap(a) === exportMap(b) && ['uid', 'title', 'associatedChampions', 'associatedMaps', 'blocks', 'mode', 'type', 'preferredItemSlots', 'startedFrom'].every((field) => isDeepStrictEqual(a[field], b[field]))
   } catch { return false }
 }
 

@@ -12,6 +12,7 @@ import { LcuService } from './lcu'
 import { MatchmakingService } from './matchmaking'
 import { DEFAULT_MATCHMAKING_PREFERENCES, matchmakingPreferences, type MatchmakingPreferences } from '@shared/matchmaking'
 import { ConfigurationManager, messageOf } from './configuration'
+import { ConfigurationChat } from './configuration-chat'
 import { FileJournal } from './journal'
 import { RecommendationFiles } from './recommendation-files'
 import { fetchRecommendedBuilds } from './opgg'
@@ -94,7 +95,7 @@ let previousPhase = ''
 let operation = 0
 let quitting = false
 let preferencesWrites: Promise<void> = Promise.resolve()
-let preferences: Preferences = { matchmaking: { ...DEFAULT_MATCHMAKING_PREFERENCES }, coachPool: { ...DEFAULT_COACH_POOL }, optimizeBeforeLaunch: true, dock: true, nativeJungleEnabled: true, chatMuteEnabled: false, combat: { ...DEFAULT_COMBAT_PREFERENCES }, combatVolumeDefaultVersion: COMBAT_VOLUME_DEFAULT_VERSION, selectedPlans: {}, positions: {} }
+let preferences: Preferences = { matchmaking: { ...DEFAULT_MATCHMAKING_PREFERENCES }, coachPool: { ...DEFAULT_COACH_POOL }, optimizeBeforeLaunch: true, dock: true, nativeJungleEnabled: true, chatMuteEnabled: true, combat: { ...DEFAULT_COMBAT_PREFERENCES }, combatVolumeDefaultVersion: COMBAT_VOLUME_DEFAULT_VERSION, selectedPlans: {}, positions: {} }
 let state: AppState = {
   client: { connected: false, phase: 'ClientOffline', championId: null, championLocked: false, position: null, mode: 'ranked', message: '等待英雄联盟客户端…' },
   dock: true, canRestore: false, recoveryNeeded: false,
@@ -204,7 +205,7 @@ function makeWindow() {
   mainWindow = new BrowserWindow({
     ...presentation.bounds, minWidth: presentation.minWidth, maxWidth: presentation.maxWidth, minHeight: presentation.minHeight,
     show: false, frame: false, roundedCorners: false, backgroundColor: '#1b1b1c', title: 'Rift Sidekick', autoHideMenuBar: true,
-    webPreferences: { preload: join(__dirname, '../preload/index.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true },
+    webPreferences: { preload: join(__dirname, '../preload/index.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true, backgroundThrottling: false },
   })
   mainWindow.setMenu(null)
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
@@ -538,6 +539,7 @@ ipcMain.handle('rift:select-position', async (_event, input) => {
   await refreshClientState()
 })
 ipcMain.handle('rift:apply-config', async (_event, input) => {
+  if (configurationReady && configuration.isBusy) return { ok: false, message: '上一项配置还在执行，请稍等一下。' }
   const token = ++operation
   if (autoTimer) clearTimeout(autoTimer)
   try {
@@ -752,6 +754,7 @@ else {
     configuration = new ConfigurationManager(lcu.request, new FileJournal(join(app.getPath('userData'), 'configuration.json')), undefined, {
       catalog: (patch) => data.getCatalog(patch),
       files: new RecommendationFiles(lcu.request, join(app.getPath('userData'), 'recommendation-backups')),
+      announce: (applied, guard) => new ConfigurationChat(lcu.request).announce(applied, guard),
     })
     try { await configuration.initialize(); configurationReady = true; updateConfigurationState() }
     catch (error) { updateState({ recoveryNeeded: true, lastConfig: { ok: false, message: messageOf(error), at: Date.now() } }) }

@@ -13,13 +13,15 @@ export function purchaseGroups(plan: BuildPlan, catalog: GameCatalog, starters: 
     label, ids, names: ids.map((id) => catalog.items[id]?.name || String(id)),
   })
   const result: ItemGroup[] = []
-  const isStarterGroup = (entry: ItemGroup) => entry.label === '出门装' || entry.label === '出门'
+  const isStarterGroup = (entry: ItemGroup) => ['初始装', '出门装', '出门'].includes(entry.label)
   const start = (starters.length ? starters : plan.itemGroups.filter(isStarterGroup).flatMap((entry) => entry.ids)).filter(available)
-  if (start.length) result.push(group('出门装', start))
+  if (start.length) result.push(group('初始装', start))
   const core = [...new Set(plan.itemGroups.filter((entry) => !isStarterGroup(entry) && entry.label !== '后续成装').flatMap((entry) => entry.ids))]
   const follow = [...new Set(plan.itemGroups.filter((entry) => entry.label === '后续成装').flatMap((entry) => entry.ids))].filter((id) => !core.includes(id))
-  const hasBoots = plan.itemGroups.some((entry) => entry.label === '鞋子' && entry.ids.length) || core.some((id) => catalog.items[id]?.tags?.includes('Boots'))
-  if (core.length) result.push(group(hasBoots ? '核心装（含鞋）' : '核心装', core))
-  if (follow.length) result.push(group('后续成装', follow))
+  const completed = [...core, ...follow]
+  const components = [...new Set(completed.flatMap((id) => catalog.items[id]?.from || []).map(Number))]
+    .filter((id) => available(id) && !completed.includes(id) && !start.includes(id))
+  if (components.length) result.push(group('中间装', components))
+  if (completed.length) result.push(group('成装', completed))
   return result
 }
